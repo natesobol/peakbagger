@@ -91,6 +91,20 @@
   --input-bg:#ffffff; --input-bg-hover:#f3f4f8; --chip-bg:#ffffff; --chip-border:#dadde6;
   --shadow:0 10px 35px rgba(0,0,0,.10);
 }
+/* Forest green theme */
+.theme-forest{
+  --bg:#07160e; --panel:#0b2a19; --card:#0f3a23; --ink:#eaf6ec; --ink-weak:#b6d6c2;
+  --border:#12321e; --border-strong:#eaf6ec; --accent:#2fb86a; --good:#44c27a; --warn:#e6a100;
+  --input-bg:#0b2a19; --input-bg-hover:#0f3a23; --chip-bg:#0b2a19; --chip-border:#12321e;
+  --shadow:0 10px 35px rgba(0,0,0,.25);
+}
+/* Sky blue theme */
+.theme-sky{
+  --bg:#eaf6ff; --panel:#dff3ff; --card:#ffffff; --ink:#0b2340; --ink-weak:#4a6b86;
+  --border:#bcdcf0; --border-strong:#0b2340; --accent:#3a96ff; --good:#1dbf73; --warn:#ffb74d;
+  --input-bg:#ffffff; --input-bg-hover:#f3fbff; --chip-bg:#ffffff; --chip-border:#bcdcf0;
+  --shadow:0 10px 35px rgba(0,0,0,.06);
+}
 
 /* ---------- Base / app frame ---------- */
 *{box-sizing:border-box}
@@ -596,13 +610,14 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     <style>
     /* Profile image for each mountain in list */
     .profile-img {
-      width: 24px;
-      height: 24px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       object-fit: cover;
-      margin-right: 6px;
-      /* subtle border ensures profile images stand out without debug styling */
-      border: 1px solid var(--border);
+      margin-right: 10px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      border: 1px solid color-mix(in oklab, var(--border) 60%, black);
     }
     /* Photos carousel in detail panel */
     #detailPhotos {
@@ -634,6 +649,41 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     }
     .carousel-controls span {
       color: var(--ink-weak);
+    }
+    /* Carousel thumbnails & indicators */
+    .carousel-wrap { display:flex; flex-direction:column; gap:8px; }
+    .carousel-main { position:relative; }
+    .carousel-prev, .carousel-next {
+      position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.35); color:#fff; border:none; padding:6px 8px; border-radius:6px; cursor:pointer;
+    }
+    .carousel-prev{ left:8px }
+    .carousel-next{ right:8px }
+    .carousel-thumbs{ display:flex; gap:8px; overflow-x:auto; padding-top:6px }
+    .carousel-thumb{ width:64px; height:44px; flex:0 0 auto; border-radius:6px; object-fit:cover; cursor:pointer; opacity:.8; border:1px solid var(--border); }
+    .carousel-thumb.active{ outline:2px solid var(--accent); opacity:1 }
+    .carousel-indicators{ display:flex; gap:6px; justify-content:center; margin-top:6px }
+    .carousel-indicators .dot{ width:8px; height:8px; border-radius:50%; background:var(--input-bg); border:1px solid var(--border); }
+    .carousel-indicators .dot.active{ background:var(--accent); }
+
+    /* Hover preview for list profile images */
+    .img-preview {
+      position:fixed; z-index:999999; pointer-events:none; border-radius:8px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,.45); border:1px solid var(--border-strong); background:var(--panel);
+      width:260px; max-width:40vw; transform:translateY(-6px);
+    }
+    .img-preview img{ width:100%; height:auto; display:block }
+    /* App version badge */
+    .app-version {
+      position: fixed;
+      right: 10px;
+      bottom: 8px;
+      z-index: 999999;
+      font-size: 12px;
+      color: var(--ink-weak);
+      background: transparent;
+      padding: 6px 8px;
+      border-radius: 8px;
+      pointer-events: none;
+      opacity: 0.9;
     }
     </style>
 
@@ -717,10 +767,7 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
           <label>Units: meters</label>
           <label class="switch"><input id="metersToggle" type="checkbox"><span class="slider"></span></label>
         </div>
-        <div class="row">
-          <label>Theme: light</label>
-          <label class="switch"><input id="themeToggle" type="checkbox"><span class="slider"></span></label>
-        </div>
+        <!-- Theme is now managed via the Themes dropdown in the sidebar -->
 
         <!-- NEW: Row density -->
         <div class="row">
@@ -733,6 +780,19 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
           <label class="switch"><input id="stickyToggle" type="checkbox"><span class="slider"></span></label>
         </div>
       </div></details>
+
+      <!-- Themes dropdown (pre-collapsed) -->
+      <details id="themeDetails" class="collapsible-section"><summary>Themes</summary>
+        <div class="panel" style="margin-top:8px">
+          <label for="themeSelect" class="subtle">Choose theme</label>
+          <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
+            <option value="dark">Dark (default)</option>
+            <option value="light">Light (white & black)</option>
+            <option value="forest">Forest Green</option>
+            <option value="sky">Sky Blue</option>
+          </select>
+        </div>
+      </details>
 
       <!-- NEW: Resources panel -->
       <details id="resourcesDetails" class="collapsible-section"><summary>Resources</summary><div class="panel" style="margin-top:14px">
@@ -875,14 +935,13 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
   const metersToggle=document.getElementById('metersToggle');
-  const themeToggle=document.getElementById('themeToggle');
+  const themeSelect = document.getElementById('themeSelect');
   const metersLabel=metersToggle.closest('.row').querySelector('label');
-  const themeLabel=themeToggle.closest('.row').querySelector('label');
   const updMeters=()=>{metersLabel.textContent='Units: '+(metersToggle.checked?'Meters':'Feet')};
-  const updTheme =()=>{themeLabel.textContent='Theme: '+(themeToggle.checked?'Light':'Dark')};
-  updMeters();updTheme();
+  updMeters();
   metersToggle.addEventListener('change',updMeters);
-  themeToggle.addEventListener('change',updTheme);
+  // sync theme select default from prefs if present
+  try{ const prefs = JSON.parse(localStorage.getItem('pb_prefs_v1')||'{}'); if (themeSelect && prefs.theme) themeSelect.value = prefs.theme; }catch(e){}
 });
 </script>
 
@@ -973,7 +1032,7 @@ const exportBtn=document.getElementById('exportBtn');
 const unitToggle=document.getElementById('unitToggle');
 const unitLabel=document.getElementById('unitLabel');
 const metersToggle=document.getElementById('metersToggle');
-const themeToggle=document.getElementById('themeToggle');
+const themeSelect=document.getElementById('themeSelect');
 const openAuthBtn=document.getElementById('openAuth');
 const logoutBtn=document.getElementById('logoutBtn');
 const authModal=document.getElementById('authModal');
@@ -1133,43 +1192,66 @@ function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevat
   if (data && Array.isArray(data.photos)) {
     photos = data.photos;
   }
+  // helper: clear existing carousel timer if present
+  if (photoContainer._carouselTimer) { clearInterval(photoContainer._carouselTimer); photoContainer._carouselTimer = null; }
   if (photos.length > 0) {
     let idx = 0;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'carousel';
-    const img = document.createElement('img');
-    img.alt = it.name;
-    img.src = photos[0].url;
-    wrapper.appendChild(img);
-    const controls = document.createElement('div');
-    controls.className = 'carousel-controls';
-    const prevBtn = document.createElement('button');
-    prevBtn.textContent = 'Prev';
-    prevBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (photos.length === 0) return;
-      idx = (idx - 1 + photos.length) % photos.length;
-      img.src = photos[idx].url;
-      indexSpan.textContent = `${idx+1}/${photos.length}`;
+    const wrap = document.createElement('div'); wrap.className = 'carousel-wrap';
+    const main = document.createElement('div'); main.className = 'carousel-main';
+    const img = document.createElement('img'); img.alt = it.name; img.src = photos[0].url; img.className = 'carousel-main-img'; img.loading = 'lazy';
+    main.appendChild(img);
+    const prevBtn = document.createElement('button'); prevBtn.className = 'carousel-prev'; prevBtn.textContent = '‹';
+    const nextBtn = document.createElement('button'); nextBtn.className = 'carousel-next'; nextBtn.textContent = '›';
+    main.appendChild(prevBtn); main.appendChild(nextBtn);
+
+    // thumbnails
+    const thumbs = document.createElement('div'); thumbs.className = 'carousel-thumbs';
+    const indicators = document.createElement('div'); indicators.className = 'carousel-indicators';
+    const makeThumb = (p, i) => {
+      const t = document.createElement('img'); t.className = 'carousel-thumb'; t.src = p.url; t.alt = it.name + ' thumbnail'; t.dataset.i = String(i); t.loading = 'lazy';
+      t.addEventListener('click', (e)=>{ e.stopPropagation(); setIndex(i); });
+      return t;
     };
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = 'Next';
-    nextBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (photos.length === 0) return;
-      idx = (idx + 1) % photos.length;
+    const setIndex = (n) => {
+      idx = ((n % photos.length) + photos.length) % photos.length;
       img.src = photos[idx].url;
-      indexSpan.textContent = `${idx+1}/${photos.length}`;
+      // update thumbs
+      thumbs.querySelectorAll('.carousel-thumb').forEach((el)=>el.classList.toggle('active', el.dataset.i==String(idx)));
+      indicators.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active', i===idx));
     };
-    const indexSpan = document.createElement('span');
-    indexSpan.textContent = `1/${photos.length}`;
-    controls.appendChild(prevBtn);
-    controls.appendChild(indexSpan);
-    controls.appendChild(nextBtn);
-    photoContainer.appendChild(wrapper);
-    photoContainer.appendChild(controls);
+    photos.forEach((p,i)=>{ thumbs.appendChild(makeThumb(p,i)); const dot=document.createElement('div'); dot.className='dot'; indicators.appendChild(dot); });
+    // autoplay
+    const AUTOPLAY_MS = 3500;
+    const startTimer = () => { if (photoContainer._carouselTimer) clearInterval(photoContainer._carouselTimer); photoContainer._carouselTimer = setInterval(()=>{ setIndex(idx+1); }, AUTOPLAY_MS); };
+    const stopTimer = () => { if (photoContainer._carouselTimer) { clearInterval(photoContainer._carouselTimer); photoContainer._carouselTimer = null; } };
+
+    prevBtn.addEventListener('click', (e)=>{ e.stopPropagation(); setIndex(idx-1); startTimer(); });
+    nextBtn.addEventListener('click', (e)=>{ e.stopPropagation(); setIndex(idx+1); startTimer(); });
+    main.addEventListener('mouseenter', stopTimer); main.addEventListener('mouseleave', startTimer);
+
+    wrap.appendChild(main);
+    wrap.appendChild(thumbs);
+    wrap.appendChild(indicators);
+    photoContainer.appendChild(wrap);
+    setIndex(0);
+    startTimer();
+  } else {
+    // no photos — show placeholder
+    const ph = document.createElement('div'); ph.style.width='100%'; ph.style.borderRadius='8px'; ph.style.overflow='hidden';
+    const pimg = document.createElement('img'); pimg.alt = it.name; pimg.src = placeholderFor(it.name, 800, 420); pimg.loading = 'lazy';
+    ph.appendChild(pimg);
+    photoContainer.appendChild(ph);
   }
   detail.classList.add('open');
+}
+
+// Generate an inline SVG placeholder data URL for peaks with no photos
+function placeholderFor(name, w=800, h=420){
+  const bg = encodeURIComponent('#2c2c2c');
+  const fg = encodeURIComponent('#ffffff');
+  const txt = encodeURIComponent(name || 'No Photo');
+  const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'><rect width='100%' height='100%' fill='${bg}'/><g fill='${fg}' font-family='Segoe UI, Roboto, Arial' font-weight='600' font-size='28'><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>${txt}</text></g></svg>`;
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
 /* ======= Appearance helpers ======= */
@@ -1180,10 +1262,21 @@ function applyUnitsFlag(flag){
   renderTable();
   const prefs = readPrefs(); prefs.meters = meters; writePrefs(prefs);
 }
-function applyThemeFlag(light){
-  document.body.classList.toggle('theme-light', light);
-  themeToggle.checked = light;
-  const prefs = readPrefs(); prefs.light = light; writePrefs(prefs);
+function applyTheme(theme){
+  // Remove known theme classes
+  document.body.classList.remove('theme-light','theme-forest','theme-sky');
+  if (!theme || theme === 'dark') {
+    // dark = default, no class needed
+  } else if (theme === 'light') {
+    document.body.classList.add('theme-light');
+  } else if (theme === 'forest') {
+    document.body.classList.add('theme-forest');
+  } else if (theme === 'sky') {
+    document.body.classList.add('theme-sky');
+  }
+  // sync UI select if present
+  if (themeSelect) themeSelect.value = theme || 'dark';
+  const prefs = readPrefs(); prefs.theme = theme || 'dark'; writePrefs(prefs);
 }
 function applyDensity(compact){
   document.body.classList.toggle('compact-rows', !!compact);
@@ -1384,15 +1477,17 @@ async function renderTable(){
     ensureGridRecord(currentList, it.name);
     const tr = document.createElement('tr');
 
-    if (!gridMode) {
-      // Checklist row with profile image
-      const slug = getSlugForName(it.name);
-      let imgHtml = '';
-      const photoData = NH48_DATA?.[slug]?.photos;
+    // compute profile image (first photo from NH48 dataset) for both modes
+    const slug = getSlugForName(it.name);
+    let imgHtml = '';
+    const photoData = NH48_DATA?.[slug]?.photos;
       if (photoData && photoData.length > 0) {
         const url = photoData[0].url;
-        imgHtml = `<img src="${url}" alt="${it.name}" class="profile-img" />`;
+        imgHtml = `<img src="${url}" alt="${it.name}" class="profile-img" loading="lazy" />`;
       }
+
+    if (!gridMode) {
+      // Checklist row with profile image
       tr.innerHTML = `
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
@@ -1403,7 +1498,7 @@ async function renderTable(){
           <input type="date" class="date-input" required value="${it.date || ''}" data-name="${it.name}">
         </td>
         <td class="stat" data-cell="done">
-          <img class="check js-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" />
+          <img class="check js-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" loading="lazy" />
         </td>
         <td data-cell="open">›</td>
       `;
@@ -1419,7 +1514,7 @@ async function renderTable(){
       tr.innerHTML = `
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
-          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
+          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${imgHtml}${it.name}</span>
         </td>
         <td class="stat" data-cell="elev">${fmtElevation(it.elevation_ft ?? null)}</td>
         <td data-cell="months" colspan="2">
@@ -1469,6 +1564,32 @@ async function renderTable(){
 
     rows.appendChild(tr);
   });
+
+  // Attach hover preview handlers for profile images (one-time per render)
+  // Use event delegation per-row above, but we also wire detailed preview to the small circular images.
+  rows.querySelectorAll('.profile-img').forEach(img => {
+    let previewEl = null;
+    const makePreview = () => {
+      if (previewEl) return previewEl;
+      previewEl = document.createElement('div'); previewEl.className = 'img-preview';
+      const big = document.createElement('img'); big.alt = img.alt || ''; big.src = img.src || placeholderFor(img.alt || ''); previewEl.appendChild(big);
+      document.body.appendChild(previewEl);
+      return previewEl;
+    };
+    const movePreview = (e) => {
+      const rect = img.getBoundingClientRect();
+      const px = rect.right + 10;
+      const py = Math.max(8, rect.top + window.scrollY - 8);
+      const el = previewEl;
+      if (el) {
+        el.style.left = px + 'px';
+        el.style.top = (rect.top + window.scrollY) + 'px';
+      }
+    };
+    img.addEventListener('mouseenter', (e)=>{ makePreview(); previewEl.style.display='block'; movePreview(e); });
+    img.addEventListener('mousemove', (e)=>{ if (previewEl) movePreview(e); });
+    img.addEventListener('mouseleave', ()=>{ if (previewEl){ previewEl.remove(); previewEl = null; } });
+  });
 }
 
 /* ======= List switching ======= */
@@ -1506,7 +1627,7 @@ exportBtn.onclick=async()=>{
 
 unitToggle.onclick=()=>applyUnitsFlag(!meters);
 metersToggle.onchange=()=>applyUnitsFlag(metersToggle.checked);
-themeToggle.onchange=()=>applyThemeFlag(themeToggle.checked);
+if (themeSelect) themeSelect.onchange = () => applyTheme(themeSelect.value);
 
 /* NEW: handlers for added settings */
 densityToggle.onchange = () => applyDensity(densityToggle.checked);
@@ -1551,7 +1672,7 @@ if(doSignupBtn) doSignupBtn.onclick=async()=>{
 (async function boot(){
   try{
     const prefs=readPrefs();
-    applyThemeFlag(!!prefs.light);
+    applyTheme(prefs.theme || 'dark');
     applyUnitsFlag(!!prefs.meters);
     applyDensity(!!prefs.compact);
     applyStickyHeader(!!prefs.sticky);
@@ -1626,6 +1747,10 @@ if(doSignupBtn) doSignupBtn.onclick=async()=>{
     Peakbagger’s Journal needs JavaScript for list loading and saving progress. Please enable JavaScript to use the app.
   </div>
 </noscript>
- 
+</noscript>
+
+<!-- Version badge -->
+<div class="app-version" aria-hidden="true">v0.8.0.1</div>
+
 </body>
 </html>
