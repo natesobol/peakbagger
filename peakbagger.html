@@ -717,7 +717,7 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
   <div class="content">
     <aside class="sidebar">
       <div class="brand">
-        <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="logo" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border-strong)" />
+        <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="logo" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border-strong)" loading="lazy" />
         <div>
           <h1 style="margin:0">Peakbagger (Web)</h1>
           <div class="subtle">Private to this embed</div>
@@ -725,7 +725,7 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       </div>
 
       <a class="app-promo" href="https://apps.apple.com/us/app/peakbaggers-journal/idXXXXXXXXX" target="_blank" rel="noopener">
-        <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger’s Journal iOS icon">
+        <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger’s Journal iOS icon" loading="lazy">
         <div class="app-promo__meta">
           <div class="app-promo__title">Peakbagger’s Journal (iOS)</div>
           <div class="app-promo__sub">Available on the App Store</div>
@@ -1572,7 +1572,7 @@ async function renderTable(){
     const makePreview = () => {
       if (previewEl) return previewEl;
       previewEl = document.createElement('div'); previewEl.className = 'img-preview';
-      const big = document.createElement('img'); big.alt = img.alt || ''; big.src = img.src || placeholderFor(img.alt || ''); previewEl.appendChild(big);
+      const big = document.createElement('img'); big.alt = img.alt || ''; big.src = img.src || placeholderFor(img.alt || ''); big.loading = 'lazy'; previewEl.appendChild(big);
       document.body.appendChild(previewEl);
       return previewEl;
     };
