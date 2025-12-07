@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -319,18 +319,6 @@ input[type="date"]{ min-width: clamp(116px, 40vw, 124px); max-width: clamp(160px
   thead th:nth-child(6), tbody td:nth-child(6){ display:none !important }
 }
 
-/* Profile thumbnail and detail carousel */
-.profile{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0}
-.mountain-row{display:flex;align-items:center;gap:10px;justify-content:center}
-.carousel{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.carousel-main{position:relative;display:flex;align-items:center;justify-content:center;height:260px;background:var(--card);border-radius:10px;overflow:hidden}
-.carousel-main img{width:100%;height:100%;object-fit:cover}
-.carousel-controls{display:flex;justify-content:space-between;gap:8px;margin-top:6px}
-.carousel-thumbs{display:flex;gap:6px;overflow:auto;padding-top:6px}
-.carousel-thumbs img{width:72px;height:52px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent}
-.carousel-thumbs img.active{border-color:var(--accent)}
-.carousel-btn{background:var(--panel);border:1px solid var(--border);padding:6px 10px;border-radius:8px;cursor:pointer}
-
     </style>
     <!-- Collapsible and mobile pager styles (NEW) -->
     <style>
@@ -603,6 +591,52 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       }
     }
     </style>
+
+<!-- Additional styles for NH48 API integration -->
+    <style>
+    /* Profile image for each mountain in list */
+    .profile-img {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 6px;
+      /* subtle border ensures profile images stand out without debug styling */
+      border: 1px solid var(--border);
+    }
+    /* Photos carousel in detail panel */
+    #detailPhotos {
+      margin-bottom: 16px;
+    }
+    .carousel {
+      position: relative;
+    }
+    .carousel img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .carousel-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .carousel-controls button {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .carousel-controls span {
+      color: var(--ink-weak);
+    }
+    </style>
+
 </head>
 <body>
 <div class="app">
@@ -758,6 +792,9 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     Quick facts, weather & helpful links. (Your progress stays private on this device.)
   </p>
 
+  <!-- NEW: Photos for detail -->
+  <div id="detailPhotos"></div>
+
   <div class="detail-grid">
     <!-- Fast facts -->
     <section class="fact">
@@ -851,6 +888,67 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <!-- App -->
 <script type="module">
+// NH48 API integration constants and helpers
+// Location of the NH48 API dataset. When running from the local filesystem
+// (file protocol), point to the bundled nh48.json in the repo so that
+// CORS is not an issue. Otherwise fall back to the CDN URL.
+// Relative path to the bundled NH48 dataset. When served over HTTP (e.g. GitHub Pages),
+// this will be fetched from the same origin without CORS issues. When viewing via
+// file:// protocol, fetching may fail but the application will still function when
+// hosted online.
+const NH48_API_URL = 'nh48.json';
+let NH48_DATA = null;
+// Map from normalized peak names to slug for easier lookup (e.g., 'Washington' -> 'mount-washington').
+let NH48_SLUG_MAP = {};
+async function fetchNh48Data() {
+  if (NH48_DATA) return NH48_DATA;
+  try {
+    const resp = await fetch(NH48_API_URL);
+    NH48_DATA = await resp.json();
+    buildSlugMap();
+  } catch (e) {
+    console.error('Failed to load NH48 data', e);
+    NH48_DATA = {};
+  }
+  return NH48_DATA;
+}
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+// Build a lookup map from various name variants to slug. This helps match peaks whose
+// list names omit "Mount" or "Mountain" prefixes/suffixes, such as "Washington" ("Mount Washington").
+function buildSlugMap() {
+  NH48_SLUG_MAP = {};
+  if (!NH48_DATA) return;
+  Object.entries(NH48_DATA).forEach(([slug, entry]) => {
+    const names = [];
+    if (entry.peakName) names.push(entry.peakName);
+    if (entry['Peak Name']) names.push(entry['Peak Name']);
+    names.forEach(n => {
+      const key = (n || '').toLowerCase().trim();
+      if (!key) return;
+      NH48_SLUG_MAP[key] = slug;
+      // If the name starts with "mount ", map without that prefix too
+      if (key.startsWith('mount ')) {
+        const base = key.replace(/^mount\s+/, '').trim();
+        NH48_SLUG_MAP[base] = slug;
+      }
+      // If the name ends with " mountain", map without that suffix too
+      if (key.endsWith(' mountain')) {
+        const base2 = key.replace(/\s*mountain$/, '').trim();
+        NH48_SLUG_MAP[base2] = slug;
+      }
+    });
+  });
+}
+
+// Determine slug for a peak name by using the precomputed map; fallback to naive slugify.
+function getSlugForName(name) {
+  const key = (name || '').toLowerCase().trim();
+  return NH48_SLUG_MAP[key] || slugify(name || '');
+}
+
 const API = location.hostname.endsWith('nh48pics.com') ? '/_functions' : 'https://www.nh48pics.com/_functions';
 
 /* ======= Lists (existing) ======= */
@@ -889,6 +987,9 @@ const detail=document.getElementById('detail');
 const dTitle=document.getElementById('detailTitle');
 const dElev=document.getElementById('detailElev');
 const dDate=document.getElementById('detailDate');
+const dLocation=document.getElementById('detailLocation');
+const dProm=document.getElementById('detailProm');
+const dDiff=document.getElementById('detailDiff');
 const listTitle=document.getElementById('listTitle');
 
 // NEW: settings elements
@@ -959,21 +1060,6 @@ function writePrefs(p){ localStorage.setItem(PREF_KEY,JSON.stringify(p)) }
 function loadState(){ try{const raw=localStorage.getItem(stateKey());completions=raw?(JSON.parse(raw).completions||{}):{}}catch{completions={}} }
 function saveState(){ try{localStorage.setItem(stateKey(),JSON.stringify({completions}))}catch{} }
 
-/* ======= NH48 images helper (caching) ======= */
-const imagesCache = new Map();
-async function fetchPeakImages(peak){
-  if(!peak) return [];
-  if(imagesCache.has(peak)) return imagesCache.get(peak);
-  try{
-    const r = await fetch(API + '/nh48_images?peak=' + encodeURIComponent(peak));
-    if(!r.ok) { imagesCache.set(peak, []); return []; }
-    const j = await r.json();
-    const arr = (j.images || []).map(i => ({ url: i.url, thumb: i.thumb || i.url, caption: i.caption || '' }));
-    imagesCache.set(peak, arr);
-    return arr;
-  }catch(e){ imagesCache.set(peak, []); return []; }
-}
-
 /* ======= Terms text (short) ======= */
 const TERMS_TEXT = `
 <strong>Peakbagger’s Journal – Terms & Conditions (v${TOS_VERSION})</strong><br><br>
@@ -1025,80 +1111,287 @@ function toggleComplete(peakName){ completions[currentList]??={}; const rec=comp
 function renderProgressBase(allItems){ const done=allItems.filter(it=>completions[currentList]?.[it.name]?.done).length; const total=allItems.length; const pct= total? Math.round(done/total*100):0; bar.style.width=pct+'%'; progressText.textContent=`${done}/${total} • ${pct}%`; }
 function fmtElevation(ft){ if(!ft) return ''; return meters ? Math.round(ft*0.3048)+' m' : ft+' ft' }
 async function baseItemsFor(listName){ if(!cache.has(listName)){ cache.set(listName, await fetchListItems(listName)) } return cache.get(listName) }
-  async function openDetail(it){
-    dTitle.textContent = it.name;
-    dElev.textContent = fmtElevation(it.elevation_ft ?? null) || '—';
-    dDate.textContent = completions[currentList]?.[it.name]?.date || '—';
-    detail.classList.add('open');
-
-    // ensure carousel container exists and is placed above the facts
-    let carousel = document.getElementById('detailCarousel');
-    const grid = document.querySelector('#detail .detail-grid');
-    if (!carousel) {
-      carousel = document.createElement('div'); carousel.id = 'detailCarousel'; carousel.className = 'carousel'; grid.parentNode.insertBefore(carousel, grid);
-    }
-    carousel.innerHTML = '<div class="subtle">Loading images…</div>';
-
-    const imgs = await fetchPeakImages(it.name);
-    if (!imgs || imgs.length === 0) { carousel.innerHTML = '<div class="subtle">No images available for this peak.</div>'; return; }
-
-    let idx = 0;
-    function renderCarousel(){
-      carousel.innerHTML = '';
-      const main = document.createElement('div'); main.className = 'carousel-main';
-      const mainImg = document.createElement('img'); mainImg.src = imgs[idx].url; mainImg.alt = imgs[idx].caption || it.name;
-      main.appendChild(mainImg);
-
-      const controls = document.createElement('div'); controls.className = 'carousel-controls';
-      const prev = document.createElement('button'); prev.className = 'carousel-btn'; prev.textContent = '‹ Prev';
-      const next = document.createElement('button'); next.className = 'carousel-btn'; next.textContent = 'Next ›';
-      prev.onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + imgs.length) % imgs.length; renderCarousel(); };
-      next.onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % imgs.length; renderCarousel(); };
-      controls.appendChild(prev); controls.appendChild(next);
-
-      const thumbs = document.createElement('div'); thumbs.className = 'carousel-thumbs';
-      imgs.forEach((im, i) => {
-        const t = document.createElement('img'); t.src = im.thumb || im.url; t.alt = im.caption || ''; if (i===idx) t.classList.add('active');
-        t.addEventListener('click', (e)=>{ e.stopPropagation(); idx = i; renderCarousel(); });
-        thumbs.appendChild(t);
-      });
-
-      carousel.appendChild(main);
-      carousel.appendChild(controls);
-      carousel.appendChild(thumbs);
-    }
-
-    renderCarousel();
+function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevation(it.elevation_ft ?? null) || '—'; dDate.textContent=completions[currentList]?.[it.name]?.date || '—';
+  // Load NH48 details for this peak
+  const slug = getSlugForName(it.name);
+  const data = NH48_DATA?.[slug] || null;
+  // Fill additional facts
+  dLocation.textContent = data?.["Range / Subrange"] || '—';
+  if (dLocation.textContent === '') dLocation.textContent = '—';
+  const promFt = data?.["Prominence (ft)"];
+  dProm.textContent = promFt ? (meters ? Math.round(promFt*0.3048)+' m' : promFt+' ft') : '—';
+  dDiff.textContent = data?.Difficulty || '—';
+  // Build photo carousel
+  const photoContainer = document.getElementById('detailPhotos');
+  photoContainer.innerHTML = '';
+  let photos = [];
+  if (data && Array.isArray(data.photos)) {
+    photos = data.photos;
   }
+  if (photos.length > 0) {
+    let idx = 0;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'carousel';
+    const img = document.createElement('img');
+    img.alt = it.name;
+    img.src = photos[0].url;
+    wrapper.appendChild(img);
+    const controls = document.createElement('div');
+    controls.className = 'carousel-controls';
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = 'Prev';
+    prevBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (photos.length === 0) return;
+      idx = (idx - 1 + photos.length) % photos.length;
+      img.src = photos[idx].url;
+      indexSpan.textContent = `${idx+1}/${photos.length}`;
+    };
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = 'Next';
+    nextBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (photos.length === 0) return;
+      idx = (idx + 1) % photos.length;
+      img.src = photos[idx].url;
+      indexSpan.textContent = `${idx+1}/${photos.length}`;
+    };
+    const indexSpan = document.createElement('span');
+    indexSpan.textContent = `1/${photos.length}`;
+    controls.appendChild(prevBtn);
+    controls.appendChild(indexSpan);
+    controls.appendChild(nextBtn);
+    photoContainer.appendChild(wrapper);
+    photoContainer.appendChild(controls);
+  }
+  detail.classList.add('open');
+}
 
 /* ======= Appearance helpers ======= */
-function applyUnitsFlag(flag){ meters = flag; metersToggle.checked = meters; unitLabel.textContent = meters ? 'Meters (m)' : 'Feet (ft)'; renderTable(); const prefs = readPrefs(); prefs.meters = meters; writePrefs(prefs); }
-function applyThemeFlag(light){ document.body.classList.toggle('theme-light', light); themeToggle.checked = light; const prefs = readPrefs(); prefs.light = light; writePrefs(prefs); }
-function applyDensity(compact){ document.body.classList.toggle('compact-rows', !!compact); if (densityToggle) densityToggle.checked = !!compact; if (densityLabel) densityLabel.textContent = compact ? 'Compact' : 'Comfortable'; const p = readPrefs(); p.compact = !!compact; writePrefs(p); }
-function applyStickyHeader(sticky){ document.body.classList.toggle('sticky-header', !!sticky); if (stickyToggle) stickyToggle.checked = !!sticky; const p = readPrefs(); p.sticky = !!sticky; writePrefs(p); }
+function applyUnitsFlag(flag){
+  meters = flag;
+  metersToggle.checked = meters;
+  unitLabel.textContent = meters ? 'Meters (m)' : 'Feet (ft)';
+  renderTable();
+  const prefs = readPrefs(); prefs.meters = meters; writePrefs(prefs);
+}
+function applyThemeFlag(light){
+  document.body.classList.toggle('theme-light', light);
+  themeToggle.checked = light;
+  const prefs = readPrefs(); prefs.light = light; writePrefs(prefs);
+}
+function applyDensity(compact){
+  document.body.classList.toggle('compact-rows', !!compact);
+  if (densityToggle) densityToggle.checked = !!compact;
+  if (densityLabel) densityLabel.textContent = compact ? 'Compact' : 'Comfortable';
+  const p = readPrefs(); p.compact = !!compact; writePrefs(p);
+}
+function applyStickyHeader(sticky){
+  document.body.classList.toggle('sticky-header', !!sticky);
+  if (stickyToggle) stickyToggle.checked = !!sticky;
+  const p = readPrefs(); p.sticky = !!sticky; writePrefs(p);
+}
 
 /* ======= Remote persistence (NEW) ======= */
-function summarizeCompletions(list, allItems){ const done = allItems.filter(it=>completions[list]?.[it.name]?.done).length; return `${done}/${allItems.length} peaks completed`; }
-let saveTimer=null; function queueRemoteSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(()=>saveToRemote().catch(()=>{}), 400); }
-async function saveToRemote(){ const me = currentUser(); if (!me || !currentList) return; const items = await baseItemsFor(currentList); const body = { email: me.email, list: currentList, grid: completionsGrid[currentList] || {}, completions: summarizeCompletions(currentList, items), updatedAt: new Date().toISOString() }; try{ await fetch(API + '/peakbagger_progress', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); }catch(_e){} }
-async function restoreFromRemote(email, list){ try{ const r = await fetch(API + '/peakbagger_progress?email=' + encodeURIComponent(email) + '&list=' + encodeURIComponent(list)); if(!r.ok) return; const data = await r.json(); if (!data || !data.record) return; const remoteGrid = data.record.grid || {}; completionsGrid[list] = { ...(completionsGrid[list]||{}) , ...remoteGrid }; saveGrid(); completions[list] ??= {}; Object.entries(completionsGrid[list]).forEach(([peak, monthsObj])=>{ const dates = Object.values(monthsObj||{}).filter(Boolean).sort(); completions[list][peak] = { done: dates.length>0, date: dates.slice(-1)[0] || '' }; }); saveState(); renderTable(); }catch(_e){} }
+function summarizeCompletions(list, allItems){
+  const done = allItems.filter(it=>completions[list]?.[it.name]?.done).length;
+  return `${done}/${allItems.length} peaks completed`;
+}
+let saveTimer=null;
+function queueRemoteSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>saveToRemote().catch(()=>{}), 400);
+}
+
+async function saveToRemote(){
+  const me = currentUser(); if (!me || !currentList) return; // offline-only if not signed in
+  const items = await baseItemsFor(currentList);
+  const body = {
+    email: me.email,
+    list: currentList,
+    grid: completionsGrid[currentList] || {},
+    completions: summarizeCompletions(currentList, items),
+    updatedAt: new Date().toISOString()
+  };
+  try{
+    await fetch(API + '/peakbagger_progress', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+  }catch(_e){
+    // stay silent — offline-first
+  }
+}
+
+async function restoreFromRemote(email, list){
+  try{
+    const r = await fetch(API + '/peakbagger_progress?email=' + encodeURIComponent(email) + '&list=' + encodeURIComponent(list));
+    if(!r.ok) return;
+    const data = await r.json();
+    if (!data || !data.record) return;
+
+    // Merge grid
+    const remoteGrid = data.record.grid || {};
+    completionsGrid[list] = { ...(completionsGrid[list]||{}) , ...remoteGrid };
+    saveGrid();
+
+    // Derive classic mode state from grid (latest date across months)
+    completions[list] ??= {};
+    Object.entries(completionsGrid[list]).forEach(([peak, monthsObj])=>{
+      const dates = Object.values(monthsObj||{}).filter(Boolean).sort();
+      completions[list][peak] = {
+        done: dates.length>0,
+        date: dates.slice(-1)[0] || ''
+      };
+    });
+    saveState();
+    renderTable();
+  }catch(_e){ /* ignore */ }
+}
 
 /* ======= Pagination (NEW) ======= */
-let PAGE = 1; const PAGE_SIZE = 25; let TOTAL_PAGES = 1;
-const pgStatsTop = document.getElementById('pg-stats-top'); const pgStatsBot = document.getElementById('pg-stats-bot'); const pgListTop  = document.getElementById('pg-list-top'); const pgListBot  = document.getElementById('pg-list-bot');
-function pageBounds(page, size, total){ const maxPages = Math.max(1, Math.ceil((total||0)/size)); const p = Math.max(1, Math.min(page, maxPages)); const start = (p - 1) * size; const end = Math.min(start + size, total); return { p, start, end, maxPages }; }
-function updatePager(total, from, to){ const { maxPages } = pageBounds(PAGE, PAGE_SIZE, total); TOTAL_PAGES = maxPages; const label = total ? `Showing ${from}–${to} of ${total}` : 'No results'; if (pgStatsTop) pgStatsTop.textContent = label; if (pgStatsBot) pgStatsBot.textContent = label; const buildButtons = (host) => { if (!host) return; host.innerHTML = ''; const mk = (txt, disabled, onClick, aria) => { const b = document.createElement('button'); b.className = 'page-btn'; b.textContent = txt; if (disabled) b.disabled = true; if (aria) b.setAttribute('aria-label', aria); b.addEventListener('click', onClick); return b; }; host.appendChild(mk('«', PAGE===1, ()=>gotoPage(1), 'First page')); host.appendChild(mk('‹', PAGE===1, ()=>gotoPage(PAGE-1), 'Previous page')); const windowSize = 7; let start = Math.max(1, PAGE - Math.floor(windowSize/2)); let end   = Math.min(maxPages, start + windowSize - 1); start = Math.max(1, Math.min(start, Math.max(1, end - windowSize + 1))); for (let i=start; i<=end; i++){ const btn = mk(String(i), false, ()=>gotoPage(i)); if (i === PAGE) btn.setAttribute('aria-current','page'); host.appendChild(btn); } host.appendChild(mk('›', PAGE===maxPages, ()=>gotoPage(PAGE+1), 'Next page')); host.appendChild(mk('»', PAGE===maxPages, ()=>gotoPage(maxPages), 'Last page')); }; buildButtons(pgListTop); buildButtons(pgListBot); }
-function gotoPage(p){ const { p:clamped } = pageBounds(p, PAGE_SIZE, Number(rows?.dataset?.total || 0)); PAGE = clamped; renderTable(); try { const mainEl = document.querySelector('main.panel'); const y = mainEl?.getBoundingClientRect().top + window.scrollY - 8; window.scrollTo({ top: y, behavior: 'smooth' }); } catch(_) {} }
-window.addEventListener('keydown', (e)=>{ if (e.target && (/input|select|textarea/i).test(e.target.tagName)) return; if (e.key === 'ArrowRight') { gotoPage(PAGE + 1); } if (e.key === 'ArrowLeft')  { gotoPage(PAGE - 1); } });
+let PAGE = 1;
+const PAGE_SIZE = 25;
+let TOTAL_PAGES = 1;
+
+const pgStatsTop = document.getElementById('pg-stats-top');
+const pgStatsBot = document.getElementById('pg-stats-bot');
+const pgListTop  = document.getElementById('pg-list-top');
+const pgListBot  = document.getElementById('pg-list-bot');
+
+function pageBounds(page, size, total){
+  const maxPages = Math.max(1, Math.ceil((total||0)/size));
+  const p = Math.max(1, Math.min(page, maxPages));
+  const start = (p - 1) * size;
+  const end = Math.min(start + size, total);
+  return { p, start, end, maxPages };
+}
+
+function updatePager(total, from, to){
+  const { maxPages } = pageBounds(PAGE, PAGE_SIZE, total);
+  TOTAL_PAGES = maxPages;
+
+  const label = total ? `Showing ${from}–${to} of ${total}` : 'No results';
+  if (pgStatsTop) pgStatsTop.textContent = label;
+  if (pgStatsBot) pgStatsBot.textContent = label;
+
+  const buildButtons = (host) => {
+    if (!host) return;
+    host.innerHTML = '';
+
+    const mk = (txt, disabled, onClick, aria) => {
+      const b = document.createElement('button');
+      b.className = 'page-btn'; b.textContent = txt;
+      if (disabled) b.disabled = true;
+      if (aria) b.setAttribute('aria-label', aria);
+      b.addEventListener('click', onClick);
+      return b;
+    };
+
+    // First / Prev
+    host.appendChild(mk('«', PAGE===1, ()=>gotoPage(1), 'First page'));
+    host.appendChild(mk('‹', PAGE===1, ()=>gotoPage(PAGE-1), 'Previous page'));
+
+    // Number window — show up to 7 numbers centered on current
+    const windowSize = 7;
+    let start = Math.max(1, PAGE - Math.floor(windowSize/2));
+    let end   = Math.min(maxPages, start + windowSize - 1);
+    start = Math.max(1, Math.min(start, Math.max(1, end - windowSize + 1)));
+    for (let i=start; i<=end; i++){
+      const btn = mk(String(i), false, ()=>gotoPage(i));
+      if (i === PAGE) btn.setAttribute('aria-current','page');
+      host.appendChild(btn);
+    }
+
+    // Next / Last
+    host.appendChild(mk('›', PAGE===maxPages, ()=>gotoPage(PAGE+1), 'Next page'));
+    host.appendChild(mk('»', PAGE===maxPages, ()=>gotoPage(maxPages), 'Last page'));
+  };
+
+  buildButtons(pgListTop);
+  buildButtons(pgListBot);
+}
+
+function gotoPage(p){
+  const { p:clamped } = pageBounds(p, PAGE_SIZE, Number(rows?.dataset?.total || 0));
+  PAGE = clamped;
+  renderTable();
+  try {
+    const mainEl = document.querySelector('main.panel');
+    const y = mainEl?.getBoundingClientRect().top + window.scrollY - 8;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  } catch(_) {}
+}
+
+// Keyboard shortcuts for pagination
+window.addEventListener('keydown', (e)=>{
+  if (e.target && (/input|select|textarea/i).test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight') { gotoPage(PAGE + 1); }
+  if (e.key === 'ArrowLeft')  { gotoPage(PAGE - 1); }
+});
 
 /* ======= Render table (unchanged + grid + pagination) ======= */
-async function renderTable(){ if (!currentList) { rows.innerHTML = ''; return; } const q = searchEl.value.trim().toLowerCase(); const allItems = (await baseItemsFor(currentList)).map(it => { const c = completions[currentList]?.[it.name] ?? { done:false, date:'' }; return { ...it, completed: !!c.done, date: c.date || '' }; }); allItems.sort((a,b) => { if (sortMode === 'name')   return a.name.localeCompare(b.name); if (sortMode === 'elev')   return (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0); if (sortMode === 'status') return (b.completed ? 1 : 0) - (a.completed ? 1 : 0) || a.rank - b.rank; return a.rank - b.rank; }); let items = allItems.filter(it => !q || it.name.toLowerCase().includes(q)); if (hideCompleted) items = items.filter(it => !it.completed); renderProgressBase(allItems); if (gridMode) { let totalCells = items.length * 12; let filled = 0; items.forEach(it=>{ const rec = ensureGridRecord(currentList, it.name); filled += Object.values(rec).filter(Boolean).length; }); const pct = totalCells ? Math.round(filled/totalCells*100) : 0; bar.style.width = pct + '%'; progressText.textContent = `${filled}/${totalCells} • ${pct}%`; } const total = items.length; const { p, start, end } = pageBounds(PAGE, PAGE_SIZE, total); PAGE = p; rows.dataset.total = String(total); const pageItems = items.slice(start, end); updatePager(total, total ? (start + 1) : 0, end); rows.innerHTML = ''; pageItems.forEach(it => { ensureGridRecord(currentList, it.name); const tr = document.createElement('tr'); if (!gridMode) { tr.innerHTML = `
+async function renderTable(){
+  if (!currentList) { rows.innerHTML = ''; return; }
+  const q = searchEl.value.trim().toLowerCase();
+
+  const allItems = (await baseItemsFor(currentList)).map(it => {
+    const c = completions[currentList]?.[it.name] ?? { done:false, date:'' };
+    return { ...it, completed: !!c.done, date: c.date || '' };
+  });
+
+  // sort
+  allItems.sort((a,b) => {
+    if (sortMode === 'name')   return a.name.localeCompare(b.name);
+    if (sortMode === 'elev')   return (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0);
+    if (sortMode === 'status') return (b.completed ? 1 : 0) - (a.completed ? 1 : 0) || a.rank - b.rank;
+    return a.rank - b.rank; // rank
+  });
+
+  // filter
+  let items = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  if (hideCompleted) items = items.filter(it => !it.completed);
+
+  // progress (default checklist)
+  renderProgressBase(allItems);
+
+  // grid progress override
+  if (gridMode) {
+    let totalCells = items.length * 12; let filled = 0;
+    items.forEach(it=>{ const rec = ensureGridRecord(currentList, it.name); filled += Object.values(rec).filter(Boolean).length; });
+    const pct = totalCells ? Math.round(filled/totalCells*100) : 0;
+    bar.style.width = pct + '%';
+    progressText.textContent = `${filled}/${totalCells} • ${pct}%`;
+  }
+
+  // ===== Pagination slice =====
+  const total = items.length;
+  const { p, start, end } = pageBounds(PAGE, PAGE_SIZE, total);
+  PAGE = p;
+  rows.dataset.total = String(total);
+  const pageItems = items.slice(start, end);
+  updatePager(total, total ? (start + 1) : 0, end);
+
+  // rows
+  rows.innerHTML = '';
+  pageItems.forEach(it => {
+    ensureGridRecord(currentList, it.name);
+    const tr = document.createElement('tr');
+
+    if (!gridMode) {
+      // Checklist row with profile image
+      const slug = getSlugForName(it.name);
+      let imgHtml = '';
+      const photoData = NH48_DATA?.[slug]?.photos;
+      if (photoData && photoData.length > 0) {
+        const url = photoData[0].url;
+        imgHtml = `<img src="${url}" alt="${it.name}" class="profile-img" />`;
+      }
+      tr.innerHTML = `
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
-          <div class="mountain-row">
-            <img class="profile" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-peak="${it.name}" alt="${it.name} thumb">
-            <span class="mountain-link" style="cursor:pointer; display:inline-block; max-width:100%;">${it.name}</span>
-          </div>
+          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${imgHtml}${it.name}</span>
         </td>
         <td class="stat" data-cell="elev">${fmtElevation(it.elevation_ft ?? null)}</td>
         <td data-cell="date">
@@ -1108,10 +1401,20 @@ async function renderTable(){ if (!currentList) { rows.innerHTML = ''; return; }
           <img class="check js-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" />
         </td>
         <td data-cell="open">›</td>
-      `; } else { const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const chips = monthLabels.map((lbl, idx) => { const m = idx+1; const done = monthHasDate(currentList, it.name, m); const dot = done ? '<span class="dot"></span>' : ''; return `<button class="month-chip ${done?'done':''}" data-m="${m}" title="${lbl}">${lbl}${dot}</button>`; }).join(''); tr.innerHTML = `
+      `;
+    } else {
+      // Grid mode row
+      const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const chips = monthLabels.map((lbl, idx) => {
+        const m = idx+1; const done = monthHasDate(currentList, it.name, m);
+        const dot = done ? '<span class="dot"></span>' : '';
+        return `<button class="month-chip ${done?'done':''}" data-m="${m}" title="${lbl}">${lbl}${dot}</button>`;
+      }).join('');
+
+      tr.innerHTML = `
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
-          <span class="mountain-link" style="cursor:pointer; display:inline-block; max-width:100%;">${it.name}</span>
+          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
         </td>
         <td class="stat" data-cell="elev">${fmtElevation(it.elevation_ft ?? null)}</td>
         <td data-cell="months" colspan="2">
@@ -1124,17 +1427,77 @@ async function renderTable(){ if (!currentList) { rows.innerHTML = ''; return; }
           </div>
         </td>
         <td data-cell="open">›</td>
-      `; } tr.querySelector('[data-cell="name"]')?.addEventListener('click', () => openDetail(it)); tr.querySelector('[data-cell="open"]')?.addEventListener('click', () => openDetail(it)); if (!gridMode) { const dateInput = tr.querySelector('.date-input'); dateInput?.addEventListener('click', e => e.stopPropagation()); dateInput?.addEventListener('change', () => { if (dateInput.value) setDateFor(it.name, dateInput.value); }); tr.querySelector('.js-check')?.addEventListener('click', (e) => { e.stopPropagation(); toggleComplete(it.name); }); } else { const picker = tr.querySelector('.month-picker'); const dateEl = tr.querySelector('.grid-date'); let activeMonth = 0; tr.querySelectorAll('.month-chip').forEach(btn => { btn.addEventListener('click', e => { e.stopPropagation(); activeMonth = parseInt(btn.dataset.m,10); dateEl.value = getMonthDate(currentList, it.name, activeMonth); picker.classList.add('open'); dateEl.focus(); }); }); tr.querySelector('.grid-save')?.addEventListener('click', e => { e.stopPropagation(); setGridDate(currentList, it.name, activeMonth, dateEl.value); renderTable(); }); tr.querySelector('.grid-clear')?.addEventListener('click', e => { e.stopPropagation(); setGridDate(currentList, it.name, activeMonth, ''); renderTable(); }); } rows.appendChild(tr); }); pageItems.forEach(async it => { try{ const imgs = await fetchPeakImages(it.name); if (imgs && imgs.length){ const imgEl = Array.from(rows.querySelectorAll('img.profile')).find(i => i.dataset.peak === it.name); if (imgEl) imgEl.src = imgs[0].thumb || imgs[0].url; } }catch(e){} }); }
+      `;
+    }
+
+    // Common handlers
+    tr.querySelector('[data-cell="name"]')?.addEventListener('click', () => openDetail(it));
+    tr.querySelector('[data-cell="open"]')?.addEventListener('click', () => openDetail(it));
+
+    if (!gridMode) {
+      // checklist handlers
+      const dateInput = tr.querySelector('.date-input');
+      dateInput?.addEventListener('click', e => e.stopPropagation());
+      dateInput?.addEventListener('change', () => {
+        if (dateInput.value) setDateFor(it.name, dateInput.value);
+      });
+      tr.querySelector('.js-check')?.addEventListener('click', (e) => {
+        e.stopPropagation(); toggleComplete(it.name);
+      });
+    } else {
+      // grid handlers
+      const picker = tr.querySelector('.month-picker');
+      const dateEl = tr.querySelector('.grid-date');
+      let activeMonth = 0;
+      tr.querySelectorAll('.month-chip').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          activeMonth = parseInt(btn.dataset.m,10);
+          dateEl.value = getMonthDate(currentList, it.name, activeMonth);
+          picker.classList.add('open');
+          dateEl.focus();
+        });
+      });
+      tr.querySelector('.grid-save')?.addEventListener('click', e => { e.stopPropagation(); setGridDate(currentList, it.name, activeMonth, dateEl.value); renderTable(); });
+      tr.querySelector('.grid-clear')?.addEventListener('click', e => { e.stopPropagation(); setGridDate(currentList, it.name, activeMonth, ''); renderTable(); });
+    }
+
+    rows.appendChild(tr);
+  });
+}
 
 /* ======= List switching ======= */
-async function changeList(name){ currentList = name; PAGE = 1; if (listTitle) listTitle.textContent = currentList || '—'; await renderTable(); const me = currentUser(); if (me) restoreFromRemote(me.email, currentList).catch(()=>{}); }
+async function changeList(name){
+  currentList = name;
+  PAGE = 1; // reset page on list change
+  if (listTitle) listTitle.textContent = currentList || '—';
+  await renderTable();
+  // Try to restore remote for signed-in users
+  const me = currentUser(); if (me) restoreFromRemote(me.email, currentList).catch(()=>{});
+}
 
 /* ======= UI handlers ======= */
 listSelect.onchange=async()=>{ await changeList(listSelect.value) };
 searchEl.oninput=()=>{ PAGE = 1; renderTable(); };
-sortBtn.onclick=()=>{ const modes=['rank','name','elev','status']; const idx=(modes.indexOf(sortMode)+1)%modes.length; sortMode=modes[idx]; sortLabel.textContent=(sortMode==='elev'?'Elevation':sortMode==='status'?'Status':sortMode[0].toUpperCase()+sortMode.slice(1)); PAGE = 1; renderTable(); };
-showBtn.onclick=()=>{ hideCompleted=!hideCompleted; showBtn.innerHTML= hideCompleted ? '<span class="ico">◎</span> <span>Show completed</span>' : '<span class="ico">◯</span> <span>Hide completed</span>'; PAGE = 1; renderTable(); };
-exportBtn.onclick=async()=>{ const base=await baseItemsFor(currentList); const items=base.map((it,i)=>{ const c=completions[currentList]?.[it.name] ?? {done:false,date:''}; return [i+1, it.name, fmtElevation(it.elevation_ft ?? null), c.date || '', c.done ? 'Yes':'No'] }); const ws=XLSX.utils.aoa_to_sheet([[ 'Rank','Mountain','Elevation','Date','Completed' ], ...items]); ws['!cols']=[{wch:6},{wch:26},{wch:14},{wch:12},{wch:10}]; const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, currentList.slice(0,31)); XLSX.writeFile(wb, `${currentList.replace(/\s+/g,'_')}.xlsx`); };
+sortBtn.onclick=()=>{
+  const modes=['rank','name','elev','status'];
+  const idx=(modes.indexOf(sortMode)+1)%modes.length;
+  sortMode=modes[idx];
+  sortLabel.textContent=(sortMode==='elev'?'Elevation':sortMode==='status'?'Status':sortMode[0].toUpperCase()+sortMode.slice(1));
+  PAGE = 1;
+  renderTable();
+};
+showBtn.onclick=()=>{
+  hideCompleted=!hideCompleted;
+  showBtn.innerHTML= hideCompleted ? '<span class="ico">◎</span> <span>Show completed</span>' : '<span class="ico">◯</span> <span>Hide completed</span>';
+  PAGE = 1;
+  renderTable();
+};
+exportBtn.onclick=async()=>{
+  const base=await baseItemsFor(currentList);
+  const items=base.map((it,i)=>{ const c=completions[currentList]?.[it.name] ?? {done:false,date:''}; return [i+1, it.name, fmtElevation(it.elevation_ft ?? null), c.date || '', c.done ? 'Yes':'No'] });
+  const ws=XLSX.utils.aoa_to_sheet([[ 'Rank','Mountain','Elevation','Date','Completed' ], ...items]); ws['!cols']=[{wch:6},{wch:26},{wch:14},{wch:12},{wch:10}]; const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, currentList.slice(0,31)); XLSX.writeFile(wb, `${currentList.replace(/\s+/g,'_')}.xlsx`);
+};
 
 unitToggle.onclick=()=>applyUnitsFlag(!meters);
 metersToggle.onchange=()=>applyUnitsFlag(metersToggle.checked);
@@ -1150,17 +1513,61 @@ tosToggle.onclick = () => { tosBox.classList.toggle('open'); tosToggle.textConte
 tosAgree.addEventListener('change', ()=>{ doSignupBtn.disabled = !tosAgree.checked; });
 
 // NEW: Mode toggle
-const modeBtn = document.getElementById('modeBtn'); const modeLabel = document.getElementById('modeLabel'); modeBtn.onclick = () => { gridMode = !gridMode; modeLabel.textContent = gridMode ? 'Grid' : 'Checklist'; PAGE = 1; renderTable(); };
+const modeBtn = document.getElementById('modeBtn');
+const modeLabel = document.getElementById('modeLabel');
+modeBtn.onclick = () => { gridMode = !gridMode; modeLabel.textContent = gridMode ? 'Grid' : 'Checklist'; PAGE = 1; renderTable(); };
 
 /* Auth buttons */
 if(openAuthBtn) openAuthBtn.onclick=()=>openModal();
 if(closeAuthBtn) closeAuthBtn.onclick=()=>closeModal();
 if(logoutBtn) logoutBtn.onclick=()=>{ signOut(); reflectAuthUI(); };
-if(doSigninBtn) doSigninBtn.onclick=async()=>{ authMsg.textContent=''; try{ await signIn(authEmail.value, authPass.value); authMsg.textContent='Success!'; authMsg.className='ok'; closeModal(); reflectAuthUI(); }catch(e){ authMsg.textContent=e.message||'Failed to sign in'; authMsg.className='err'; } };
-if(doSignupBtn) doSignupBtn.onclick=async()=>{ authMsg.textContent=''; try{ await signUp(authName.value, authEmail.value, authPass.value, { tosAgreed: tosAgree.checked }); authMsg.textContent='Account created & signed in!'; authMsg.className='ok'; closeModal(); reflectAuthUI(); }catch(e){ authMsg.textContent=e.message||'Failed to create account'; authMsg.className='err'; } };
+if(doSigninBtn) doSigninBtn.onclick=async()=>{
+  authMsg.textContent='';
+  try{
+    await signIn(authEmail.value, authPass.value);
+    authMsg.textContent='Success!'; authMsg.className='ok';
+    closeModal(); reflectAuthUI();
+  }catch(e){
+    authMsg.textContent=e.message||'Failed to sign in'; authMsg.className='err';
+  }
+};
+if(doSignupBtn) doSignupBtn.onclick=async()=>{
+  authMsg.textContent='';
+  try{
+    await signUp(authName.value, authEmail.value, authPass.value, { tosAgreed: tosAgree.checked });
+    authMsg.textContent='Account created & signed in!'; authMsg.className='ok';
+    closeModal(); reflectAuthUI();
+  }catch(e){
+    authMsg.textContent=e.message||'Failed to create account'; authMsg.className='err';
+  }
+};
 
 /* ======= Boot ======= */
-(async function boot(){ try{ const prefs=readPrefs(); applyThemeFlag(!!prefs.light); applyUnitsFlag(!!prefs.meters); applyDensity(!!prefs.compact); applyStickyHeader(!!prefs.sticky); if (copyrightYear) copyrightYear.textContent = new Date().getFullYear(); reflectAuthUI(); loadGrid(); ALL_LISTS=await fetchAllLists(); const preferred='NH 48'; currentList = ALL_LISTS.includes(preferred) ? preferred : (ALL_LISTS[0] || ''); renderListDropdown(); if (listTitle) listTitle.textContent = currentList || '—'; await changeList(currentList); }catch(e){ console.error(e); rows.innerHTML=`<tr><td colspan="6" class="subtle">Couldn’t load lists. Check that <code>/_functions/peakbagger_lists</code> and <code>/_functions/peakbagger_list</code> are published.</td></tr>`; }})();
+(async function boot(){
+  try{
+    const prefs=readPrefs();
+    applyThemeFlag(!!prefs.light);
+    applyUnitsFlag(!!prefs.meters);
+    applyDensity(!!prefs.compact);
+    applyStickyHeader(!!prefs.sticky);
+
+    if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
+
+    reflectAuthUI();
+    loadGrid();
+    ALL_LISTS=await fetchAllLists();
+    const preferred='NH 48';
+    currentList = ALL_LISTS.includes(preferred) ? preferred : (ALL_LISTS[0] || '');
+    renderListDropdown();
+    if (listTitle) listTitle.textContent = currentList || '—';
+    // Load NH48 API data
+    await fetchNh48Data();
+    await changeList(currentList);
+  }catch(e){
+    console.error(e);
+    rows.innerHTML=`<tr><td colspan="6" class="subtle">Couldn’t load lists. Check that <code>/_functions/peakbagger_lists</code> and <code>/_functions/peakbagger_list</code> are published.</td></tr>`;
+  }
+})();
 </script>
   
 <!-- Reset helper (unchanged + grid key) -->
