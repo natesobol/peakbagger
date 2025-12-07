@@ -896,14 +896,18 @@ document.addEventListener('DOMContentLoaded',()=>{
 // this will be fetched from the same origin without CORS issues. When viewing via
 // file:// protocol, fetching may fail but the application will still function when
 // hosted online.
-const NH48_API_URL = 'nh48.json';
+// Use the NH48 data from the API repo.
+// rawcdn.githack.com serves GitHub files with proper CORS headers, so fetch() will succeed.
+const NH48_API_URL = 'https://rawcdn.githack.com/natesobol/nh48-api/main/data/nh48.json';
+
 let NH48_DATA = null;
-// Map from normalized peak names to slug for easier lookup (e.g., 'Washington' -> 'mount-washington').
 let NH48_SLUG_MAP = {};
+
 async function fetchNh48Data() {
   if (NH48_DATA) return NH48_DATA;
   try {
-    const resp = await fetch(NH48_API_URL);
+    const resp = await fetch(NH48_API_URL, { mode: 'cors' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     NH48_DATA = await resp.json();
     buildSlugMap();
   } catch (e) {
@@ -912,6 +916,7 @@ async function fetchNh48Data() {
   }
   return NH48_DATA;
 }
+
 function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
