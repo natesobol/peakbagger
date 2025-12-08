@@ -84,6 +84,8 @@
   --ctrl-h:40px; --ctrl-gap:12px;
   /* column widths (desktop) */
   --col-rank:64px; --col-elev:140px; --col-date:160px; --col-done:120px; --col-arrow:48px;
+  /* new pic column width */
+  --col-pic:64px;
 }
 .theme-light{
   --bg:#f8f8fb; --panel:#ffffff; --card:#ffffff; --ink:#111111; --ink-weak:#666666;
@@ -168,14 +170,17 @@ tr{background:var(--card);border:1px solid var(--border-strong);border-radius:12
 tr td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
 tr td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
 /* column widths */
-thead th:nth-child(1), tbody td:nth-child(1){width:var(--col-rank)}
-thead th:nth-child(2), tbody td:nth-child(2){width:auto}
-thead th:nth-child(3), tbody td:nth-child(3){width:var(--col-elev)}
-thead th:nth-child(4), tbody td:nth-child(4){width:var(--col-date)}
-thead th:nth-child(5), tbody td:nth-child(5){width:var(--col-done)}
-thead th:nth-child(6), tbody td:nth-child(6){width:var(--col-arrow)}
+/* Updated widths: column order = Pic, Rank, Mountain, Elevation, Date, Completed, Arrow */
+thead th:nth-child(1), tbody td:nth-child(1){width:var(--col-pic)}
+thead th:nth-child(2), tbody td:nth-child(2){width:var(--col-rank)}
+thead th:nth-child(3), tbody td:nth-child(3){width:auto}
+thead th:nth-child(4), tbody td:nth-child(4){width:var(--col-elev)}
+thead th:nth-child(5), tbody td:nth-child(5){width:var(--col-date)}
+thead th:nth-child(6), tbody td:nth-child(6){width:var(--col-done)}
+thead th:nth-child(7), tbody td:nth-child(7){width:var(--col-arrow)}
 /* center Rank + Mountain + Elevation */
-thead th:nth-child(-n+3), tbody td:nth-child(-n+3){text-align:center;vertical-align:middle}
+/* Center the first four columns (Pic, Rank, Mountain, Elevation) */
+thead th:nth-child(-n+4), tbody td:nth-child(-n+4){text-align:center;vertical-align:middle}
 .stat{text-align:center;font-variant-numeric:tabular-nums}
 /* Mountain cell truly centered */
 .cell-actions{display:flex;align-items:center;justify-content:center;gap:8px;height:100%;width:100%}
@@ -625,6 +630,11 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       box-shadow: 0 2px 6px rgba(0,0,0,0.35);
       border: 1px solid color-mix(in oklab, var(--border) 60%, black);
     }
+
+    /* Remove margin on profile images when they are in the dedicated Pic column */
+    td[data-cell="pic"] .profile-img {
+      margin-right: 0;
+    }
     /* Photos carousel in detail panel */
     #detailPhotos {
       margin-bottom: 16px;
@@ -838,7 +848,8 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       <table>
         <thead>
           <tr>
-            <!-- inline widths kept; CSS variables mirror them -->
+            <!-- Updated headers: Pic column added -->
+            <th style="width:64px">Pic</th>
             <th style="width:64px">Rank</th>
             <th>Mountain</th>
             <th style="width:140px">Elevation</th>
@@ -1531,10 +1542,12 @@ async function renderTable(){
     let imgHtml = '';
     let profileUrl = '';
     const photoData = NH48_DATA?.[slug]?.photos;
-      if (photoData && photoData.length > 0 && photoData[0].url) {
+      // Only show images if the current list has an associated API (NH 48 has NH48_DATA)
+      const listHasImages = currentList && currentList.toLowerCase() === 'nh 48';
+      if (listHasImages && photoData && photoData.length > 0 && photoData[0].url) {
         // Use the first dataset photo only if it has a valid URL
         profileUrl = photoData[0].url;
-      } else {
+      } else if (listHasImages) {
         const apiImgs = await fetchPeakImages(slug);
         if (apiImgs.length > 0) {
           profileUrl = apiImgs[0].thumb || apiImgs[0].url || '';
@@ -1545,11 +1558,12 @@ async function renderTable(){
     }
 
     if (!gridMode) {
-      // Checklist row with profile image
+      // Checklist row with profile image column followed by rank
       tr.innerHTML = `
+        <td data-cell="pic" class="pic-cell">${imgHtml}</td>
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
-          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${imgHtml}${it.name}</span>
+          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
         </td>
         <td class="stat" data-cell="elev">${fmtElevation(it.elevation_ft ?? null)}</td>
         <td data-cell="date">
@@ -1561,7 +1575,7 @@ async function renderTable(){
         <td data-cell="open">›</td>
       `;
     } else {
-      // Grid mode row
+      // Grid mode row with profile image column followed by rank
       const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const chips = monthLabels.map((lbl, idx) => {
         const m = idx+1; const done = monthHasDate(currentList, it.name, m);
@@ -1570,9 +1584,10 @@ async function renderTable(){
       }).join('');
 
       tr.innerHTML = `
+        <td data-cell="pic" class="pic-cell">${imgHtml}</td>
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
-          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${imgHtml}${it.name}</span>
+          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
         </td>
         <td class="stat" data-cell="elev">${fmtElevation(it.elevation_ft ?? null)}</td>
         <td data-cell="months" colspan="2">
