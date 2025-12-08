@@ -808,6 +808,36 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
         /* Ensure the Completed cell remains flex so the checkmark stays centered */
         display: flex !important;
       }
+
+      /* Add dotted separators between the sections of each card */
+      /* A dashed line after the image row */
+      table tbody td:nth-child(2),
+      table tbody td:nth-child(3),
+      table tbody td:nth-child(4) {
+        border-top: 1px dashed var(--border);
+      }
+      /* A dashed line before the date/complete row */
+      table tbody td:nth-child(5),
+      table tbody td:nth-child(6) {
+        border-top: 1px dashed var(--border);
+      }
+
+      /* Narrow the date picker and center it */
+      td[data-cell="date"] input[type="date"] {
+        width: 60%;
+        max-width: 140px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* Add a label above the date picker to indicate its purpose */
+      td[data-cell="date"]::before {
+        content: "Select date:";
+        display: block;
+        font-size: 12px;
+        color: var(--ink-weak);
+        margin-bottom: 4px;
+      }
     }
 
     /* Prevent the card row from clipping date picker popovers */
