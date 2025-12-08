@@ -91,6 +91,20 @@
   --input-bg:#ffffff; --input-bg-hover:#f3f4f8; --chip-bg:#ffffff; --chip-border:#dadde6;
   --shadow:0 10px 35px rgba(0,0,0,.10);
 }
+/* Forest green theme */
+.theme-forest{
+  --bg:#07160e; --panel:#0b2a19; --card:#0f3a23; --ink:#eaf6ec; --ink-weak:#b6d6c2;
+  --border:#12321e; --border-strong:#eaf6ec; --accent:#2fb86a; --good:#44c27a; --warn:#e6a100;
+  --input-bg:#0b2a19; --input-bg-hover:#0f3a23; --chip-bg:#0b2a19; --chip-border:#12321e;
+  --shadow:0 10px 35px rgba(0,0,0,.25);
+}
+/* Sky blue theme */
+.theme-sky{
+  --bg:#eaf6ff; --panel:#dff3ff; --card:#ffffff; --ink:#0b2340; --ink-weak:#4a6b86;
+  --border:#bcdcf0; --border-strong:#0b2340; --accent:#3a96ff; --good:#1dbf73; --warn:#ffb74d;
+  --input-bg:#ffffff; --input-bg-hover:#f3fbff; --chip-bg:#ffffff; --chip-border:#bcdcf0;
+  --shadow:0 10px 35px rgba(0,0,0,.06);
+}
 
 /* ---------- Base / app frame ---------- */
 *{box-sizing:border-box}
@@ -184,6 +198,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 .detail-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .detail-title{font-size:18px;font-weight:700}
 .detail-close{cursor:pointer;border:1px solid var(--border-strong);border-radius:8px;padding:6px 10px;background:transparent;color:var(--ink)}
+
+/* Responsive override for detail panel on small screens */
+@media (max-width:480px){
+  .detail-wrap{width:100%; right:-100%;}
+  .detail-wrap.open{right:0;}
+}
 
 /* ---------- Settings switches ---------- */
 .settings{margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card)}
@@ -596,13 +616,14 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     <style>
     /* Profile image for each mountain in list */
     .profile-img {
-      width: 24px;
-      height: 24px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       object-fit: cover;
-      margin-right: 6px;
-      /* subtle border ensures profile images stand out without debug styling */
-      border: 1px solid var(--border);
+      margin-right: 10px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      border: 1px solid color-mix(in oklab, var(--border) 60%, black);
     }
     /* Photos carousel in detail panel */
     #detailPhotos {
@@ -634,6 +655,41 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     }
     .carousel-controls span {
       color: var(--ink-weak);
+    }
+    /* Carousel thumbnails & indicators */
+    .carousel-wrap { display:flex; flex-direction:column; gap:8px; }
+    .carousel-main { position:relative; }
+    .carousel-prev, .carousel-next {
+      position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.35); color:#fff; border:none; padding:6px 8px; border-radius:6px; cursor:pointer;
+    }
+    .carousel-prev{ left:8px }
+    .carousel-next{ right:8px }
+    .carousel-thumbs{ display:flex; gap:8px; overflow-x:auto; padding-top:6px }
+    .carousel-thumb{ width:64px; height:44px; flex:0 0 auto; border-radius:6px; object-fit:cover; cursor:pointer; opacity:.8; border:1px solid var(--border); }
+    .carousel-thumb.active{ outline:2px solid var(--accent); opacity:1 }
+    .carousel-indicators{ display:flex; gap:6px; justify-content:center; margin-top:6px }
+    .carousel-indicators .dot{ width:8px; height:8px; border-radius:50%; background:var(--input-bg); border:1px solid var(--border); }
+    .carousel-indicators .dot.active{ background:var(--accent); }
+
+    /* Hover preview for list profile images */
+    .img-preview {
+      position:fixed; z-index:999999; pointer-events:none; border-radius:8px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,.45); border:1px solid var(--border-strong); background:var(--panel);
+      width:260px; max-width:40vw; transform:translateY(-6px);
+    }
+    .img-preview img{ width:100%; height:auto; display:block }
+    /* App version badge */
+    .app-version {
+      position: fixed;
+      right: 10px;
+      bottom: 8px;
+      z-index: 999999;
+      font-size: 12px;
+      color: var(--ink-weak);
+      background: transparent;
+      padding: 6px 8px;
+      border-radius: 8px;
+      pointer-events: none;
+      opacity: 0.9;
     }
     </style>
 
@@ -667,7 +723,7 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
   <div class="content">
     <aside class="sidebar">
       <div class="brand">
-        <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="logo" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border-strong)" />
+        <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="logo" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border-strong)" loading="lazy" />
         <div>
           <h1 style="margin:0">Peakbagger (Web)</h1>
           <div class="subtle">Private to this embed</div>
@@ -675,7 +731,7 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       </div>
 
       <a class="app-promo" href="https://apps.apple.com/us/app/peakbaggers-journal/idXXXXXXXXX" target="_blank" rel="noopener">
-        <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger’s Journal iOS icon">
+        <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger’s Journal iOS icon" loading="lazy">
         <div class="app-promo__meta">
           <div class="app-promo__title">Peakbagger’s Journal (iOS)</div>
           <div class="app-promo__sub">Available on the App Store</div>
@@ -717,10 +773,7 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
           <label>Units: meters</label>
           <label class="switch"><input id="metersToggle" type="checkbox"><span class="slider"></span></label>
         </div>
-        <div class="row">
-          <label>Theme: light</label>
-          <label class="switch"><input id="themeToggle" type="checkbox"><span class="slider"></span></label>
-        </div>
+        <!-- Theme is now managed via the Themes dropdown in the sidebar -->
 
         <!-- NEW: Row density -->
         <div class="row">
@@ -733,6 +786,19 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
           <label class="switch"><input id="stickyToggle" type="checkbox"><span class="slider"></span></label>
         </div>
       </div></details>
+
+      <!-- Themes dropdown (pre-collapsed) -->
+      <details id="themeDetails" class="collapsible-section"><summary>Themes</summary>
+        <div class="panel" style="margin-top:8px">
+          <label for="themeSelect" class="subtle">Choose theme</label>
+          <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
+            <option value="dark">Dark (default)</option>
+            <option value="light">Light (white & black)</option>
+            <option value="forest">Forest Green</option>
+            <option value="sky">Sky Blue</option>
+          </select>
+        </div>
+      </details>
 
       <!-- NEW: Resources panel -->
       <details id="resourcesDetails" class="collapsible-section"><summary>Resources</summary><div class="panel" style="margin-top:14px">
@@ -800,7 +866,8 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     <section class="fact">
       <h3>Fast facts</h3>
       <div class="kv"><span>Elevation</span><strong id="detailElev">—</strong></div>
-      <div class="kv"><span>Date completed</span><strong id="detailDate">—</strong></div>
+      <!-- Replace strong with editable date input -->
+      <div class="kv"><span>Date completed</span><input type="date" id="detailDateInput" class="date-input" value="" /></div>
       <div class="kv"><span>Location</span><strong id="detailLocation" data-empty="—">—</strong></div>
       <div class="kv"><span>Prominence</span><strong id="detailProm" data-empty="—">—</strong></div>
       <div class="kv"><span>Difficulty</span><strong id="detailDiff" data-empty="—">—</strong></div>
@@ -875,14 +942,13 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
   const metersToggle=document.getElementById('metersToggle');
-  const themeToggle=document.getElementById('themeToggle');
+  const themeSelect = document.getElementById('themeSelect');
   const metersLabel=metersToggle.closest('.row').querySelector('label');
-  const themeLabel=themeToggle.closest('.row').querySelector('label');
   const updMeters=()=>{metersLabel.textContent='Units: '+(metersToggle.checked?'Meters':'Feet')};
-  const updTheme =()=>{themeLabel.textContent='Theme: '+(themeToggle.checked?'Light':'Dark')};
-  updMeters();updTheme();
+  updMeters();
   metersToggle.addEventListener('change',updMeters);
-  themeToggle.addEventListener('change',updTheme);
+  // sync theme select default from prefs if present
+  try{ const prefs = JSON.parse(localStorage.getItem('pb_prefs_v1')||'{}'); if (themeSelect && prefs.theme) themeSelect.value = prefs.theme; }catch(e){}
 });
 </script>
 
@@ -896,14 +962,18 @@ document.addEventListener('DOMContentLoaded',()=>{
 // this will be fetched from the same origin without CORS issues. When viewing via
 // file:// protocol, fetching may fail but the application will still function when
 // hosted online.
-const NH48_API_URL = 'nh48.json';
+// Use the NH48 data from the API repo.
+// rawcdn.githack.com serves GitHub files with proper CORS headers, so fetch() will succeed.
+const NH48_API_URL = 'https://rawcdn.githack.com/natesobol/nh48-api/main/data/nh48.json';
+
 let NH48_DATA = null;
-// Map from normalized peak names to slug for easier lookup (e.g., 'Washington' -> 'mount-washington').
 let NH48_SLUG_MAP = {};
+
 async function fetchNh48Data() {
   if (NH48_DATA) return NH48_DATA;
   try {
-    const resp = await fetch(NH48_API_URL);
+    const resp = await fetch(NH48_API_URL, { mode: 'cors' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     NH48_DATA = await resp.json();
     buildSlugMap();
   } catch (e) {
@@ -912,6 +982,7 @@ async function fetchNh48Data() {
   }
   return NH48_DATA;
 }
+
 function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
@@ -951,6 +1022,26 @@ function getSlugForName(name) {
 
 const API = location.hostname.endsWith('nh48pics.com') ? '/_functions' : 'https://www.nh48pics.com/_functions';
 
+// =============================
+// New: images API cache and fetch
+// =============================
+const _imagesCache = new Map();
+async function fetchPeakImages(slug) {
+  if (_imagesCache.has(slug)) return _imagesCache.get(slug);
+  try {
+    const r = await fetch(API + '/nh48_images?peak=' + encodeURIComponent(slug));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const imgs = Array.isArray(data?.images) ? data.images : [];
+    _imagesCache.set(slug, imgs);
+    return imgs;
+  } catch (e) {
+    console.error('Failed to load images for', slug, e);
+    _imagesCache.set(slug, []);
+    return [];
+  }
+}
+
 /* ======= Lists (existing) ======= */
 async function fetchAllLists(){ const r=await fetch(API+'/peakbagger_lists'); if(!r.ok) throw new Error('Failed to load lists'); const {lists}=await r.json(); return lists??[]; }
 async function fetchListItems(name){ const r=await fetch(API+'/peakbagger_list?name='+encodeURIComponent(name)); if(!r.ok) throw new Error('Failed to load items for '+name); const {items}=await r.json(); return (items??[]).map((p,i)=>({rank:i+1,...p})); }
@@ -968,7 +1059,7 @@ const exportBtn=document.getElementById('exportBtn');
 const unitToggle=document.getElementById('unitToggle');
 const unitLabel=document.getElementById('unitLabel');
 const metersToggle=document.getElementById('metersToggle');
-const themeToggle=document.getElementById('themeToggle');
+const themeSelect=document.getElementById('themeSelect');
 const openAuthBtn=document.getElementById('openAuth');
 const logoutBtn=document.getElementById('logoutBtn');
 const authModal=document.getElementById('authModal');
@@ -986,7 +1077,8 @@ const signedInBox=document.getElementById('authSignedIn');
 const detail=document.getElementById('detail');
 const dTitle=document.getElementById('detailTitle');
 const dElev=document.getElementById('detailElev');
-const dDate=document.getElementById('detailDate');
+// update to new date input element
+const dDate=document.getElementById('detailDateInput');
 const dLocation=document.getElementById('detailLocation');
 const dProm=document.getElementById('detailProm');
 const dDiff=document.getElementById('detailDiff');
@@ -1111,7 +1203,8 @@ function toggleComplete(peakName){ completions[currentList]??={}; const rec=comp
 function renderProgressBase(allItems){ const done=allItems.filter(it=>completions[currentList]?.[it.name]?.done).length; const total=allItems.length; const pct= total? Math.round(done/total*100):0; bar.style.width=pct+'%'; progressText.textContent=`${done}/${total} • ${pct}%`; }
 function fmtElevation(ft){ if(!ft) return ''; return meters ? Math.round(ft*0.3048)+' m' : ft+' ft' }
 async function baseItemsFor(listName){ if(!cache.has(listName)){ cache.set(listName, await fetchListItems(listName)) } return cache.get(listName) }
-function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevation(it.elevation_ft ?? null) || '—'; dDate.textContent=completions[currentList]?.[it.name]?.date || '—';
+// openDetail becomes async and uses API images fallback and editable date input
+async function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevation(it.elevation_ft ?? null) || '—'; dDate.value = completions[currentList]?.[it.name]?.date || '';
   // Load NH48 details for this peak
   const slug = getSlugForName(it.name);
   const data = NH48_DATA?.[slug] || null;
@@ -1125,46 +1218,75 @@ function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevat
   const photoContainer = document.getElementById('detailPhotos');
   photoContainer.innerHTML = '';
   let photos = [];
-  if (data && Array.isArray(data.photos)) {
+  if (data && Array.isArray(data.photos) && data.photos.length > 0) {
     photos = data.photos;
+  } else {
+    const apiImgs = await fetchPeakImages(slug);
+    photos = apiImgs.map(img => ({ url: img.url || img.thumb || '', caption: img.caption || '' }));
   }
+  // helper: clear existing carousel timer if present
+  if (photoContainer._carouselTimer) { clearInterval(photoContainer._carouselTimer); photoContainer._carouselTimer = null; }
   if (photos.length > 0) {
     let idx = 0;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'carousel';
-    const img = document.createElement('img');
-    img.alt = it.name;
-    img.src = photos[0].url;
-    wrapper.appendChild(img);
-    const controls = document.createElement('div');
-    controls.className = 'carousel-controls';
-    const prevBtn = document.createElement('button');
-    prevBtn.textContent = 'Prev';
-    prevBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (photos.length === 0) return;
-      idx = (idx - 1 + photos.length) % photos.length;
-      img.src = photos[idx].url;
-      indexSpan.textContent = `${idx+1}/${photos.length}`;
+    const wrap = document.createElement('div'); wrap.className = 'carousel-wrap';
+    const main = document.createElement('div'); main.className = 'carousel-main';
+    const img = document.createElement('img'); img.alt = it.name; img.src = photos[0].url; img.className = 'carousel-main-img'; img.loading = 'lazy';
+    main.appendChild(img);
+    const prevBtn = document.createElement('button'); prevBtn.className = 'carousel-prev'; prevBtn.textContent = '‹';
+    const nextBtn = document.createElement('button'); nextBtn.className = 'carousel-next'; nextBtn.textContent = '›';
+    main.appendChild(prevBtn); main.appendChild(nextBtn);
+
+    // thumbnails
+    const thumbs = document.createElement('div'); thumbs.className = 'carousel-thumbs';
+    const indicators = document.createElement('div'); indicators.className = 'carousel-indicators';
+    const makeThumb = (p, i) => {
+      const t = document.createElement('img'); t.className = 'carousel-thumb'; t.src = p.url; t.alt = it.name + ' thumbnail'; t.dataset.i = String(i); t.loading = 'lazy';
+      t.addEventListener('click', (e)=>{ e.stopPropagation(); setIndex(i); });
+      return t;
     };
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = 'Next';
-    nextBtn.onclick = (e) => {
-      e.stopPropagation();
-      if (photos.length === 0) return;
-      idx = (idx + 1) % photos.length;
+    const setIndex = (n) => {
+      idx = ((n % photos.length) + photos.length) % photos.length;
       img.src = photos[idx].url;
-      indexSpan.textContent = `${idx+1}/${photos.length}`;
+      // update thumbs
+      thumbs.querySelectorAll('.carousel-thumb').forEach((el)=>el.classList.toggle('active', el.dataset.i==String(idx)));
+      indicators.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active', i===idx));
     };
-    const indexSpan = document.createElement('span');
-    indexSpan.textContent = `1/${photos.length}`;
-    controls.appendChild(prevBtn);
-    controls.appendChild(indexSpan);
-    controls.appendChild(nextBtn);
-    photoContainer.appendChild(wrapper);
-    photoContainer.appendChild(controls);
+    photos.forEach((p,i)=>{ thumbs.appendChild(makeThumb(p,i)); const dot=document.createElement('div'); dot.className='dot'; indicators.appendChild(dot); });
+    // autoplay
+    const AUTOPLAY_MS = 3500;
+    const startTimer = () => { if (photoContainer._carouselTimer) clearInterval(photoContainer._carouselTimer); photoContainer._carouselTimer = setInterval(()=>{ setIndex(idx+1); }, AUTOPLAY_MS); };
+    const stopTimer = () => { if (photoContainer._carouselTimer) { clearInterval(photoContainer._carouselTimer); photoContainer._carouselTimer = null; } };
+
+    prevBtn.addEventListener('click', (e)=>{ e.stopPropagation(); setIndex(idx-1); startTimer(); });
+    nextBtn.addEventListener('click', (e)=>{ e.stopPropagation(); setIndex(idx+1); startTimer(); });
+    main.addEventListener('mouseenter', stopTimer); main.addEventListener('mouseleave', startTimer);
+
+    wrap.appendChild(main);
+    wrap.appendChild(thumbs);
+    wrap.appendChild(indicators);
+    photoContainer.appendChild(wrap);
+    setIndex(0);
+    startTimer();
+  } else {
+    // no photos — show placeholder
+    const ph = document.createElement('div'); ph.style.width='100%'; ph.style.borderRadius='8px'; ph.style.overflow='hidden';
+    const pimg = document.createElement('img'); pimg.alt = it.name; pimg.src = placeholderFor(it.name, 800, 420); pimg.loading = 'lazy';
+    ph.appendChild(pimg);
+    photoContainer.appendChild(ph);
   }
+  // attach date input handlers
+  dDate.onclick = (e) => e.stopPropagation();
+  dDate.onchange = () => { if (dDate.value) setDateFor(it.name, dDate.value); };
   detail.classList.add('open');
+}
+
+// Generate an inline SVG placeholder data URL for peaks with no photos
+function placeholderFor(name, w=800, h=420){
+  const bg = encodeURIComponent('#2c2c2c');
+  const fg = encodeURIComponent('#ffffff');
+  const txt = encodeURIComponent(name || 'No Photo');
+  const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'><rect width='100%' height='100%' fill='${bg}'/><g fill='${fg}' font-family='Segoe UI, Roboto, Arial' font-weight='600' font-size='28'><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>${txt}</text></g></svg>`;
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
 /* ======= Appearance helpers ======= */
@@ -1175,10 +1297,21 @@ function applyUnitsFlag(flag){
   renderTable();
   const prefs = readPrefs(); prefs.meters = meters; writePrefs(prefs);
 }
-function applyThemeFlag(light){
-  document.body.classList.toggle('theme-light', light);
-  themeToggle.checked = light;
-  const prefs = readPrefs(); prefs.light = light; writePrefs(prefs);
+function applyTheme(theme){
+  // Remove known theme classes
+  document.body.classList.remove('theme-light','theme-forest','theme-sky');
+  if (!theme || theme === 'dark') {
+    // dark = default, no class needed
+  } else if (theme === 'light') {
+    document.body.classList.add('theme-light');
+  } else if (theme === 'forest') {
+    document.body.classList.add('theme-forest');
+  } else if (theme === 'sky') {
+    document.body.classList.add('theme-sky');
+  }
+  // sync UI select if present
+  if (themeSelect) themeSelect.value = theme || 'dark';
+  const prefs = readPrefs(); prefs.theme = theme || 'dark'; writePrefs(prefs);
 }
 function applyDensity(compact){
   document.body.classList.toggle('compact-rows', !!compact);
@@ -1375,19 +1508,29 @@ async function renderTable(){
 
   // rows
   rows.innerHTML = '';
-  pageItems.forEach(it => {
+  for (const it of pageItems) {
     ensureGridRecord(currentList, it.name);
     const tr = document.createElement('tr');
 
+    // compute profile image (first photo from NH48 dataset or fallback to API) for both modes
+    const slug = getSlugForName(it.name);
+    let imgHtml = '';
+    let profileUrl = '';
+    const photoData = NH48_DATA?.[slug]?.photos;
+      if (photoData && photoData.length > 0) {
+        profileUrl = photoData[0].url;
+      } else {
+        const apiImgs = await fetchPeakImages(slug);
+        if (apiImgs.length > 0) {
+          profileUrl = apiImgs[0].thumb || apiImgs[0].url || '';
+        }
+      }
+    if (profileUrl) {
+      imgHtml = `<img src="${profileUrl}" alt="${it.name}" class="profile-img" loading="lazy" />`;
+    }
+
     if (!gridMode) {
       // Checklist row with profile image
-      const slug = getSlugForName(it.name);
-      let imgHtml = '';
-      const photoData = NH48_DATA?.[slug]?.photos;
-      if (photoData && photoData.length > 0) {
-        const url = photoData[0].url;
-        imgHtml = `<img src="${url}" alt="${it.name}" class="profile-img" />`;
-      }
       tr.innerHTML = `
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
@@ -1398,7 +1541,7 @@ async function renderTable(){
           <input type="date" class="date-input" required value="${it.date || ''}" data-name="${it.name}">
         </td>
         <td class="stat" data-cell="done">
-          <img class="check js-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" />
+          <img class="check js-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" loading="lazy" />
         </td>
         <td data-cell="open">›</td>
       `;
@@ -1414,7 +1557,7 @@ async function renderTable(){
       tr.innerHTML = `
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
-          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
+          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${imgHtml}${it.name}</span>
         </td>
         <td class="stat" data-cell="elev">${fmtElevation(it.elevation_ft ?? null)}</td>
         <td data-cell="months" colspan="2">
@@ -1463,6 +1606,32 @@ async function renderTable(){
     }
 
     rows.appendChild(tr);
+  }
+
+  // Attach hover preview handlers for profile images (one-time per render)
+  // Use event delegation per-row above, but we also wire detailed preview to the small circular images.
+  rows.querySelectorAll('.profile-img').forEach(img => {
+    let previewEl = null;
+    const makePreview = () => {
+      if (previewEl) return previewEl;
+      previewEl = document.createElement('div'); previewEl.className = 'img-preview';
+      const big = document.createElement('img'); big.alt = img.alt || ''; big.src = img.src || placeholderFor(img.alt || ''); big.loading = 'lazy'; previewEl.appendChild(big);
+      document.body.appendChild(previewEl);
+      return previewEl;
+    };
+    const movePreview = (e) => {
+      const rect = img.getBoundingClientRect();
+      const px = rect.right + 10;
+      const py = Math.max(8, rect.top + window.scrollY - 8);
+      const el = previewEl;
+      if (el) {
+        el.style.left = px + 'px';
+        el.style.top = (rect.top + window.scrollY) + 'px';
+      }
+    };
+    img.addEventListener('mouseenter', (e)=>{ makePreview(); previewEl.style.display='block'; movePreview(e); });
+    img.addEventListener('mousemove', (e)=>{ if (previewEl) movePreview(e); });
+    img.addEventListener('mouseleave', ()=>{ if (previewEl){ previewEl.remove(); previewEl = null; } });
   });
 }
 
@@ -1501,7 +1670,7 @@ exportBtn.onclick=async()=>{
 
 unitToggle.onclick=()=>applyUnitsFlag(!meters);
 metersToggle.onchange=()=>applyUnitsFlag(metersToggle.checked);
-themeToggle.onchange=()=>applyThemeFlag(themeToggle.checked);
+if (themeSelect) themeSelect.onchange = () => applyTheme(themeSelect.value);
 
 /* NEW: handlers for added settings */
 densityToggle.onchange = () => applyDensity(densityToggle.checked);
@@ -1546,7 +1715,7 @@ if(doSignupBtn) doSignupBtn.onclick=async()=>{
 (async function boot(){
   try{
     const prefs=readPrefs();
-    applyThemeFlag(!!prefs.light);
+    applyTheme(prefs.theme || 'dark');
     applyUnitsFlag(!!prefs.meters);
     applyDensity(!!prefs.compact);
     applyStickyHeader(!!prefs.sticky);
@@ -1621,6 +1790,10 @@ if(doSignupBtn) doSignupBtn.onclick=async()=>{
     Peakbagger’s Journal needs JavaScript for list loading and saving progress. Please enable JavaScript to use the app.
   </div>
 </noscript>
- 
+</noscript>
+
+<!-- Version badge -->
+<div class="app-version" aria-hidden="true">v0.8.0.1</div>
+
 </body>
 </html>
