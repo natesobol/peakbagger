@@ -1,37 +1,198 @@
 # peakbagger
 
-This workspace contains a web UI (a single `index.html`) for Peakbagger’s Journal with integration hooks to the NH48 API.
+Peakbagger’s Journal Web is a **single-page peak-logging web app** designed to run as a static HTML file (`peakbagger.html` / `index.html`) with **no build step**. It’s optimized for embedding on [nh48pics.com](https://www.nh48pics.com) and other sites via an `<iframe>` or Wix HTML Embed.
 
-What I changed in this workspace
-- Added `index.html` with:
-	- Circular profile thumbnails next to mountain names (first image if available).
-	- A detail pane image carousel that loads images from the NH48 images endpoint at `/_functions/nh48_images?peak=...`.
-	- Graceful fallbacks when the API or images are not available.
+The app connects to:
 
-Next steps (deploy & embed)
-1. Push this repository to your GitHub repo (if it isn't already):
+- The **Peakbagger Lists API** (`/_functions/peakbagger_lists`, `/_functions/peakbagger_list`)
+- The **NH48 API dataset** (`nh48.json` via rawcdn.githack.com)
+- The **NH48 Images endpoint** (`/_functions/nh48_images?peak=...`)
 
-```bash
-git add index.html README.md
-git commit -m "Add Peakbagger web UI with NH48 image carousel and profile thumbs"
-git push origin main
-```
+to provide a rich, offline-friendly experience for logging progress on the **NH 48** and other peak lists.
 
-2. Enable hosting on GitHub Pages (Repository > Settings > Pages) or deploy to Netlify/Vercel and get a public URL.
+---
 
-3. Embed in Wix:
- - Use the Wix Embed element and provide an `iframe` that points to your hosted URL (GitHub Pages or Netlify). Example embed HTML:
+## Web App Overview
 
-```html
-<iframe src="https://your-username.github.io/your-repo/" width="100%" height="900" style="border:0"></iframe>
-```
+The web UI is a **pure HTML/CSS/JS single file**. When opened in a browser, it:
 
-Notes
-- The `index.html` expects the functions host at `/_functions` when served under `nh48pics.com`, otherwise it falls back to `https://www.nh48pics.com/_functions`.
-- The image endpoint assumed is `/_functions/nh48_images?peak=...` which should return JSON `{ images: [{ url, thumb, caption }, ...] }`.
-- If your actual API path or JSON shape differs, adjust the `fetchPeakImages` function in `index.html` accordingly.
+- Fetches available lists (e.g. “NH 48”) from `/_functions/peakbagger_lists`
+- Fetches items (peaks) for the selected list from `/_functions/peakbagger_list?name=...`
+- Enriches each peak with metadata from `nh48.json` (elevation, range/subrange, prominence, difficulty)
+- Tries to load photos for each peak either from the NH48 dataset (`photos` array) or from the NH48 images function at `/_functions/nh48_images?peak=...`
 
-If you want, I can:
-- Update the `index.html` to match the full original UI instead of the minimal demo shell I included here.
-- Add a tiny build script or GitHub Action to deploy to GitHub Pages automatically.
-Peakbagger Peak Logging Web Application
+All completion state is stored **per-device** in `localStorage`, with optional remote sync (for signed-in users) via `/_functions/peakbagger_progress`.
+
+---
+
+## Key Features
+
+### 1. Peak List UI
+
+- **Checklist mode (default)**  
+  - Rank, mountain name, elevation, date completed, status, and a “details” chevron.  
+  - Supports **search**, **sorting** (rank, name, elevation, status), **hide completed**, and **pagination** (25 rows per page) with keyboard navigation (← / →).
+
+- **Grid mode (monthly log)**  
+  - Toggles via “Mode: Checklist/Grid” control.  
+  - Each peak row shows a 12-month strip of chips (Jan–Dec).  
+  - Tap a month to attach a date and log that month as “completed” for that peak.  
+  - A progress bar summarizes completion as **cells filled** instead of peaks.
+
+### 2. Completion Tracking
+
+- **Per-peak date input** in the table (checklist mode)  
+  - Uses native `<input type="date">`.  
+  - Changing the date:
+    - Marks the peak as completed.
+    - Saves to `localStorage` (per-user session key).
+    - Triggers an optional remote sync (if signed in).
+
+- **Detail panel “Date completed” input**  
+  - The Fast Facts card includes an editable date field that stays in sync with the table.  
+  - Editing here uses the same `setDateFor()` logic, so the table and sidebar always reflect the current value.
+
+- **Grid mode monthly dates**  
+  - Each month chip opens a small date picker.  
+  - Saved dates are stored in a **grid record** so the app can derive:
+    - Latest date per peak → classic “completed” state
+    - Per-month completion for the grid progress bar
+
+### 3. NH48 Data Integration
+
+The app loads additional fields from the **NH48 API dataset** (`nh48.json`):
+
+- `Range / Subrange` → shown as **Location**
+- `Prominence (ft)` → converted to meters when the user toggles units
+- `Difficulty` → shown as-is (e.g. “Moderate”, “Very Difficult”)
+- Optional `photos` array → used for thumbnail & carousel when present
+
+Name matching uses a robust **slug map** that understands:
+
+- `Mount Washington` vs `Washington`
+- `South Twin Mountain` vs `South Twin`
+- Other “Mount/Mountain” prefix/suffix variations
+
+If the dataset is missing or a field is unknown, the UI falls back to `—` gracefully.
+
+### 4. Image Thumbnails & Detail Carousel
+
+**List view**
+
+- Each peak row includes a **circular profile thumbnail** when at least one image is available.
+- Thumbnail source order:
+  1. First `photo.url` from `nh48.json` (if present)
+  2. First image (thumb or url) from `/_functions/nh48_images?peak=...`
+- Hovering a thumbnail shows a **larger preview** near the cursor.
+
+**Detail panel**
+
+- When you click a peak row, the detail panel:
+  1. Looks up the peak in `nh48.json`
+  2. Builds a photo list:
+     - From `data.photos`, or (if empty)
+     - From `/_functions/nh48_images?peak=slug`, expecting:
+       ```json
+       {
+         "images": [
+           { "url": "...", "thumb": "...", "caption": "..." },
+           ...
+         ]
+       }
+       ```
+  3. Renders a **carousel** with:
+     - Main image
+     - Previous / next arrow buttons
+     - Horizontal thumbnail strip
+     - Dot indicators
+     - Auto-advance with pause on hover
+
+If there are no photos at all, the app renders a **generated SVG placeholder** showing the peak’s name.
+
+### 5. Detail Panel “Fast Facts” & Links
+
+The slide-in detail pane shows:
+
+- **Fast facts**
+  - Elevation (unit-aware)
+  - Date completed (editable)
+  - Location (range/subrange)
+  - Prominence (unit-aware)
+  - Difficulty
+
+- **Weather links**
+  - NOAA point forecast
+  - Open-Meteo docs
+  - TrailsNH summit forecast
+  - MWOBS (Presidentials)  
+
+- **Learn more**
+  - Wikipedia search for the peak
+  - Peakbagger
+  - AllTrails search
+  - SummitPost object list (NH)
+  - OpenStreetMap
+
+Links currently use generic search queries; they can be tightened later using coordinates and known slug mapping.
+
+### 6. Local Auth & Optional Remote Sync
+
+The app includes a **local-only auth system**:
+
+- Sign up with name, email, and password
+- Passwords are salted + SHA-256 hashed and stored in `localStorage` (not a real auth backend)
+- A lightweight **Terms & Conditions** box is included in the modal
+
+For signed-in users, it can persist a summary to the `/_functions/peakbagger_progress` endpoint:
+
+- `POST /_functions/peakbagger_progress` with:
+  - `email`
+  - `list`
+  - `grid` (monthly completion structure)
+  - `completions` (summary string like `"23/48 peaks completed"`)
+  - `updatedAt`
+
+On load, the app attempts to restore any remote record and merge it into local state.
+
+### 7. Preferences & Themes
+
+User preferences are stored in `localStorage` (`pb_prefs_v1`):
+
+- Units (feet/meters)
+- Theme (dark / light / forest / sky)
+- Row density (comfortable/compact)
+- Sticky header (on/off)
+
+The theme system uses CSS custom properties and `.theme-light`, `.theme-forest`, `.theme-sky` classes on `<body>`.
+
+### 8. Mobile & Accessibility
+
+- **Responsive layout**
+  - Sidebar and table stack on smaller screens
+  - Rows become a two-line card layout on phones
+  - Detail panel width becomes full-width on small devices
+- **Keyboard support**
+  - Arrow keys paginate left/right
+  - Focus styles (`:focus-visible`) are present for interactive elements
+- **Print view**
+  - Hides sidebar, topbar, and detail slides
+  - Renders a clean, black-on-white table
+
+---
+
+## Files
+
+- `peakbagger.html` (or `index.html` depending on your setup)  
+  The entire web app: HTML, CSS, and JS in a single file.
+
+---
+
+## API Expectations
+
+The app currently expects:
+
+- **Functions base URL**  
+  ```js
+  const API = location.hostname.endsWith("nh48pics.com")
+    ? "/_functions"
+    : "https://www.nh48pics.com/_functions";
