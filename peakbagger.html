@@ -658,7 +658,19 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     }
     /* Carousel thumbnails & indicators */
     .carousel-wrap { display:flex; flex-direction:column; gap:8px; }
-    .carousel-main { position:relative; }
+    .carousel-main {
+      position: relative;
+      width: 100%;
+      /* Enforce a square aspect ratio for the main photo to avoid overly tall images */
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+    }
+    /* Ensure the main image fills its square container and crops as needed */
+    .carousel-main img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
     .carousel-prev, .carousel-next {
       position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.35); color:#fff; border:none; padding:6px 8px; border-radius:6px; cursor:pointer;
     }
@@ -1218,11 +1230,13 @@ async function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmt
   const photoContainer = document.getElementById('detailPhotos');
   photoContainer.innerHTML = '';
   let photos = [];
-  if (data && Array.isArray(data.photos) && data.photos.length > 0) {
-    photos = data.photos;
+  if (data && Array.isArray(data.photos) && data.photos.length > 0 && data.photos[0].url) {
+    // Use the photos from the NH48 dataset only if the first photo has a valid URL
+    photos = data.photos.filter(p => p && p.url);
   } else {
+    // Fallback: load images via the nh48_images API
     const apiImgs = await fetchPeakImages(slug);
-    photos = apiImgs.map(img => ({ url: img.url || img.thumb || '', caption: img.caption || '' }));
+    photos = apiImgs.map(img => ({ url: img.url || img.thumb || '', caption: img.caption || '' })).filter(p => p.url);
   }
   // helper: clear existing carousel timer if present
   if (photoContainer._carouselTimer) { clearInterval(photoContainer._carouselTimer); photoContainer._carouselTimer = null; }
@@ -1517,7 +1531,8 @@ async function renderTable(){
     let imgHtml = '';
     let profileUrl = '';
     const photoData = NH48_DATA?.[slug]?.photos;
-      if (photoData && photoData.length > 0) {
+      if (photoData && photoData.length > 0 && photoData[0].url) {
+        // Use the first dataset photo only if it has a valid URL
         profileUrl = photoData[0].url;
       } else {
         const apiImgs = await fetchPeakImages(slug);
