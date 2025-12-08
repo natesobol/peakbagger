@@ -199,6 +199,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 .detail-title{font-size:18px;font-weight:700}
 .detail-close{cursor:pointer;border:1px solid var(--border-strong);border-radius:8px;padding:6px 10px;background:transparent;color:var(--ink)}
 
+/* Responsive override for detail panel on small screens */
+@media (max-width:480px){
+  .detail-wrap{width:100%; right:-100%;}
+  .detail-wrap.open{right:0;}
+}
+
 /* ---------- Settings switches ---------- */
 .settings{margin-top:16px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--card)}
 .settings h3{margin:0 0 8px 0;font-size:14px;color:var(--ink-weak)}
@@ -860,7 +866,8 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     <section class="fact">
       <h3>Fast facts</h3>
       <div class="kv"><span>Elevation</span><strong id="detailElev">—</strong></div>
-      <div class="kv"><span>Date completed</span><strong id="detailDate">—</strong></div>
+      <!-- Replace strong with editable date input -->
+      <div class="kv"><span>Date completed</span><input type="date" id="detailDateInput" class="date-input" value="" /></div>
       <div class="kv"><span>Location</span><strong id="detailLocation" data-empty="—">—</strong></div>
       <div class="kv"><span>Prominence</span><strong id="detailProm" data-empty="—">—</strong></div>
       <div class="kv"><span>Difficulty</span><strong id="detailDiff" data-empty="—">—</strong></div>
@@ -1015,6 +1022,26 @@ function getSlugForName(name) {
 
 const API = location.hostname.endsWith('nh48pics.com') ? '/_functions' : 'https://www.nh48pics.com/_functions';
 
+// =============================
+// New: images API cache and fetch
+// =============================
+const _imagesCache = new Map();
+async function fetchPeakImages(slug) {
+  if (_imagesCache.has(slug)) return _imagesCache.get(slug);
+  try {
+    const r = await fetch(API + '/nh48_images?peak=' + encodeURIComponent(slug));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const imgs = Array.isArray(data?.images) ? data.images : [];
+    _imagesCache.set(slug, imgs);
+    return imgs;
+  } catch (e) {
+    console.error('Failed to load images for', slug, e);
+    _imagesCache.set(slug, []);
+    return [];
+  }
+}
+
 /* ======= Lists (existing) ======= */
 async function fetchAllLists(){ const r=await fetch(API+'/peakbagger_lists'); if(!r.ok) throw new Error('Failed to load lists'); const {lists}=await r.json(); return lists??[]; }
 async function fetchListItems(name){ const r=await fetch(API+'/peakbagger_list?name='+encodeURIComponent(name)); if(!r.ok) throw new Error('Failed to load items for '+name); const {items}=await r.json(); return (items??[]).map((p,i)=>({rank:i+1,...p})); }
@@ -1050,7 +1077,8 @@ const signedInBox=document.getElementById('authSignedIn');
 const detail=document.getElementById('detail');
 const dTitle=document.getElementById('detailTitle');
 const dElev=document.getElementById('detailElev');
-const dDate=document.getElementById('detailDate');
+// update to new date input element
+const dDate=document.getElementById('detailDateInput');
 const dLocation=document.getElementById('detailLocation');
 const dProm=document.getElementById('detailProm');
 const dDiff=document.getElementById('detailDiff');
@@ -1175,7 +1203,8 @@ function toggleComplete(peakName){ completions[currentList]??={}; const rec=comp
 function renderProgressBase(allItems){ const done=allItems.filter(it=>completions[currentList]?.[it.name]?.done).length; const total=allItems.length; const pct= total? Math.round(done/total*100):0; bar.style.width=pct+'%'; progressText.textContent=`${done}/${total} • ${pct}%`; }
 function fmtElevation(ft){ if(!ft) return ''; return meters ? Math.round(ft*0.3048)+' m' : ft+' ft' }
 async function baseItemsFor(listName){ if(!cache.has(listName)){ cache.set(listName, await fetchListItems(listName)) } return cache.get(listName) }
-function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevation(it.elevation_ft ?? null) || '—'; dDate.textContent=completions[currentList]?.[it.name]?.date || '—';
+// openDetail becomes async and uses API images fallback and editable date input
+async function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevation(it.elevation_ft ?? null) || '—'; dDate.value = completions[currentList]?.[it.name]?.date || '';
   // Load NH48 details for this peak
   const slug = getSlugForName(it.name);
   const data = NH48_DATA?.[slug] || null;
@@ -1189,8 +1218,11 @@ function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevat
   const photoContainer = document.getElementById('detailPhotos');
   photoContainer.innerHTML = '';
   let photos = [];
-  if (data && Array.isArray(data.photos)) {
+  if (data && Array.isArray(data.photos) && data.photos.length > 0) {
     photos = data.photos;
+  } else {
+    const apiImgs = await fetchPeakImages(slug);
+    photos = apiImgs.map(img => ({ url: img.url || img.thumb || '', caption: img.caption || '' }));
   }
   // helper: clear existing carousel timer if present
   if (photoContainer._carouselTimer) { clearInterval(photoContainer._carouselTimer); photoContainer._carouselTimer = null; }
@@ -1242,6 +1274,9 @@ function openDetail(it){ dTitle.textContent=it.name; dElev.textContent=fmtElevat
     ph.appendChild(pimg);
     photoContainer.appendChild(ph);
   }
+  // attach date input handlers
+  dDate.onclick = (e) => e.stopPropagation();
+  dDate.onchange = () => { if (dDate.value) setDateFor(it.name, dDate.value); };
   detail.classList.add('open');
 }
 
@@ -1473,18 +1508,26 @@ async function renderTable(){
 
   // rows
   rows.innerHTML = '';
-  pageItems.forEach(it => {
+  for (const it of pageItems) {
     ensureGridRecord(currentList, it.name);
     const tr = document.createElement('tr');
 
-    // compute profile image (first photo from NH48 dataset) for both modes
+    // compute profile image (first photo from NH48 dataset or fallback to API) for both modes
     const slug = getSlugForName(it.name);
     let imgHtml = '';
+    let profileUrl = '';
     const photoData = NH48_DATA?.[slug]?.photos;
       if (photoData && photoData.length > 0) {
-        const url = photoData[0].url;
-        imgHtml = `<img src="${url}" alt="${it.name}" class="profile-img" loading="lazy" />`;
+        profileUrl = photoData[0].url;
+      } else {
+        const apiImgs = await fetchPeakImages(slug);
+        if (apiImgs.length > 0) {
+          profileUrl = apiImgs[0].thumb || apiImgs[0].url || '';
+        }
       }
+    if (profileUrl) {
+      imgHtml = `<img src="${profileUrl}" alt="${it.name}" class="profile-img" loading="lazy" />`;
+    }
 
     if (!gridMode) {
       // Checklist row with profile image
@@ -1563,7 +1606,7 @@ async function renderTable(){
     }
 
     rows.appendChild(tr);
-  });
+  }
 
   // Attach hover preview handlers for profile images (one-time per render)
   // Use event delegation per-row above, but we also wire detailed preview to the small circular images.
