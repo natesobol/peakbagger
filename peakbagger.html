@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -289,13 +289,13 @@ body.sticky-header thead th{position:sticky;top:0;background:var(--panel);z-inde
  * iOS mobile scroll fix
  *
  * Safari on iOS can exhibit erratic scrolling behaviour when an iframe is embedded
- * within another page.  In particular, the first scroll gesture after touching
+ * within another page. In particular, the first scroll gesture after touching
  * inside the iframe often fails to start a scroll, requiring the user to
- * initiate the gesture from outside the iframe instead.  Forcing hardware
+ * initiate the gesture from outside the iframe instead. Forcing hardware
  * acceleration on the page helps Safari establish a new compositing layer for
  * the document, which stabilizes touch-driven scrolling within the iframe.
  * Applying translate3d with zero offsets triggers hardware acceleration without
- * visually moving the document.  See: https://davidwalsh.name/scroll-iframes-ios
+ * visually moving the document. See: https://davidwalsh.name/scroll-iframes-ios
  */
 html, body {
   -webkit-transform: translate3d(0, 0, 0);
@@ -856,7 +856,175 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     }
     </style>
 
-</head>
+<!-- Responsive Adjustments: allow panels to shrink and pager wrap on tiny screens -->
+    <style>
+    /* Let the panels shrink: remove default min-width on sidebar and panel */
+    .content > * {
+      min-width: 0;
+    }
+    .sidebar,
+    .panel {
+      min-width: 0;
+    }
+    /* Allow pager stats to wrap on very narrow screens */
+    @media (max-width:340px){
+      .pager-stats{
+        white-space: normal;
+      }
+    }
+    /* Reduce date input minimum widths on tiny screens */
+    @media (max-width:320px){
+      input[type="date"]{
+        min-width: 0;
+        width: 100%;
+        max-width: 150px;
+      }
+    }
+    </style>
+
+    <!-- Consolidated CSS for pager, collapsible sections, and very narrow screens -->
+    <style id="consolidated-css">
+    /* Consolidated pager base styles */
+    .pager-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 0;
+      padding: 6px 0;
+    }
+    .pager-stats {
+      color: var(--ink-weak);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .page-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: nowrap;
+      justify-content: center;
+    }
+    .page-btn {
+      background: var(--card);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      min-width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .page-btn[disabled] {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+    .page-btn[aria-current="page"] {
+      border-color: var(--accent);
+      outline: 2px solid #22c55e55;
+      color: #ffffff;
+    }
+    /* Mobile pager stacking */
+    @media (max-width:700px) {
+      .pager-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        margin: 8px 0;
+        padding: 4px 0;
+      }
+      .pager-wrap .page-list {
+        order: 1;
+        justify-content: center;
+      }
+      .pager-wrap .pager-stats {
+        order: 2;
+        text-align: center;
+      }
+    }
+    /* Fine-tune pager controls on small devices */
+    @media (max-width:480px) {
+      .pager-wrap {
+        margin: 14px 0;
+        padding: 4px 0;
+      }
+      .pager-stats {
+        font-size: 11px;
+      }
+      .page-list {
+        gap: 4px;
+      }
+      .page-btn {
+        min-width: 26px;
+        height: 26px;
+        font-size: 12px;
+        border-radius: 8px;
+      }
+    }
+    /* Consolidated collapsible section styles */
+    .collapsible-section summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--ink-weak);
+      margin-bottom: 6px;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .collapsible-section summary::-webkit-details-marker {
+      display: none;
+    }
+    .collapsible-section[open] summary {
+      margin-bottom: 8px;
+    }
+    /* Consolidated ultra-narrow screen adjustments (<=360px) */
+    @media (max-width:360px) {
+      /* Wrap pager stats text to avoid overflow */
+      .pager-stats {
+        white-space: normal;
+      }
+      /* Compact row and column sizes */
+      :root {
+        --gut: clamp(0px, 1vw, 2px);
+        --row-px: clamp(4px, 2vw, 6px);
+        --row-py: clamp(4px, 2vw, 6px);
+        --col-rank: clamp(32px, 10vw, 36px);
+        --col-elev: clamp(64px, 22vw, 70px);
+      }
+      tbody tr {
+        gap: clamp(4px, 2vw, 6px) clamp(6px, 3vw, 8px);
+        padding: var(--row-py) var(--row-px);
+        margin: clamp(4px, 1.5vw, 6px) auto;
+        width: calc(100% - var(--gut) * 2);
+        border-radius: 10px;
+      }
+      /* Narrow date inputs further and center them */
+      input[type="date"] {
+        min-width: clamp(116px, 40vw, 124px);
+        max-width: clamp(160px, 55vw, 172px);
+        font-size: 12px;
+        padding: 6px 8px;
+        text-align: center;
+      }
+      /* Shrink checkmark hit area on very small screens */
+      .check {
+        width: 22px;
+        height: 22px;
+        margin: 0 auto;
+        transform: translateX(clamp(-30px, -4.2vw, -30px));
+      }
+      /* Hide completed column on ultra-narrow screens */
+      thead th:nth-child(6),
+      tbody td:nth-child(6) {
+        display: none !important;
+      }
+    }
+    </style>
+
+    </head>
 <body>
 <div class="app">
   <div class="topbar">
