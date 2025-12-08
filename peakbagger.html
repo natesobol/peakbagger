@@ -285,6 +285,22 @@ body.sticky-header thead th{position:sticky;top:0;background:var(--panel);z-inde
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion:reduce){.detail-wrap{transition:none}}
 
+/*
+ * iOS mobile scroll fix
+ *
+ * Safari on iOS can exhibit erratic scrolling behaviour when an iframe is embedded
+ * within another page.  In particular, the first scroll gesture after touching
+ * inside the iframe often fails to start a scroll, requiring the user to
+ * initiate the gesture from outside the iframe instead.  Forcing hardware
+ * acceleration on the page helps Safari establish a new compositing layer for
+ * the document, which stabilizes touch-driven scrolling within the iframe.
+ * Applying translate3d with zero offsets triggers hardware acceleration without
+ * visually moving the document.  See: https://davidwalsh.name/scroll-iframes-ios
+ */
+html, body {
+  -webkit-transform: translate3d(0, 0, 0);
+}
+
 /* ---------- Guardrail: no sideways scroll on small viewports ---------- */
 @media (max-width:1024px){html,body,.app,.content,.panel{max-width:100%;overflow-x:hidden}}
 
@@ -722,8 +738,9 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
         overflow: visible;
     }
 
-    /* Mobile card layout: expand table rows into stacked cards with a full-width image */
+    /* Mobile card layout: expand table rows into stacked cards with a full‑width image. */
     @media (max-width: 700px) {
+      /* Use a three‑row grid for each card: picture, then rank/name/elevation, then date/completion */
       table tbody tr {
         display: grid;
         grid-template-columns: var(--col-rank) 1fr var(--col-elev);
@@ -734,20 +751,25 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
           "date date done";
         overflow: visible;
       }
+
+      /* Picture cell spans the entire width of the card */
       table tbody td:nth-child(1) {
         grid-area: pic;
         padding: 0;
         text-align: center;
       }
+
       table tbody td:nth-child(1) .profile-img {
         width: 100%;
-        /* Use a landscape aspect ratio on mobile to make the image larger */
-        aspect-ratio: 3 / 2;
+        /* A square aspect ratio gives the image more height on narrow screens */
+        aspect-ratio: 1 / 1;
         height: auto;
         object-fit: cover;
-        margin-right: 0;
+        margin: 0;
         border-radius: 12px;
       }
+
+      /* Map the remaining cells to their positions in the grid */
       table tbody td:nth-child(2) { grid-area: rank; }
       table tbody td:nth-child(3) { grid-area: name; }
       table tbody td:nth-child(4) { grid-area: elev; }
@@ -763,11 +785,28 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
         align-items: center;
         text-align: center;
       }
-      /* Increase the height of date inputs on mobile so the text doesn't get truncated */
+
+      /* Increase the height of date inputs on mobile so the placeholder text is visible */
       input[type="date"] {
         min-height: 40px;
         padding: 10px 12px;
         font-size: 15px;
+      }
+
+      /* Ensure the placeholder inside date inputs is visible */
+      input[type="date"]::placeholder {
+        color: var(--ink-weak);
+        opacity: 1;
+      }
+
+      /* Override earlier rules: keep the completed column visible on mobile */
+      thead th:nth-child(6) {
+        /* Show the Completed column header */
+        display: table-cell !important;
+      }
+      tbody td:nth-child(6) {
+        /* Ensure the Completed cell remains flex so the checkmark stays centered */
+        display: flex !important;
       }
     }
 
