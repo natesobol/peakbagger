@@ -715,6 +715,62 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     }
     </style>
 
+    <!-- UI improvements and mobile card view -->
+    <style>
+    /* Allow page to scroll instead of nested scrollbars */
+    .app {
+        overflow: visible;
+    }
+
+    /* Mobile card layout: expand table rows into stacked cards with a full-width image */
+    @media (max-width: 700px) {
+      table tbody tr {
+        display: grid;
+        grid-template-columns: var(--col-rank) 1fr var(--col-elev);
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+          "pic pic pic"
+          "rank name elev"
+          "date date done";
+        overflow: visible;
+      }
+      table tbody td:nth-child(1) {
+        grid-area: pic;
+        padding: 0;
+        text-align: center;
+      }
+      table tbody td:nth-child(1) .profile-img {
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+        margin-right: 0;
+        border-radius: 12px;
+      }
+      table tbody td:nth-child(2) { grid-area: rank; }
+      table tbody td:nth-child(3) { grid-area: name; }
+      table tbody td:nth-child(4) { grid-area: elev; }
+      table tbody td:nth-child(5) {
+        grid-area: date;
+        display: flex;
+        justify-content: center;
+      }
+      table tbody td:nth-child(6) {
+        grid-area: done;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+      }
+    }
+
+    /* Prevent the card row from clipping date picker popovers */
+    @media (max-width: 700px) {
+      table tbody tr {
+        overflow: visible;
+      }
+    }
+    </style>
+
 </head>
 <body>
 <div class="app">
