@@ -741,6 +741,8 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       }
       table tbody td:nth-child(1) .profile-img {
         width: 100%;
+        /* Use a landscape aspect ratio on mobile to make the image larger */
+        aspect-ratio: 3 / 2;
         height: auto;
         object-fit: cover;
         margin-right: 0;
@@ -761,6 +763,12 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
         align-items: center;
         text-align: center;
       }
+      /* Increase the height of date inputs on mobile so the text doesn't get truncated */
+      input[type="date"] {
+        min-height: 40px;
+        padding: 10px 12px;
+        font-size: 15px;
+      }
     }
 
     /* Prevent the card row from clipping date picker popovers */
@@ -768,6 +776,14 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       table tbody tr {
         overflow: visible;
       }
+    }
+
+    /* Completed row styling: change border and mountain name color when a peak is completed */
+    .completed {
+      border: 2px solid var(--good);
+    }
+    .completed .mountain-link {
+      color: var(--good);
     }
     </style>
 
@@ -1657,6 +1673,11 @@ async function renderTable(){
         </td>
         <td data-cell="open">›</td>
       `;
+    }
+
+    // Apply completed styling to the row if the peak is marked complete
+    if (it.completed) {
+      tr.classList.add('completed');
     }
 
     // Common handlers
