@@ -1024,6 +1024,55 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
     }
     </style>
 
+    <!-- Mobile overrides: remove dotted separators and support 280px viewports -->
+    <style>
+    /* Remove dotted/dashed separators on mobile cards */
+    @media (max-width: 700px) {
+      table tbody td:nth-child(2),
+      table tbody td:nth-child(3),
+      table tbody td:nth-child(4),
+      table tbody td:nth-child(5),
+      table tbody td:nth-child(6) {
+        border-top: none !important;
+      }
+    }
+
+    /* Responsive tuning for very small screens (<= 280px) */
+    @media (max-width: 280px) {
+      :root {
+        --gut: clamp(0px, 1vw, 2px);
+        --row-px: clamp(2px, 1vw, 4px);
+        --row-py: clamp(2px, 1vw, 4px);
+        --col-rank: clamp(28px, 10vw, 34px);
+        --col-elev: clamp(56px, 24vw, 64px);
+      }
+      tbody tr {
+        gap: clamp(2px, 1.5vw, 4px) clamp(4px, 2vw, 6px);
+        padding: var(--row-py) var(--row-px);
+        margin: clamp(2px, 1vw, 4px) auto;
+        width: calc(100% - var(--gut) * 2);
+        border-radius: 8px;
+      }
+      td[data-cell="date"] input[type="date"] {
+        min-width: clamp(100px, 40vw, 110px);
+        max-width: clamp(140px, 60vw, 150px);
+        font-size: 11px;
+        padding: 4px 6px;
+        text-align: center;
+      }
+      .check {
+        width: 20px;
+        height: 20px;
+        transform: translateX(clamp(-20px, -5vw, -20px));
+      }
+      /* Hide the completed column on extremely narrow screens */
+      thead th:nth-child(6),
+      tbody td:nth-child(6) {
+        display: none !important;
+      }
+    }
+    </style>
+
     </head>
 <body>
 <div class="app">
