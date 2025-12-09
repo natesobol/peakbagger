@@ -349,10 +349,11 @@ html, body {
   td[data-cell="pic"]{grid-area:pic;padding:0;}
   td[data-cell="pic"] .profile-img{
     width:100%;
-    aspect-ratio:5/3;
+    aspect-ratio:4/3;
     object-fit:cover;
     border-radius:12px;
     display:block;
+    box-shadow:0 8px 24px rgba(0,0,0,0.35);
   }
 
   td[data-cell="name"]{
@@ -371,13 +372,14 @@ html, body {
     display:flex;
     flex-direction:column;
     align-items:flex-start;
-    gap:8px;
+    gap:6px;
     border:none;
     background:transparent;
+    width:100%;
   }
 
   td[data-cell="rank"]{grid-area:rank; font-weight:700;}
-  td[data-cell="elev"]{grid-area:elev; text-align:right;}
+  td[data-cell="elev"]{grid-area:elev; text-align:left;}
   td[data-cell="date"]{grid-area:date;}
   td[data-cell="done"]{grid-area:done;}
 
@@ -395,6 +397,7 @@ html, body {
     text-transform:uppercase;
     color:var(--ink-weak);
     display:block;
+    margin-bottom:2px;
   }
 
   td[data-cell="rank"],
@@ -404,13 +407,17 @@ html, body {
     font-size:16px;
     font-weight:600;
     color:var(--ink);
+    line-height:1.35;
   }
 
-  td[data-cell="elev"],
-  td[data-cell="done"]{ text-align:left; }
+  td[data-cell="rank"] .cell-value,
+  td[data-cell="elev"] .cell-value,
+  td[data-cell="done"] .check{
+    display:block;
+  }
 
   input[type="date"]{min-width:0;width:100%;max-width:none;padding:10px 12px;text-align:center;font-size:15px}
-  .check{width:28px;height:28px;margin-left:auto}
+  .check{width:28px;height:28px;margin:0}
   th,td{padding:0}
   td[data-cell="open"]{display:none}
   .controls{grid-template-columns:1fr 1fr;gap:10px}
@@ -1903,11 +1910,11 @@ async function renderTable(){
       // Checklist row with profile image column followed by rank
       tr.innerHTML = `
         <td data-cell="pic" class="pic-cell">${imgHtml}</td>
-        <td class="stat" data-cell="rank">${it.rank}</td>
+        <td class="stat" data-cell="rank"><span class="cell-value">${it.rank}</span></td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
           <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
         </td>
-        <td class="stat" data-cell="elev">${fmtElevation(it.elevation_ft ?? null)}</td>
+        <td class="stat" data-cell="elev"><span class="cell-value">${fmtElevation(it.elevation_ft ?? null)}</span></td>
         <td data-cell="date">
           <input type="date" class="date-input" required value="${it.date || ''}" data-name="${it.name}">
         </td>
