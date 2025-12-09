@@ -330,13 +330,15 @@ html, body {
 
   tbody tr{
     display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns:1fr;
     grid-template-areas:
-      "pic pic"
-      "name name"
-      "rank elev"
-      "date done";
-    gap:10px 12px;
+      "pic"
+      "name"
+      "rank"
+      "elev"
+      "date"
+      "done";
+    gap:12px;
     padding:var(--row-py) var(--row-px);
     margin:clamp(8px,2.6vw,12px) auto;
     width:min(620px,calc(100% - var(--gut) * 2));
@@ -367,19 +369,17 @@ html, body {
   td[data-cell="done"]{
     padding:0;
     display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    border:1px solid var(--border);
-    border-radius:10px;
-    background:color-mix(in srgb, var(--card) 90%, transparent);
-    padding:12px 14px;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+    border:none;
+    background:transparent;
   }
 
   td[data-cell="rank"]{grid-area:rank; font-weight:700;}
   td[data-cell="elev"]{grid-area:elev; text-align:right;}
-  td[data-cell="date"]{grid-area:date; flex-direction:column; align-items:flex-start; gap:8px;}
-  td[data-cell="done"]{grid-area:done; justify-content:flex-end;}
+  td[data-cell="date"]{grid-area:date;}
+  td[data-cell="done"]{grid-area:done;}
 
   td[data-cell="rank"]{--label:"Rank";}
   td[data-cell="elev"]{--label:"Elevation";}
@@ -394,7 +394,20 @@ html, body {
     letter-spacing:.3px;
     text-transform:uppercase;
     color:var(--ink-weak);
+    display:block;
   }
+
+  td[data-cell="rank"],
+  td[data-cell="elev"],
+  td[data-cell="date"],
+  td[data-cell="done"]{
+    font-size:16px;
+    font-weight:600;
+    color:var(--ink);
+  }
+
+  td[data-cell="elev"],
+  td[data-cell="done"]{ text-align:left; }
 
   input[type="date"]{min-width:0;width:100%;max-width:none;padding:10px 12px;text-align:center;font-size:15px}
   .check{width:28px;height:28px;margin-left:auto}
