@@ -389,12 +389,6 @@ html, body {
 :root{ --gut: clamp(0px, 1vw, 2px); --row-px: clamp(4px, 2vw, 6px); --row-py: clamp(4px, 2vw, 6px); --col-rank: clamp(32px, 10vw, 36px); --col-elev: clamp(64px, 22vw, 70px); }
 tbody tr{ gap: clamp(4px, 2vw, 6px) clamp(6px, 3vw, 8px); padding: var(--row-py) var(--row-px); margin: clamp(4px, 1.5vw, 6px) auto; width: calc(100% - var(--gut) * 2); border-radius: 10px; }
 input[type="date"]{ min-width: clamp(116px, 40vw, 124px); max-width: clamp(160px, 55vw, 172px); font-size: 12px; padding: 6px 8px; text-align:center; }
-  tbody td:nth-child(1){ grid-area: rank; text-align:center }
-  tbody td:nth-child(2){ grid-area: name; text-align:center }
-  tbody td:nth-child(2) .cell-actions{ justify-content:center; flex-wrap:wrap }
-  tbody td:nth-child(3){ grid-area: elev; text-align:center; font-size:13px }
-  tbody td:nth-child(4){ grid-area: date; display:flex; justify-content:center }
-  tbody td:nth-child(5){grid-area:done;display:flex;justify-content:left;align-items:left;text-align:left}
   tbody td:nth-child(4) input[type="date"]{ min-width: 120px; max-width: 168px; font-size: 12px; padding: 6px 8px; }
   .app{ overflow: visible; }
   .check{ width:22px; height:22px; margin:0 auto; transform: translateX(clamp(-30px, -4.2vw, -30px)); }
