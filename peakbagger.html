@@ -317,14 +317,12 @@ html, body {
   input[type="date"]{min-width:120px}
 }
 
-/* ---------- Phone layout: stacked cards with full-width photos ---------- */
+/* ---------- Phone layout: NH48-style stacked cards ---------- */
 @media (max-width:700px){
   :root{
     --gut:clamp(12px,4vw,24px);
     --row-px:clamp(14px,4vw,20px);
-    --row-py:clamp(10px,3.2vw,16px);
-    --col-rank:clamp(44px,8vw,64px);
-    --col-elev:clamp(90px,18vw,132px);
+    --row-py:clamp(12px,3.5vw,18px);
   }
 
   table thead{display:none}
@@ -332,48 +330,76 @@ html, body {
 
   tbody tr{
     display:grid;
-    grid-template-columns:var(--col-rank) 1fr var(--col-elev) var(--col-arrow, 48px);
-    grid-template-rows:minmax(160px,1fr) auto auto;
+    grid-template-columns:repeat(2,minmax(0,1fr));
     grid-template-areas:
-      "pic pic pic pic"
-      "rank name elev arrow"
-      "date date done arrow";
-    align-items:center;
+      "pic pic"
+      "name name"
+      "rank elev"
+      "date done";
     gap:10px 12px;
     padding:var(--row-py) var(--row-px);
     margin:clamp(8px,2.6vw,12px) auto;
-    width:min(560px,calc(100% - var(--gut) * 2));
+    width:min(620px,calc(100% - var(--gut) * 2));
     border-radius:12px;
-    overflow:visible;
+    overflow:hidden;
   }
 
-  tbody td:nth-child(1){
-    grid-area:pic;
-    padding:0;
-  }
-  tbody td:nth-child(1) img{
+  td[data-cell="pic"]{grid-area:pic;padding:0;}
+  td[data-cell="pic"] .profile-img{
     width:100%;
-    height:100%;
-    min-height:160px;
-    max-height:280px;
+    aspect-ratio:5/3;
     object-fit:cover;
     border-radius:12px;
     display:block;
   }
 
-  tbody td:nth-child(2){grid-area:rank;text-align:center;font-weight:700}
-  tbody td:nth-child(3){grid-area:name}
-  tbody td:nth-child(4){grid-area:elev;text-align:center}
-  tbody td:nth-child(5){grid-area:date;display:flex;justify-content:center}
-  tbody td:nth-child(6){grid-area:done;display:flex;justify-content:center;align-items:center;text-align:center}
-  tbody td:nth-child(7){grid-area:arrow;justify-self:end;text-align:right}
+  td[data-cell="name"]{
+    grid-area:name;
+    text-align:left;
+    font-weight:700;
+    font-size:18px;
+    padding:2px 4px;
+  }
 
-  tbody td:nth-child(2) .cell-actions{justify-content:center}
-  td[data-cell="name"]{text-align:center}
-  input[type="date"]{min-width:0;width:100%;max-width:260px;padding:10px 12px;text-align:center;font-size:15px}
-  td[data-cell="date"]::before{content:"Select date:";display:block;font-size:12px;color:var(--ink-weak);margin-bottom:4px}
-  .check{width:28px;height:28px;margin:0 auto}
+  td[data-cell="rank"],
+  td[data-cell="elev"],
+  td[data-cell="date"],
+  td[data-cell="done"]{
+    padding:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:color-mix(in srgb, var(--card) 90%, transparent);
+    padding:12px 14px;
+  }
+
+  td[data-cell="rank"]{grid-area:rank; font-weight:700;}
+  td[data-cell="elev"]{grid-area:elev; text-align:right;}
+  td[data-cell="date"]{grid-area:date; flex-direction:column; align-items:flex-start; gap:8px;}
+  td[data-cell="done"]{grid-area:done; justify-content:flex-end;}
+
+  td[data-cell="rank"]{--label:"Rank";}
+  td[data-cell="elev"]{--label:"Elevation";}
+  td[data-cell="date"]{--label:"Date";}
+  td[data-cell="done"]{--label:"Completed";}
+  td[data-cell="rank"]::before,
+  td[data-cell="elev"]::before,
+  td[data-cell="date"]::before,
+  td[data-cell="done"]::before{
+    content:var(--label);
+    font-size:12px;
+    letter-spacing:.3px;
+    text-transform:uppercase;
+    color:var(--ink-weak);
+  }
+
+  input[type="date"]{min-width:0;width:100%;max-width:none;padding:10px 12px;text-align:center;font-size:15px}
+  .check{width:28px;height:28px;margin-left:auto}
   th,td{padding:0}
+  td[data-cell="open"]{display:none}
   .controls{grid-template-columns:1fr 1fr;gap:10px}
   .controls .ctrl{grid-column:1 / -1}
 }
@@ -773,29 +799,19 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
 
     /* Reinforce the mobile grid with full-width images and clear spacing */
     @media (max-width: 700px) {
-      table tbody tr {
-        grid-template-rows: minmax(180px, 1fr) auto auto;
-      }
-
-      table tbody td:nth-child(1) {
-        padding: 0;
-      }
-
-      table tbody td:nth-child(1) img {
+      table tbody td:nth-child(1) { padding: 0; }
+      table tbody td:nth-child(1) img.profile-img {
         width: 100%;
-        height: 100%;
-        min-height: 180px;
-        max-height: 320px;
+        aspect-ratio: 5/3;
         object-fit: cover;
         border-radius: 12px;
         display: block;
       }
 
-      /* Keep text and controls centered and uncluttered */
-      td[data-cell="name"] { text-align: center; }
+      td[data-cell="name"] { text-align: left; }
       td[data-cell="date"] input[type="date"] {
-        width: clamp(140px, 72%, 220px);
-        margin-inline: auto;
+        width: 100%;
+        margin-inline: 0;
       }
 
       /* Strip any residual separators from earlier styles */
