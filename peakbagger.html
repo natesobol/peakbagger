@@ -84,8 +84,6 @@
   --ctrl-h:40px; --ctrl-gap:12px;
   /* column widths (desktop) */
   --col-rank:64px; --col-elev:140px; --col-date:160px; --col-done:120px; --col-arrow:48px;
-  /* new pic column width */
-  --col-pic:64px;
 }
 .theme-light{
   --bg:#f8f8fb; --panel:#ffffff; --card:#ffffff; --ink:#111111; --ink-weak:#666666;
@@ -169,21 +167,47 @@ th{color:var(--ink-weak);text-align:center;border-bottom:1px solid var(--border)
 tr{background:var(--card);border:1px solid var(--border-strong);border-radius:12px}
 tr td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
 tr td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
+tbody tr{
+  display:grid;
+  grid-template-columns:var(--col-rank) minmax(0,1fr) var(--col-elev) var(--col-date) var(--col-done) var(--col-arrow);
+  align-items:center;
+}
+td[data-cell="months"]{grid-column:4 / span 2;}
 /* column widths */
-/* Updated widths: column order = Pic, Rank, Mountain, Elevation, Date, Completed, Arrow */
-thead th:nth-child(1), tbody td:nth-child(1){width:var(--col-pic)}
-thead th:nth-child(2), tbody td:nth-child(2){width:var(--col-rank)}
-thead th:nth-child(3), tbody td:nth-child(3){width:auto}
-thead th:nth-child(4), tbody td:nth-child(4){width:var(--col-elev)}
-thead th:nth-child(5), tbody td:nth-child(5){width:var(--col-date)}
-thead th:nth-child(6), tbody td:nth-child(6){width:var(--col-done)}
-thead th:nth-child(7), tbody td:nth-child(7){width:var(--col-arrow)}
+/* Updated widths: column order = Rank, Mountain, Elevation, Date, Completed, Arrow */
+thead th:nth-child(1), tbody td:nth-child(1){width:var(--col-rank)}
+thead th:nth-child(2), tbody td:nth-child(2){width:auto}
+thead th:nth-child(3), tbody td:nth-child(3){width:var(--col-elev)}
+thead th:nth-child(4), tbody td:nth-child(4){width:var(--col-date)}
+thead th:nth-child(5), tbody td:nth-child(5){width:var(--col-done)}
+thead th:nth-child(6), tbody td:nth-child(6){width:var(--col-arrow)}
 /* center Rank + Mountain + Elevation */
-/* Center the first four columns (Pic, Rank, Mountain, Elevation) */
-thead th:nth-child(-n+4), tbody td:nth-child(-n+4){text-align:center;vertical-align:middle}
+/* Center the first three columns (Rank, Mountain, Elevation) */
+thead th:nth-child(-n+3), tbody td:nth-child(-n+3){text-align:center;vertical-align:middle}
 .stat{text-align:center;font-variant-numeric:tabular-nums}
 /* Mountain cell truly centered */
 .cell-actions{display:flex;align-items:center;justify-content:center;gap:8px;height:100%;width:100%}
+
+/* Free-floating photo block (decoupled from table cells) */
+.row-photo{
+  grid-column:1/-1;
+  justify-self:center;
+  width:290px;
+  max-width:100%;
+  margin:0 auto 8px;
+  border-radius:12px;
+  overflow:hidden;
+  background:var(--panel);
+  box-shadow:0 10px 28px rgba(0,0,0,0.35);
+}
+.row-photo img{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:5/3;
+  object-fit:cover;
+  background:var(--panel);
+}
 
 /* ---------- Date input (visible on iOS) ---------- */
 input[type="date"]{
@@ -332,7 +356,7 @@ html, body {
     display:grid;
     grid-template-columns:1fr;
     grid-template-areas:
-      "pic"
+      "photo"
       "name"
       "rank"
       "elev"
@@ -733,11 +757,6 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       flex-shrink: 0;
       box-shadow: 0 2px 6px rgba(0,0,0,0.35);
       border: 1px solid color-mix(in oklab, var(--border) 60%, black);
-    }
-
-    /* Remove margin on profile images when they are in the dedicated Pic column */
-    td[data-cell="pic"] .profile-img {
-      margin-right: 0;
     }
     /* Photos carousel in detail panel */
     #detailPhotos {
@@ -1204,8 +1223,6 @@ body.compact-rows td, body.compact-rows th{ font-size: 13px; }
       <table>
         <thead>
           <tr>
-            <!-- Updated headers: Pic column added -->
-            <th style="width:64px">Pic</th>
             <th style="width:64px">Rank</th>
             <th>Mountain</th>
             <th style="width:140px">Elevation</th>
@@ -1913,10 +1930,17 @@ async function renderTable(){
       imgHtml = `<img src="${profileUrl}" alt="${it.name}" class="profile-img" loading="lazy" />`;
     }
 
+    // Free-floating photo block (not inside a data cell)
+    if (imgHtml) {
+      const photo = document.createElement('div');
+      photo.className = 'row-photo';
+      photo.innerHTML = imgHtml;
+      tr.appendChild(photo);
+    }
+
     if (!gridMode) {
-      // Checklist row with profile image column followed by rank
-      tr.innerHTML = `
-        <td data-cell="pic" class="pic-cell">${imgHtml}</td>
+      // Checklist row without a picture cell
+      tr.innerHTML += `
         <td class="stat" data-cell="rank"><span class="cell-value">${it.rank}</span></td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
           <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
@@ -1931,7 +1955,7 @@ async function renderTable(){
         <td data-cell="open">›</td>
       `;
     } else {
-      // Grid mode row with profile image column followed by rank
+      // Grid mode row without a picture cell
       const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const chips = monthLabels.map((lbl, idx) => {
         const m = idx+1; const done = monthHasDate(currentList, it.name, m);
@@ -1939,8 +1963,7 @@ async function renderTable(){
         return `<button class="month-chip ${done?'done':''}" data-m="${m}" title="${lbl}">${lbl}${dot}</button>`;
       }).join('');
 
-      tr.innerHTML = `
-        <td data-cell="pic" class="pic-cell">${imgHtml}</td>
+      tr.innerHTML += `
         <td class="stat" data-cell="rank">${it.rank}</td>
         <td data-cell="name" style="text-align:center; vertical-align:middle;">
           <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
