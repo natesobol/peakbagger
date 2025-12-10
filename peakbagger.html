@@ -363,7 +363,7 @@ html, body {
       "date"
       "done";
     gap:12px;
-    padding:var(--row-py) var(--row-px);
+    padding:0;
     margin:clamp(8px,2.6vw,12px) auto;
     width:min(620px,calc(100% - var(--gut) * 2));
     border-radius:12px;
@@ -371,20 +371,35 @@ html, body {
   }
 
   td[data-cell="pic"]{
-    grid-area:pic;
+    grid-area:photo;
     padding:0;
-    margin:calc(-1 * var(--row-py)) calc(-1 * var(--row-px)) 0;
+    margin:0;
     overflow:hidden;
+    border-radius:12px 12px 0 0;
+    background:var(--panel);
   }
   td[data-cell="pic"] .profile-img{
     width:100%;
-    height:100%;
+    height:auto;
     aspect-ratio:5/3;
     object-fit:cover;
     border-radius:0;
     display:block;
     background:var(--panel);
-    box-shadow:0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  /* Content cells have padding when image is present */
+  td[data-cell="name"],
+  td[data-cell="rank"],
+  td[data-cell="elev"],
+  td[data-cell="date"],
+  td[data-cell="done"]{
+    padding:var(--row-py) var(--row-px);
+  }
+
+  /* Last cell gets bottom padding from card */
+  td[data-cell="done"]{
+    padding-bottom:var(--row-py);
   }
 
   td[data-cell="name"]{
@@ -1930,12 +1945,22 @@ async function renderTable(){
       imgHtml = `<img src="${profileUrl}" alt="${it.name}" class="profile-img" loading="lazy" />`;
     }
 
-    // Free-floating photo block (not inside a data cell)
+    // On mobile, render image as first grid cell; on desktop, use free-floating div
+    const isMobile = window.innerWidth <= 700;
     if (imgHtml) {
-      const photo = document.createElement('div');
-      photo.className = 'row-photo';
-      photo.innerHTML = imgHtml;
-      tr.appendChild(photo);
+      if (isMobile) {
+        // Mobile: image is the first grid cell
+        const picCell = document.createElement('td');
+        picCell.setAttribute('data-cell', 'pic');
+        picCell.innerHTML = imgHtml;
+        tr.appendChild(picCell);
+      } else {
+        // Desktop: free-floating photo block
+        const photo = document.createElement('div');
+        photo.className = 'row-photo';
+        photo.innerHTML = imgHtml;
+        tr.appendChild(photo);
+      }
     }
 
     if (!gridMode) {
