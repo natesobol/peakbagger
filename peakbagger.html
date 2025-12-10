@@ -373,11 +373,11 @@ html, body {
   td[data-cell="pic"]{
     grid-area:photo;
     padding:0;
-    margin:0;
+    margin:0 calc(-1 * var(--row-px)) 0 calc(-1 * var(--row-px));
     overflow:hidden;
     border-radius:0;
     background:var(--panel);
-    height:180px;
+    height:200px;
   }
   td[data-cell="pic"] .profile-img{
     width:100%;
