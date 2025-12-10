@@ -346,13 +346,20 @@ html, body {
     overflow:hidden;
   }
 
-  td[data-cell="pic"]{grid-area:pic;padding:0;}
+  td[data-cell="pic"]{
+    grid-area:pic;
+    padding:0;
+    margin:calc(-1 * var(--row-py)) calc(-1 * var(--row-px)) 0;
+    overflow:hidden;
+  }
   td[data-cell="pic"] .profile-img{
     width:100%;
-    aspect-ratio:4/3;
+    height:100%;
+    aspect-ratio:5/3;
     object-fit:cover;
-    border-radius:12px;
+    border-radius:0;
     display:block;
+    background:var(--panel);
     box-shadow:0 8px 24px rgba(0,0,0,0.35);
   }
 
