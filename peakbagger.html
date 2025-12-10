@@ -352,33 +352,37 @@ html, body {
   table thead{display:none}
   table{table-layout:auto;border-spacing:0;width:100%;max-width:100%}
 
+  /* Mobile card container */
+  tbody{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
   tbody tr{
-    display:grid;
-    grid-template-columns:1fr;
-    grid-template-areas:
-      "photo"
-      "name"
-      "rank"
-      "elev"
-      "date"
-      "done";
-    gap:12px;
-    padding:0;
-    margin:clamp(8px,2.6vw,12px) auto;
-    width:min(620px,calc(100% - var(--gut) * 2));
+    display:flex;
+    flex-direction:column;
+    background:var(--card);
+    border:1px solid var(--border-strong);
     border-radius:12px;
+    overflow:hidden;
+    width:100%;
+    max-width:600px;
+    margin:0 auto;
+  }
+
+  /* Image section - full width at top */
+  td[data-cell="pic"]{
+    order:1;
+    width:100%;
+    height:220px;
+    padding:0;
+    margin:0;
+    border:none;
+    background:var(--panel);
     overflow:hidden;
   }
 
-  td[data-cell="pic"]{
-    grid-area:photo;
-    padding:0;
-    margin:0 calc(-1 * var(--row-px)) 0 calc(-1 * var(--row-px));
-    overflow:hidden;
-    border-radius:0;
-    background:var(--panel);
-    height:200px;
-  }
   td[data-cell="pic"] .profile-img{
     width:100%;
     height:100%;
@@ -389,82 +393,94 @@ html, body {
     background:var(--panel);
   }
 
-  /* Content cells have padding when image is present */
+  /* Content cells - wrapped in a container with padding */
   td[data-cell="name"],
   td[data-cell="rank"],
   td[data-cell="elev"],
   td[data-cell="date"],
   td[data-cell="done"]{
-    padding:var(--row-py) var(--row-px);
+    order:2;
+    width:100%;
+    padding:0;
+    border:none;
+    background:transparent;
+    display:block;
   }
 
-  /* Last cell gets bottom padding from card */
-  td[data-cell="done"]{
-    padding-bottom:var(--row-py);
+  /* Create a unified content area */
+  tbody tr > td[data-cell="rank"],
+  tbody tr > td[data-cell="elev"],
+  tbody tr > td[data-cell="date"],
+  tbody tr > td[data-cell="done"]{
+    padding:12px 16px 0;
   }
 
-  td[data-cell="name"]{
-    grid-area:name;
-    text-align:left;
+  tbody tr > td[data-cell="name"]{
+    padding:16px 16px 8px;
+    font-size:20px;
     font-weight:700;
-    font-size:18px;
-    padding:2px 4px;
+    text-align:left;
   }
 
+  tbody tr > td[data-cell="done"]{
+    padding:12px 16px 16px;
+  }
+
+  /* Metadata rows */
   td[data-cell="rank"],
   td[data-cell="elev"],
   td[data-cell="date"],
   td[data-cell="done"]{
-    padding:0;
     display:flex;
     flex-direction:column;
-    align-items:flex-start;
-    gap:6px;
-    border:none;
-    background:transparent;
-    width:100%;
+    gap:4px;
+    font-size:14px;
+    line-height:1.4;
   }
 
-  td[data-cell="rank"]{grid-area:rank; font-weight:700;}
-  td[data-cell="elev"]{grid-area:elev; text-align:left;}
-  td[data-cell="date"]{grid-area:date;}
-  td[data-cell="done"]{grid-area:done;}
-
-  td[data-cell="rank"]{--label:"Rank";}
-  td[data-cell="elev"]{--label:"Elevation";}
-  td[data-cell="date"]{--label:"Date";}
-  td[data-cell="done"]{--label:"Completed";}
   td[data-cell="rank"]::before,
   td[data-cell="elev"]::before,
   td[data-cell="date"]::before,
   td[data-cell="done"]::before{
     content:var(--label);
-    font-size:12px;
-    letter-spacing:.3px;
+    font-size:11px;
+    letter-spacing:0.5px;
     text-transform:uppercase;
     color:var(--ink-weak);
     display:block;
     margin-bottom:2px;
   }
 
-  td[data-cell="rank"],
-  td[data-cell="elev"],
-  td[data-cell="date"],
-  td[data-cell="done"]{
-    font-size:16px;
-    font-weight:600;
-    color:var(--ink);
-    line-height:1.35;
-  }
+  td[data-cell="rank"]{--label:"Rank";}
+  td[data-cell="elev"]{--label:"Elevation";}
+  td[data-cell="date"]{--label:"Date";}
+  td[data-cell="done"]{--label:"Completed";}
 
   td[data-cell="rank"] .cell-value,
-  td[data-cell="elev"] .cell-value,
-  td[data-cell="done"] .check{
-    display:block;
+  td[data-cell="elev"] .cell-value{
+    font-weight:600;
+    color:var(--ink);
   }
 
-  input[type="date"]{min-width:0;width:100%;max-width:none;padding:10px 12px;text-align:center;font-size:15px}
-  .check{width:28px;height:28px;margin:0}
+  input[type="date"]{
+    width:100%;
+    min-width:0;
+    max-width:none;
+    padding:8px 10px;
+    text-align:center;
+    font-size:14px;
+    background:var(--input-bg);
+    border:1px solid var(--border-strong);
+    border-radius:8px;
+    color:var(--ink);
+  }
+
+  .check{
+    width:26px;
+    height:26px;
+    margin:0;
+  }
+
   th,td{padding:0}
   td[data-cell="open"]{display:none}
   .controls{grid-template-columns:1fr 1fr;gap:10px}
@@ -472,10 +488,27 @@ html, body {
 }
 
 /* ---------- Smaller phones ---------- */
-@media (max-width:480px){:root{--col-rank:clamp(42px,9vw,56px);--col-elev:clamp(86px,22vw,120px)} input[type="date"]{max-width:260px}}
+@media (max-width:480px){
+  :root{--col-rank:clamp(42px,9vw,56px);--col-elev:clamp(86px,22vw,120px)}
+  input[type="date"]{max-width:none}
+  tbody tr{max-width:100%}
+  td[data-cell="pic"]{height:200px}
+  td[data-cell="name"]{font-size:18px}
+}
 
 /* ---------- Very small phones ---------- */
-@media (max-width:380px){:root{--col-rank:clamp(40px,10vw,52px);--col-elev:clamp(80px,24vw,112px)} .controls{grid-template-columns:1fr} input[type="date"]{min-width:0} }
+@media (max-width:380px){
+  :root{--col-rank:clamp(40px,10vw,52px);--col-elev:clamp(80px,24vw,112px)}
+  .controls{grid-template-columns:1fr}
+  input[type="date"]{min-width:0}
+  td[data-cell="pic"]{height:180px}
+  td[data-cell="name"]{font-size:16px;padding:12px 14px 6px}
+  td[data-cell="rank"],
+  td[data-cell="elev"],
+  td[data-cell="date"],
+  td[data-cell="done"]{padding:10px 14px 0}
+  td[data-cell="done"]{padding:10px 14px 12px}
+}
 
 /* Explicit 320px hard stop override */
 @media (max-width: 320px){
