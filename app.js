@@ -76,20 +76,57 @@ async function fetchPeakImages(slug) {
 }
 
 // =====================================================
-// List & Item Fetching
+// List & Item Fetching (NH48-API GitHub)
 // =====================================================
+
+// Mapping of list names to JSON file names in NH48-API
+const LIST_TO_JSON_MAP = {
+  'ADK 46': 'ADK46.json',
+  'AZ 2020 Peaks': 'AZ2020Peaks.json',
+  'CA 14ers': 'CA14ers.json',
+  'CO 14': 'CO14.json',
+  'Catskill 3500': 'Catskill3500.json',
+  'Colorado Centennials': 'ColoradoCentennials.json',
+  'ME 4000': 'ME4000.json',
+  'Montana 53': 'Montana53.json',
+  'NE 115': 'NE115.json',
+  'NE 67': 'NE67.json',
+  'NH 48': 'nh48.json',
+  'NH 200': 'NH200.json',
+  'NH 300': 'NH300.json',
+  'NH 500': 'NH500.json',
+  'NH 52 WAV': 'NH52WAV.json',
+  'Southern Sixers': 'SouthernSixers.json',
+  'US State Highpoints': 'USStateHighpoints.json',
+  'Ultras': 'Ultras.json',
+  'VT 4000': 'VT4000.json',
+  'WA Bulgers': 'WABulgers.json'
+};
+
+const NH48_API_REPO_URL = 'https://rawcdn.githack.com/natesobol/nh48-api/main/data';
+
 async function fetchAllLists() {
-  const r = await fetch(API + '/peakbagger_lists');
-  if (!r.ok) throw new Error('Failed to load lists');
-  const { lists } = await r.json();
-  return lists ?? [];
+  // Return the list names from the mapping
+  return Object.keys(LIST_TO_JSON_MAP);
 }
 
 async function fetchListItems(name) {
-  const r = await fetch(API + '/peakbagger_list?name=' + encodeURIComponent(name));
-  if (!r.ok) throw new Error('Failed to load items for ' + name);
-  const { items } = await r.json();
-  return (items ?? []).map((p, i) => ({ rank: i + 1, ...p }));
+  const jsonFileName = LIST_TO_JSON_MAP[name];
+  if (!jsonFileName) throw new Error('Unknown list: ' + name);
+  
+  try {
+    const url = `${NH48_API_REPO_URL}/${jsonFileName}`;
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const items = await r.json();
+    
+    // Ensure items is an array and add rank
+    const itemArray = Array.isArray(items) ? items : (items.items ?? []);
+    return itemArray.map((p, i) => ({ rank: i + 1, ...p }));
+  } catch (e) {
+    console.error('Failed to load items for ' + name, e);
+    throw new Error('Failed to load items for ' + name);
+  }
 }
 
 // =====================================================
