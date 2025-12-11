@@ -732,7 +732,7 @@ function toggleComplete(peakName) {
   completions[currentList][peakName] = rec;
   saveState();
   queueRemoteSave();
-  renderTable();
+  renderGrid();
 }
 
 function renderProgressBase(allItems) {
@@ -822,28 +822,12 @@ async function renderGrid() {
             <span class="peak-card-meta-value">${elevStr}</span>
           </div>
           <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Prominence</span>
-            <span class="peak-card-meta-value">${promStr}</span>
-          </div>
-          <div class="peak-card-meta-row">
             <span class="peak-card-meta-label">Range</span>
             <span class="peak-card-meta-value">${rangeStr}</span>
           </div>
           <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Trail Type</span>
-            <span class="peak-card-meta-value">${trailStr}</span>
-          </div>
-          <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Difficulty</span>
-            <span class="peak-card-meta-value">${diffStr}</span>
-          </div>
-          <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Exposure</span>
-            <span class="peak-card-meta-value">${expStr}</span>
-          </div>
-          <div class="peak-card-meta-row">
             <span class="peak-card-meta-label">Date</span>
-            <span class="peak-card-meta-value"><input type="date" class="card-date-input" value="${it.date || ''}" data-name="${it.name}" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--ink);font-size:0.85rem;width:100%;"></span>
+            <span class="peak-card-meta-value"><input type="date" class="card-date-input" value="${it.date || ''}" data-name="${it.name}" placeholder="mm/dd/yyyy" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--ink);font-size:0.85rem;width:100%;min-width:120px;box-sizing:border-box;"></span>
           </div>
           <div class="peak-card-meta-row">
             <span class="peak-card-meta-label">Completed</span>
