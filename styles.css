@@ -53,9 +53,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 .topbar .row1{display:flex;flex-direction:column;gap:12px}
 .progress-wrap{width:100%}
 .progress-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
-.progress{height:10px;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden;background:#000}
-.bar{height:100%;background:#fff;width:0}
-.list-title{flex:1;text-align:center;font-size:24px;font-weight:700;letter-spacing:.3px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.progress{height:8px;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden;background:#000}
+.bar{height:100%;background:linear-gradient(90deg, #22c55e, #16a34a);width:0}
+.list-title{flex:1;text-align:center;font-size:38px;font-weight:700;letter-spacing:.3px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- Controls row ---------- */
 .controls{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--ctrl-gap);align-items:center}
@@ -303,7 +303,136 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   }
 }
 
-/* ---------- Icons ---------- */
+/* List View */
+.list-view{
+  width:100%;
+  display:none;
+}
+
+.list-view.active{
+  display:table;
+}
+
+.list-view-header{
+  display:table-row;
+  background:var(--panel);
+  font-weight:600;
+  border-bottom:1px solid var(--border);
+}
+
+.list-view-header-cell{
+  display:table-cell;
+  padding:12px;
+  border-right:1px solid var(--border);
+  font-size:0.9rem;
+  text-transform:uppercase;
+  color:var(--ink-weak);
+}
+
+.list-view-header-cell:last-child{
+  border-right:none;
+}
+
+.list-view-row{
+  display:table-row;
+  border-bottom:1px solid var(--border);
+}
+
+.list-view-row:hover{
+  background:var(--card);
+}
+
+.list-view-cell{
+  display:table-cell;
+  padding:12px;
+  border-right:1px solid var(--border);
+  color:var(--ink);
+  font-size:0.9rem;
+  word-break:break-word;
+}
+
+.list-view-cell:last-child{
+  border-right:none;
+}
+
+.list-view-cell.rank{
+  width:60px;
+  text-align:center;
+  font-weight:600;
+}
+
+.list-view-cell.name{
+  width:25%;
+}
+
+.list-view-cell.elev{
+  width:120px;
+  text-align:right;
+}
+
+.list-view-cell.range{
+  width:25%;
+}
+
+.list-view-cell.date{
+  width:160px;
+  text-align:center;
+}
+
+.list-view-cell.completed{
+  width:60px;
+  text-align:center;
+}
+
+.list-view-cell.completed img{
+  cursor:pointer;
+  width:20px;
+  height:20px;
+}
+
+.list-view-cell input[type="date"]{
+  background:var(--input-bg);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:4px 6px;
+  color:var(--ink);
+  font-size:0.85rem;
+  min-width:130px;
+}
+
+/* Compact View (Grid without images) */
+.grid-view.compact .peak-card-thumb{
+  display:none;
+}
+
+.grid-view.compact .peak-card{
+  padding:12px;
+}
+
+.grid-view.compact .peak-card-body{
+  padding:0;
+  gap:6px;
+}
+
+.grid-view.compact .peak-card-body h3{
+  font-size:0.95rem;
+  margin:0 0 6px 0;
+}
+
+.grid-view.compact .peak-card-meta-row{
+  font-size:0.75rem;
+  padding:2px 0;
+}
+
+.grid-view.compact .peak-card-meta-label{
+  font-size:0.65rem;
+}
+
+@media (max-width:960px){
+  .list-view{
+    display:none !important;
+  }
+}
 .check{width:26px;height:26px;cursor:pointer;filter:drop-shadow(0 0 0 rgba(0,0,0,0));transition:transform .05s ease}
 .check:active{ transform:scale(.96) }
 
@@ -688,3 +817,34 @@ html, body{-webkit-transform:translate3d(0, 0, 0)}
 
 /* Allow overflow on main app */
 .app{overflow:visible}
+
+#progressText{font-size:1.3rem;font-weight:500}
+
+/* List View */
+.list-view{width:100%;display:none}
+.list-view.active{display:table}
+.list-view-header{display:table-row;background:var(--panel);font-weight:600;border-bottom:1px solid var(--border)}
+.list-view-header-cell{display:table-cell;padding:12px;border-right:1px solid var(--border);font-size:.9rem;text-transform:uppercase;color:var(--ink-weak)}
+.list-view-header-cell:last-child{border-right:none}
+.list-view-row{display:table-row;border-bottom:1px solid var(--border)}
+.list-view-row:hover{background:var(--card)}
+.list-view-cell{display:table-cell;padding:12px;border-right:1px solid var(--border);color:var(--ink);font-size:.9rem;word-break:break-word}
+.list-view-cell:last-child{border-right:none}
+.list-view-cell.rank{width:60px;text-align:center;font-weight:600}
+.list-view-cell.name{width:25%}
+.list-view-cell.elev{width:120px;text-align:right}
+.list-view-cell.range{width:25%}
+.list-view-cell.date{width:160px;text-align:center}
+.list-view-cell.completed{width:60px;text-align:center}
+.list-view-cell.completed img{cursor:pointer;width:20px;height:20px}
+.list-view-cell input[type="date"]{background:var(--input-bg);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--ink);font-size:.85rem;min-width:130px}
+
+/* Compact View (Grid without images) */
+.grid-view.compact .peak-card-thumb{display:none}
+.grid-view.compact .peak-card{padding:12px}
+.grid-view.compact .peak-card-body{padding:0;gap:6px}
+.grid-view.compact .peak-card-body h3{font-size:.95rem;margin:0 0 6px 0}
+.grid-view.compact .peak-card-meta-row{font-size:.75rem;padding:2px 0}
+.grid-view.compact .peak-card-meta-label{font-size:.65rem}
+
+@media (max-width:960px){.list-view{display:none !important}}

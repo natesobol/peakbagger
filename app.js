@@ -225,7 +225,7 @@ let hideCompleted = false;
 let sortMode = 'rank';
 let meters = false;
 let lastTotalItems = 0;  // Track total items for pagination
-let gridMode = false;
+let gridMode = 'grid';  // 'grid', 'list', 'compact'
 let completionsGrid = {};
 let completions = {};
 
@@ -411,7 +411,7 @@ function reflectAuthUI() {
   }
   loadState();
   loadGrid();
-  renderGrid();
+  renderView();
   if (me && currentList) restoreFromRemote(me.email, currentList).catch(() => {});
 }
 
@@ -578,7 +578,7 @@ function applyUnitsFlag(flag) {
   meters = flag;
   metersToggle.checked = meters;
   unitLabel.textContent = meters ? 'Meters (m)' : 'Feet (ft)';
-  renderGrid();
+  renderView();
   const prefs = readPrefs();
   prefs.meters = meters;
   writePrefs(prefs);
@@ -744,7 +744,7 @@ function updatePager(total, from, to) {
 function gotoPage(p) {
   const { p: clamped } = pageBounds(p, PAGE_SIZE, lastTotalItems);
   PAGE = clamped;
-  renderGrid();
+  renderView();
   try {
     const mainEl = document.querySelector('main.panel');
     const y = mainEl?.getBoundingClientRect().top + window.scrollY - 8;
@@ -808,7 +808,7 @@ function toggleComplete(peakName) {
   saveState();
   queueRemoteSave();
   playPingSound();
-  renderGrid();
+  renderView();
 }
 
 function playPingSound() {
@@ -841,6 +841,109 @@ function renderProgressBase(allItems) {
   const pct = total ? Math.round(done / total * 100) : 0;
   bar.style.width = pct + '%';
   progressText.textContent = `${done}/${total} • ${pct}%`;
+}
+
+/* ======= Render View Router ======= */
+async function renderView() {
+  const gridView = document.getElementById('grid-view');
+  const listView = document.getElementById('list-view');
+  
+  if (gridMode === 'list') {
+    gridView.innerHTML = '';
+    gridView.style.display = 'none';
+    listView.style.display = 'table';
+    await renderList();
+  } else if (gridMode === 'compact') {
+    listView.style.display = 'none';
+    gridView.style.display = 'grid';
+    gridView.classList.add('compact');
+    await renderGrid();
+  } else {
+    listView.style.display = 'none';
+    gridView.style.display = 'grid';
+    gridView.classList.remove('compact');
+    await renderGrid();
+  }
+}
+
+/* ======= Render List (Table View) ======= */
+async function renderList() {
+  const listView = document.getElementById('list-view');
+  if (!currentList) {
+    listView.innerHTML = '';
+    return;
+  }
+
+  const q = searchEl.value.trim().toLowerCase();
+  const allItems = (await baseItemsFor(currentList)).map(it => {
+    const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
+    return { ...it, completed: !!c.done, date: c.date || '' };
+  });
+
+  // Sort
+  allItems.sort((a, b) => {
+    if (sortMode === 'name') return a.name.localeCompare(b.name);
+    if (sortMode === 'elev') return (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0);
+    if (sortMode === 'status') return (b.completed ? 1 : 0) - (a.completed ? 1 : 0) || a.rank - b.rank;
+    return a.rank - b.rank;
+  });
+
+  // Filter
+  let items = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  if (hideCompleted) items = items.filter(it => !it.completed);
+
+  // Progress
+  renderProgressBase(allItems);
+
+  // Pagination
+  const total = items.length;
+  lastTotalItems = total;
+  const { p, start, end } = pageBounds(PAGE, PAGE_SIZE, total);
+  PAGE = p;
+  const pageItems = items.slice(start, end);
+  updatePager(total, total ? (start + 1) : 0, end);
+
+  listView.innerHTML = `
+    <div class="list-view-header">
+      <div class="list-view-header-cell rank">Rank</div>
+      <div class="list-view-header-cell name">Name</div>
+      <div class="list-view-header-cell elev">Elevation</div>
+      <div class="list-view-header-cell range">Range</div>
+      <div class="list-view-header-cell date">Date</div>
+      <div class="list-view-header-cell completed">Done</div>
+    </div>
+  `;
+
+  for (const it of pageItems) {
+    const elevStr = fmtElevation(it.elevation_ft ?? null) || '—';
+    const nhData = NH48_DATA?.[it.slug] || {};
+    const rangeStr = (nhData['Range / Subrange'] || '—').replace(/^Range[:\s]+/i, '').trim() || '—';
+
+    const row = document.createElement('div');
+    row.className = 'list-view-row';
+    row.innerHTML = `
+      <div class="list-view-cell rank">${it.rank}</div>
+      <div class="list-view-cell name" style="cursor:pointer;text-decoration:underline;color:var(--accent)">${it.name}</div>
+      <div class="list-view-cell elev">${elevStr}</div>
+      <div class="list-view-cell range">${rangeStr}</div>
+      <div class="list-view-cell date"><input type="date" class="list-date-input" value="${it.date || ''}" data-name="${it.name}" /></div>
+      <div class="list-view-cell completed"><img class="list-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" loading="lazy" /></div>
+    `;
+
+    // Event handlers
+    row.querySelector('.name')?.addEventListener('click', () => openDetail(it));
+    const dateInput = row.querySelector('.list-date-input');
+    dateInput?.addEventListener('click', e => e.stopPropagation());
+    dateInput?.addEventListener('change', () => {
+      if (dateInput.value) setDateFor(it.name, dateInput.value);
+    });
+    row.querySelector('.list-check')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleComplete(it.name);
+    });
+
+    listView.appendChild(row);
+  }
 }
 
 /* ======= Render Grid (Cards View) ======= */
@@ -1119,12 +1222,12 @@ async function renderTable() {
       tr.querySelector('.grid-save')?.addEventListener('click', e => {
         e.stopPropagation();
         setGridDate(currentList, it.name, activeMonth, dateEl.value);
-        renderGrid();
+        renderView();
       });
       tr.querySelector('.grid-clear')?.addEventListener('click', e => {
         e.stopPropagation();
         setGridDate(currentList, it.name, activeMonth, '');
-        renderGrid();
+        renderView();
       });
     }
 
@@ -1178,7 +1281,7 @@ async function changeList(name) {
   currentList = name;
   PAGE = 1;
   if (listTitle) listTitle.textContent = currentList || '—';
-  await renderGrid();
+  await renderView();
   const me = currentUser();
   if (me) restoreFromRemote(me.email, currentList).catch(() => {});
 }
@@ -1187,12 +1290,12 @@ async function changeList(name) {
 // Event Handlers
 // =====================================================
 listSelect.onchange = async () => { await changeList(listSelect.value); };
-searchEl.oninput = () => { PAGE = 1; renderGrid(); };
+searchEl.oninput = () => { PAGE = 1; renderView(); };
 
 // Sync mobile search with desktop search
 const mobileSearch = document.getElementById('mobileSearch');
 if (mobileSearch) {
-  mobileSearch.oninput = () => { searchEl.value = mobileSearch.value; PAGE = 1; renderGrid(); };
+  mobileSearch.oninput = () => { searchEl.value = mobileSearch.value; PAGE = 1; renderView(); };
   searchEl.addEventListener('input', () => { mobileSearch.value = searchEl.value; });
 }
 
@@ -1202,13 +1305,13 @@ sortBtn.onclick = () => {
   sortMode = modes[idx];
   sortLabel.textContent = (sortMode === 'elev' ? 'Elevation' : sortMode === 'status' ? 'Status' : sortMode[0].toUpperCase() + sortMode.slice(1));
   PAGE = 1;
-  renderGrid();
+  renderView();
 };
 showBtn.onclick = () => {
   hideCompleted = !hideCompleted;
   showBtn.innerHTML = hideCompleted ? '<span class="ico">◎</span> <span>Show completed</span>' : '<span class="ico">◯</span> <span>Hide completed</span>';
   PAGE = 1;
-  renderGrid();
+  renderView();
 };
 exportBtn.onclick = async () => {
   const base = await baseItemsFor(currentList);
@@ -1240,10 +1343,16 @@ tosAgree.addEventListener('change', () => { doSignupBtn.disabled = !tosAgree.che
 const modeBtn = document.getElementById('modeBtn');
 const modeLabel = document.getElementById('modeLabel');
 modeBtn.onclick = () => {
-  gridMode = !gridMode;
-  modeLabel.textContent = gridMode ? 'Grid' : 'Checklist';
+  const isMobile = window.innerWidth < 960;
+  const modes = isMobile ? ['grid'] : ['grid', 'list', 'compact'];
+  const currentIdx = modes.indexOf(gridMode);
+  const nextIdx = (currentIdx + 1) % modes.length;
+  gridMode = modes[nextIdx];
+  
+  const modeLabels = { grid: 'Grid', list: 'List', compact: 'Compact' };
+  modeLabel.textContent = modeLabels[gridMode];
   PAGE = 1;
-  renderGrid();
+  renderView();
 };
 
 if (openAuthBtn) openAuthBtn.onclick = () => openModal();
