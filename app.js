@@ -118,10 +118,28 @@ async function fetchListItems(name) {
     const url = `${NH48_API_REPO_URL}/${jsonFileName}`;
     const r = await fetch(url, { mode: 'cors' });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const items = await r.json();
+    const data = await r.json();
     
-    // Ensure items is an array and add rank
-    const itemArray = Array.isArray(items) ? items : (items.items ?? []);
+    // Convert object to array (peaks are keyed by slug in the JSON)
+    let itemArray;
+    if (Array.isArray(data)) {
+      // If it's already an array, use it directly
+      itemArray = data;
+    } else if (typeof data === 'object' && data !== null) {
+      // If it's an object (keyed by slug), convert to array
+      itemArray = Object.entries(data).map(([slug, peakData]) => {
+        // Ensure peak has a slug and peakName
+        if (!peakData.slug) peakData.slug = slug;
+        if (!peakData.peakName && !peakData['Peak Name']) {
+          peakData.peakName = slug;
+        }
+        return peakData;
+      });
+    } else {
+      throw new Error('Invalid data format: expected object or array');
+    }
+    
+    // Add rank based on position
     return itemArray.map((p, i) => ({ rank: i + 1, ...p }));
   } catch (e) {
     console.error('Failed to load items for ' + name, e);
