@@ -2,6 +2,15 @@
 // ES6 Module with async/await support
 
 // =====================================================
+// Supabase Client Setup
+// =====================================================
+const supabaseUrl = 'https://uobvavnsstrgyezcklib.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvYnZhdm5zc3RyZ3llemNrbGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODEzNTksImV4cCI6MjA4MTA1NzM1OX0.KL32AFytJcOC5RPEPlWlCzBDiA8N_Su9qb0yXT2n2ZI';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+let currentUser = null;
+
+// =====================================================
 // NH48 API Integration Constants & Helpers
 // =====================================================
 const NH48_API_URL = 'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json';
@@ -141,16 +150,91 @@ const LIST_TO_JSON_MAP = {
 const NH48_API_REPO_URL = 'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data';
 
 async function fetchAllLists() {
-  // Return the list names from the mapping
-  return Object.keys(LIST_TO_JSON_MAP);
+  try {
+    // Load lists from Supabase
+    const { data: lists, error } = await supabase
+      .from('lists')
+      .select('slug, name')
+      .order('name');
+    
+    if (error) throw error;
+    
+    // Return array of list names (to match existing API)
+    return lists.map(l => l.name);
+  } catch (e) {
+    console.error('Failed to load lists from Supabase:', e);
+    // Fallback to static list
+    return Object.keys(LIST_TO_JSON_MAP);
+  }
 }
 
 async function fetchListItems(name) {
+  try {
+    // First, try to get peaks from Supabase
+    const { data: lists } = await supabase
+      .from('lists')
+      .select('id, slug')
+      .eq('name', name)
+      .single();
+    
+    if (lists) {
+      // Get peaks for this list via list_peaks join
+      const { data: listPeaks, error } = await supabase
+        .from('list_peaks')
+        .select('rank, peak_id, peaks!inner(*)')
+        .eq('list_id', lists.id)
+        .order('rank');
+      
+      if (error) throw error;
+      
+      if (listPeaks && listPeaks.length > 0) {
+        // Transform to match the existing format
+        const items = listPeaks.map(lp => {
+          const peak = lp.peaks;
+          return {
+            rank: lp.rank,
+            slug: peak.slug,
+            name: peak.name,
+            elevation_ft: peak.elevation_ft,
+            prominence_ft: peak.prominence_ft,
+            range: peak.range,
+            coords_text: peak.coords_text,
+            ...peak.metadata // Spread metadata for optional fields
+          };
+        });
+        
+        console.log(`Loaded ${items.length} peaks from Supabase for ${name}`);
+        
+        // Merge with NH48 API photos data
+        await fetchNh48Data();
+        items.forEach(item => {
+          const slug = getSlugForName(item.name);
+          const nh48Data = NH48_DATA?.[slug];
+          if (nh48Data) {
+            item.photos = nh48Data.photos || [];
+            // Also merge any missing fields from NH48 API
+            if (!item.range && nh48Data['Range / Subrange']) {
+              item.range = nh48Data['Range / Subrange'];
+            }
+            if (!item.prominence_ft && nh48Data['Prominence (ft)']) {
+              item.prominence_ft = nh48Data['Prominence (ft)'];
+            }
+          }
+        });
+        
+        return items;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load from Supabase, falling back to static JSON:', e);
+  }
+  
+  // Fallback to the original static JSON approach
   const jsonFileName = LIST_TO_JSON_MAP[name];
   if (!jsonFileName) throw new Error('Unknown list: ' + name);
   
   try {
-    const url = `${NH48_API_REPO_URL}/${jsonFileName}?t=` + Date.now();  // Cache buster
+    const url = `${NH48_API_REPO_URL}/${jsonFileName}?t=` + Date.now();
     console.log('Fetching from:', url);
     const r = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
     console.log('Fetch response status:', r.status, r.statusText);
@@ -161,72 +245,47 @@ async function fetchListItems(name) {
     // Convert object to array (peaks are keyed by slug in the JSON)
     let itemArray;
     if (Array.isArray(data)) {
-      // If it's already an array, normalize each item
       itemArray = data.map((peakData, idx) => {
         const normalized = { ...peakData };
-        
-        // Ensure slug is set
         if (!normalized.slug) normalized.slug = normalized.peakname?.toLowerCase().replace(/\s+/g, '-') || `peak-${idx}`;
-        
-        // Normalize peak name (try multiple field names)
         if (!normalized.name) {
           normalized.name = normalized.peakName || normalized['Peak Name'] || normalized.peakname || normalized.name || 'Unknown';
         }
-        
-        // Ensure elevation_ft is available (try multiple field names)
         if (!normalized.elevation_ft) {
           normalized.elevation_ft = normalized['Elevation (ft)'] || normalized.elevation || normalized['elevation_ft'];
         }
-        
-        // Ensure elevation is a number
         if (normalized.elevation_ft && typeof normalized.elevation_ft === 'string') {
           const parsed = parseFloat(normalized.elevation_ft);
           normalized.elevation_ft = isNaN(parsed) ? 0 : parsed;
         } else if (!normalized.elevation_ft) {
           normalized.elevation_ft = 0;
         }
-        
         return normalized;
       });
     } else if (typeof data === 'object' && data !== null) {
-      // If it's an object (keyed by slug), convert to array
       itemArray = Object.entries(data).map(([keySlug, peakData]) => {
-        // Normalize the data structure
         const normalized = { ...peakData };
-        
-        // Ensure slug is set
         if (!normalized.slug) normalized.slug = keySlug;
-        
-        // Normalize peak name (try multiple field names)
         if (!normalized.name) {
           normalized.name = normalized.peakName || normalized['Peak Name'] || normalized.peakname || keySlug;
         }
-        
-        // Ensure elevation_ft is available (try multiple field names)
         if (!normalized.elevation_ft) {
           normalized.elevation_ft = normalized['Elevation (ft)'] || normalized.elevation || normalized['elevation_ft'];
         }
-        
-        // Ensure elevation is a number
         if (normalized.elevation_ft && typeof normalized.elevation_ft === 'string') {
           const parsed = parseFloat(normalized.elevation_ft);
           normalized.elevation_ft = isNaN(parsed) ? 0 : parsed;
         } else if (!normalized.elevation_ft) {
           normalized.elevation_ft = 0;
         }
-        
         return normalized;
       });
     } else {
       throw new Error('Invalid data format: expected object or array');
     }
     
-    console.log('Normalized items for', name, ':', itemArray.slice(0, 3));  // Log first 3 items
-    
-    // Sort by elevation (descending) so highest peaks are ranked first
+    console.log('Normalized items for', name, ':', itemArray.slice(0, 3));
     itemArray.sort((a, b) => (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0));
-    
-    // Add rank based on elevation order
     return itemArray.map((p, i) => ({ rank: i + 1, ...p }));
   } catch (e) {
     console.error('Failed to load items for ' + name, e);
@@ -306,48 +365,8 @@ let gridMode = 'grid';  // 'grid', 'list', 'compact'
 let completionsGrid = {};
 let completions = {};
 
-// Local storage keys and utilities
-const USERS_KEY = 'pb_users_v1';
-const SESSION_KEY = 'pb_session_v1';
+// Local storage keys and utilities (still used for preferences)
 const PREF_KEY = 'pb_prefs_v1';
-
-function getUsers() {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function putUsers(u) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(u));
-}
-
-function getSession() {
-  return localStorage.getItem(SESSION_KEY) || '';
-}
-
-function setSession(email) {
-  if (email) localStorage.setItem(SESSION_KEY, email);
-  else localStorage.removeItem(SESSION_KEY);
-}
-
-function currentUser() {
-  const email = getSession();
-  if (!email) return null;
-  const u = getUsers()[email];
-  return u ? { email, ...u } : null;
-}
-
-function stateKey() {
-  const em = getSession() || 'guest';
-  return 'peakbagger_web_state_v3_' + em;
-}
-
-function gridKey() {
-  const em = getSession() || 'guest';
-  return 'peakbagger_web_grid_v1_' + em;
-}
 
 function readPrefs() {
   try {
@@ -359,11 +378,236 @@ function readPrefs() {
 
 function writePrefs(p) {
   localStorage.setItem(PREF_KEY, JSON.stringify(p));
+  
+  // Also save to Supabase if logged in
+  if (currentUser) {
+    saveUserSettingsToSupabase(p);
+  }
 }
 
+// Save user settings to Supabase
+async function saveUserSettingsToSupabase(prefs) {
+  if (!currentUser) return;
+  
+  try {
+    await supabase.from('user_settings').upsert({
+      user_id: currentUser.id,
+      theme: prefs.theme || 'dark',
+      view_mode: gridMode || 'grid',
+      grid_enabled: false,
+      default_list_id: null,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  } catch (e) {
+    console.error('Failed to save settings to Supabase:', e);
+  }
+}
+
+// Load user settings from Supabase
+async function loadUserSettingsFromSupabase() {
+  if (!currentUser) return null;
+  
+  try {
+    const { data: settings } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .single();
+    
+    return settings;
+  } catch (e) {
+    console.error('Failed to load settings from Supabase:', e);
+    return null;
+  }
+}
+
+// Load state from Supabase
+async function loadStateFromSupabase() {
+  if (!currentUser || !currentList) {
+    completions = {};
+    return;
+  }
+  
+  try {
+    // Get the list ID first
+    const { data: lists } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('slug', slugify(currentList))
+      .single();
+    
+    if (!lists) {
+      completions = {};
+      return;
+    }
+    
+    const listId = lists.id;
+    
+    // Load user progress for this list
+    const { data: progressRows } = await supabase
+      .from('user_peak_progress')
+      .select('peak_id, completed, first_completed_at, last_completed_at, peaks(slug, name)')
+      .eq('user_id', currentUser.id)
+      .eq('list_id', listId)
+      .eq('completed', true);
+    
+    completions[currentList] = {};
+    if (progressRows) {
+      progressRows.forEach(row => {
+        const peakName = row.peaks?.name || `peak-${row.peak_id}`;
+        completions[currentList][peakName] = {
+          checked: true,
+          date: row.first_completed_at || row.last_completed_at || ''
+        };
+      });
+    }
+  } catch (e) {
+    console.error('Failed to load state from Supabase:', e);
+    completions = {};
+  }
+}
+
+// Save state to Supabase
+async function saveStateToSupabase(peakName, checked, date) {
+  if (!currentUser || !currentList) return;
+  
+  try {
+    // Get the list ID
+    const { data: lists } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('slug', slugify(currentList))
+      .single();
+    
+    if (!lists) return;
+    
+    const listId = lists.id;
+    
+    // Get the peak ID by name
+    const { data: peaks } = await supabase
+      .from('peaks')
+      .select('id')
+      .eq('name', peakName)
+      .single();
+    
+    if (!peaks) return;
+    
+    const peakId = peaks.id;
+    
+    // Upsert the progress
+    await supabase
+      .from('user_peak_progress')
+      .upsert({
+        user_id: currentUser.id,
+        list_id: listId,
+        peak_id: peakId,
+        completed: checked,
+        first_completed_at: checked ? (date || new Date().toISOString()) : null,
+        last_completed_at: checked ? (date || new Date().toISOString()) : null
+      }, { onConflict: 'user_id,list_id,peak_id' });
+  } catch (e) {
+    console.error('Failed to save state to Supabase:', e);
+  }
+}
+
+// Load grid from Supabase
+async function loadGridFromSupabase() {
+  if (!currentUser || !currentList) {
+    completionsGrid = {};
+    return;
+  }
+  
+  try {
+    const { data: lists } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('slug', slugify(currentList))
+      .single();
+    
+    if (!lists) {
+      completionsGrid = {};
+      return;
+    }
+    
+    const listId = lists.id;
+    
+    // Load grid cells for this list
+    const { data: gridCells } = await supabase
+      .from('user_peak_grid_cells')
+      .select('peak_id, month, completed_at, peaks(name)')
+      .eq('user_id', currentUser.id)
+      .eq('list_id', listId);
+    
+    completionsGrid[currentList] = {};
+    if (gridCells) {
+      gridCells.forEach(cell => {
+        const peakName = cell.peaks?.name || `peak-${cell.peak_id}`;
+        if (!completionsGrid[currentList][peakName]) {
+          completionsGrid[currentList][peakName] = { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "", "9": "", "10": "", "11": "", "12": "" };
+        }
+        completionsGrid[currentList][peakName][String(cell.month)] = cell.completed_at || '';
+      });
+    }
+  } catch (e) {
+    console.error('Failed to load grid from Supabase:', e);
+    completionsGrid = {};
+  }
+}
+
+// Save grid to Supabase
+async function saveGridToSupabase(peakName, month, date) {
+  if (!currentUser || !currentList) return;
+  
+  try {
+    const { data: lists } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('slug', slugify(currentList))
+      .single();
+    
+    if (!lists) return;
+    
+    const listId = lists.id;
+    
+    const { data: peaks } = await supabase
+      .from('peaks')
+      .select('id')
+      .eq('name', peakName)
+      .single();
+    
+    if (!peaks) return;
+    
+    const peakId = peaks.id;
+    
+    if (date) {
+      await supabase
+        .from('user_peak_grid_cells')
+        .upsert({
+          user_id: currentUser.id,
+          list_id: listId,
+          peak_id: peakId,
+          month: parseInt(month),
+          completed_at: date
+        }, { onConflict: 'user_id,list_id,peak_id,month' });
+    } else {
+      // Delete the cell if date is empty
+      await supabase
+        .from('user_peak_grid_cells')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('list_id', listId)
+        .eq('peak_id', peakId)
+        .eq('month', parseInt(month));
+    }
+  } catch (e) {
+    console.error('Failed to save grid to Supabase:', e);
+  }
+}
+
+// Backward compatibility - keep localStorage functions for fallback
 function loadState() {
   try {
-    const raw = localStorage.getItem(stateKey());
+    const raw = localStorage.getItem('peakbagger_web_state_v3_guest');
     completions = raw ? (JSON.parse(raw).completions || {}) : {};
   } catch {
     completions = {};
@@ -371,23 +615,19 @@ function loadState() {
 }
 
 function saveState() {
-  try {
-    localStorage.setItem(stateKey(), JSON.stringify({ completions }));
-  } catch {}
+  // No-op for now - we're using Supabase
 }
 
 function loadGrid() {
   try {
-    completionsGrid = JSON.parse(localStorage.getItem(gridKey()) || '{}');
+    completionsGrid = JSON.parse(localStorage.getItem('peakbagger_web_grid_v1_guest') || '{}');
   } catch {
     completionsGrid = {};
   }
 }
 
 function saveGrid() {
-  try {
-    localStorage.setItem(gridKey(), JSON.stringify(completionsGrid));
-  } catch {}
+  // No-op for now - we're using Supabase
 }
 
 // =====================================================
@@ -408,6 +648,10 @@ function ensureGridRecord(list, peak) {
 function setGridDate(list, peak, month, dateStr) {
   const rec = ensureGridRecord(list, peak);
   rec[String(month)] = dateStr || "";
+  
+  // Save to Supabase
+  saveGridToSupabase(peak, month, dateStr);
+  
   saveGrid();
   // Sync classic mode
   const months = Object.values(rec).filter(Boolean);
@@ -416,6 +660,10 @@ function setGridDate(list, peak, month, dateStr) {
   completions[list][peak] ??= { done: false, date: '' };
   completions[list][peak].done = any;
   completions[list][peak].date = any ? months.sort().slice(-1)[0] : '';
+  
+  // Also save classic mode to Supabase
+  saveStateToSupabase(peak, any, completions[list][peak].date);
+  
   saveState();
   queueRemoteSave();
 }
@@ -429,56 +677,76 @@ function getMonthDate(list, peak, month) {
 }
 
 // =====================================================
-// Authentication
+// Authentication with Supabase
 // =====================================================
-async function sha256(text) {
-  const enc = new TextEncoder().encode(text);
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function mkSalt(len = 12) {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let s = '';
-  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-}
-
 async function signUp(name, email, pass, opts = {}) {
   email = (email || '').trim().toLowerCase();
   if (!name || !email || !pass) throw new Error('Please enter name, email, and password.');
   if (!opts.tosAgreed) throw new Error('Please agree to the Terms & Conditions.');
-  const users = getUsers();
-  if (users[email]) throw new Error('An account already exists for this email.');
-  const salt = mkSalt();
-  const hash = await sha256(salt + '|' + pass);
-  users[email] = { name, email, salt, hash, tosAcceptedAt: new Date().toISOString(), tosVersion: TOS_VERSION };
-  putUsers(users);
-  setSession(email);
-  return users[email];
+  
+  const { data, error } = await supabase.auth.signUp({
+    email: email,
+    password: pass,
+    options: {
+      data: {
+        name: name,
+        tosAcceptedAt: new Date().toISOString(),
+        tosVersion: TOS_VERSION
+      }
+    }
+  });
+  
+  if (error) throw new Error(error.message);
+  
+  // Also create user_settings record with default settings
+  if (data.user) {
+    await supabase.from('user_settings').upsert({
+      user_id: data.user.id,
+      theme: 'dark',
+      view_mode: 'grid',
+      grid_enabled: false,
+      default_list_id: null
+    }, { onConflict: 'user_id' });
+  }
+  
+  currentUser = data.user;
+  return data.user;
 }
 
 async function signIn(email, pass) {
   email = (email || '').trim().toLowerCase();
-  const users = getUsers();
-  const u = users[email];
-  if (!u) throw new Error('No account for that email.');
-  const guess = await sha256(u.salt + '|' + pass);
-  if (guess !== u.hash) throw new Error('Wrong password.');
-  setSession(email);
-  return u;
+  
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: pass
+  });
+  
+  if (error) throw new Error(error.message);
+  currentUser = data.user;
+  return data.user;
 }
 
-function signOut() {
-  setSession('');
+async function signOut() {
+  await supabase.auth.signOut();
+  currentUser = null;
 }
 
-function reflectAuthUI() {
-  const me = currentUser();
+async function getCurrentUserData() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) {
+    console.error('Error getting current user:', error);
+    return null;
+  }
+  currentUser = user;
+  return user;
+}
+
+async function reflectAuthUI() {
+  const me = await getCurrentUserData();
   if (me) {
     signedOutBox.style.display = 'none';
     signedInBox.style.display = '';
-    meNameEl.textContent = me.name || me.email;
+    meNameEl.textContent = me.user_metadata?.name || me.email;
     meEmailEl.textContent = me.email || '';
   } else {
     signedOutBox.style.display = '';
@@ -486,11 +754,26 @@ function reflectAuthUI() {
     meNameEl.textContent = '';
     meEmailEl.textContent = '';
   }
-  loadState();
-  loadGrid();
+  
+  // Load data from Supabase instead of localStorage
+  await loadStateFromSupabase();
+  await loadGridFromSupabase();
   renderView();
-  if (me && currentList) restoreFromRemote(me.email, currentList).catch(() => {});
 }
+
+// Listen for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state changed:', event, session?.user?.email);
+  if (event === 'SIGNED_IN') {
+    currentUser = session.user;
+    reflectAuthUI();
+  } else if (event === 'SIGNED_OUT') {
+    currentUser = null;
+    completions = {};
+    completionsGrid = {};
+    reflectAuthUI();
+  }
+});
 
 // =====================================================
 // Modal Helpers
@@ -731,54 +1014,17 @@ function summarizeCompletions(list, allItems) {
 
 let saveTimer = null;
 function queueRemoteSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => saveToRemote().catch(() => {}), 400);
+  // No-op: We're saving directly to Supabase in real-time now
+  // This function is kept for backward compatibility
 }
 
 async function saveToRemote() {
-  const me = currentUser();
-  if (!me || !currentList) return;
-  const items = await baseItemsFor(currentList);
-  const body = {
-    email: me.email,
-    list: currentList,
-    grid: completionsGrid[currentList] || {},
-    completions: summarizeCompletions(currentList, items),
-    updatedAt: new Date().toISOString()
-  };
-  try {
-    await fetch(API + '/peakbagger_progress', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-  } catch (_e) {
-    // stay silent
-  }
+  // No-op: We're saving directly to Supabase in real-time now
 }
 
 async function restoreFromRemote(email, list) {
-  try {
-    const r = await fetch(API + '/peakbagger_progress?email=' + encodeURIComponent(email) + '&list=' + encodeURIComponent(list));
-    if (!r.ok) return;
-    const data = await r.json();
-    if (!data || !data.record) return;
-
-    const remoteGrid = data.record.grid || {};
-    completionsGrid[list] = { ...(completionsGrid[list] || {}), ...remoteGrid };
-    saveGrid();
-
-    completions[list] ??= {};
-    Object.entries(completionsGrid[list]).forEach(([peak, monthsObj]) => {
-      const dates = Object.values(monthsObj || {}).filter(Boolean).sort();
-      completions[list][peak] = {
-        done: dates.length > 0,
-        date: dates.slice(-1)[0] || ''
-      };
-    });
-    saveState();
-    renderTable();
-  } catch (_e) {}
+  // No-op: We're loading from Supabase directly now
+  // This function is kept for backward compatibility
 }
 
 // =====================================================
@@ -902,6 +1148,10 @@ function setDateFor(peakName, dateStr) {
   if (dateStr && !completions[currentList][peakName].done) {
     completions[currentList][peakName].done = true;
   }
+  
+  // Save to Supabase
+  saveStateToSupabase(peakName, !!dateStr, dateStr);
+  
   saveState();
   queueRemoteSave();
   renderTable();
@@ -921,6 +1171,10 @@ function toggleComplete(peakName) {
     }
   }
   completions[currentList][peakName] = rec;
+  
+  // Save to Supabase
+  saveStateToSupabase(peakName, rec.done, rec.date);
+  
   saveState();
   queueRemoteSave();
   playPingSound();
@@ -1441,8 +1695,11 @@ async function changeList(name) {
   } catch (e) {
     console.error('❌ Error rendering list:', e);
   }
-  const me = currentUser();
-  if (me) restoreFromRemote(me.email, currentList).catch(() => {});
+  // Load data from Supabase for the new list
+  if (currentUser) {
+    await loadStateFromSupabase();
+    await loadGridFromSupabase();
+  }
 }
 
 // =====================================================
@@ -1604,8 +1861,11 @@ if (doSignupBtn) doSignupBtn.onclick = async () => {
 
     if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
 
-    reflectAuthUI();
-    loadGrid();
+    // Initialize auth state
+    await getCurrentUserData();
+    await reflectAuthUI();
+    
+    await loadGridFromSupabase();
     ALL_LISTS = await fetchAllLists();
     const preferred = 'NH 48';
     currentList = ALL_LISTS.includes(preferred) ? preferred : (ALL_LISTS[0] || '');
@@ -1615,6 +1875,6 @@ if (doSignupBtn) doSignupBtn.onclick = async () => {
     await changeList(currentList);
   } catch (e) {
     console.error(e);
-    rows.innerHTML = `<tr><td colspan="6" class="subtle">Couldn't load lists. Check that <code>/_functions/peakbagger_lists</code> and <code>/_functions/peakbagger_list</code> are published.</td></tr>`;
+    rows.innerHTML = `<tr><td colspan="6" class="subtle">Couldn't load data. Please check your connection.</td></tr>`;
   }
 })();
