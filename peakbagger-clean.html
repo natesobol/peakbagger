@@ -183,6 +183,53 @@
       <!-- List view (table format) -->
       <div id="list-view" class="list-view"></div>
 
+      <!-- Full-page Peak Detail View -->
+      <div id="peakDetailPage" class="peak-detail-page" style="display:none">
+        <div class="peak-detail-header">
+          <button id="peakDetailBackBtn" class="btn btn-ghost btn-small" style="margin-bottom:16px">← Back to Peakbagger</button>
+          <h1 id="peakDetailTitle" style="margin:0 0 8px 0">—</h1>
+          <p id="peakDetailSub" class="subtle" style="margin:0">Quick facts, weather & helpful links.</p>
+        </div>
+
+        <div id="peakDetailPhotos" class="peak-detail-photos"></div>
+
+        <div class="peak-detail-grid">
+          <!-- Fast facts -->
+          <section class="fact">
+            <h3>Fast facts</h3>
+            <div class="kv"><span>Elevation</span><strong id="peakDetailElev">—</strong></div>
+            <div class="kv"><span>Date completed</span><input type="date" id="peakDetailDateInput" class="date-input" value="" /></div>
+            <div class="kv"><span>Location</span><strong id="peakDetailLocation">—</strong></div>
+            <div class="kv"><span>Prominence</span><strong id="peakDetailProm">—</strong></div>
+            <div class="kv"><span>Difficulty</span><strong id="peakDetailDiff">—</strong></div>
+          </section>
+
+          <!-- Weather -->
+          <section class="fact">
+            <h3>Weather</h3>
+            <p class="subtle small">Forecast links open in a new tab. NOAA point forecasts work best near the summit.</p>
+            <div class="links-col">
+              <a class="btn-link" id="peakWxNoaa" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Point Forecast</a>
+              <a class="btn-link" id="peakWxOpenMeteo" href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">Open-Meteo (lat/lon)</a>
+              <a class="btn-link" id="peakWxTrailsNH" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
+              <a class="btn-link" id="peakWxMWOBS" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
+            </div>
+          </section>
+
+          <!-- Learn more -->
+          <section class="fact">
+            <h3>Learn more</h3>
+            <div class="links-col">
+              <a class="btn-link" id="peakLnkWikipedia" href="https://en.wikipedia.org/wiki/" target="_blank" rel="noopener">Wikipedia</a>
+              <a class="btn-link" id="peakLnkPeakbagger" href="https://www.peakbagger.com/" target="_blank" rel="noopener">Peakbagger</a>
+              <a class="btn-link" id="peakLnkAllTrails" href="https://www.alltrails.com/" target="_blank" rel="noopener">AllTrails</a>
+              <a class="btn-link" id="peakLnkSummitPost" href="https://www.summitpost.org/" target="_blank" rel="noopener">SummitPost</a>
+              <a class="btn-link" id="peakLnkMaps" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>
+            </div>
+          </section>
+        </div>
+      </div>
+
       <!-- Table view (hidden by default) -->
       <table id="table-view" style="display:none">
         <thead>
@@ -205,65 +252,6 @@
       </div>
     </main>
   </div>
-</div>
-
-<!-- Detail Slide-in (REPLACED/EXPANDED) -->
-<div class="detail-wrap" id="detail" aria-live="polite">
-  <div class="detail-head">
-    <div class="detail-title" id="detailTitle">—</div>
-    <button class="detail-close" id="detailClose" aria-label="Close details">Close</button>
-  </div>
-
-  <p class="subtle" id="detailSub" style="margin:6px 0 12px">
-    Quick facts, weather & helpful links. (Your progress stays private on this device.)
-  </p>
-
-  <!-- NEW: Photos for detail -->
-  <div id="detailPhotos"></div>
-
-  <div class="detail-grid">
-    <!-- Fast facts -->
-    <section class="fact">
-      <h3>Fast facts</h3>
-      <div class="kv"><span>Elevation</span><strong id="detailElev">—</strong></div>
-      <!-- Replace strong with editable date input -->
-      <div class="kv"><span>Date completed</span><input type="date" id="detailDateInput" class="date-input" value="" /></div>
-      <div class="kv"><span>Location</span><strong id="detailLocation" data-empty="—">—</strong></div>
-      <div class="kv"><span>Prominence</span><strong id="detailProm" data-empty="—">—</strong></div>
-      <div class="kv"><span>Difficulty</span><strong id="detailDiff" data-empty="—">—</strong></div>
-    </section>
-
-    <!-- Weather (link-first, embed later if desired) -->
-    <section class="fact">
-      <h3>Weather</h3>
-      <p class="subtle small">
-        Forecast links open in a new tab. NOAA point forecasts work best near the summit.
-      </p>
-      <div class="links-col">
-        <a class="btn-link" id="wxNoaa" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Point Forecast</a>
-        <a class="btn-link" id="wxOpenMeteo" href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">Open-Meteo (lat/lon)
-        </a>
-        <a class="btn-link" id="wxTrailsNH" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
-        <a class="btn-link" id="wxMWOBS" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
-      </div>
-    </section>
-
-    <!-- Helpful links (search-first, API later) -->
-    <section class="fact">
-      <h3>Learn more</h3>
-      <div class="links-col">
-        <a class="btn-link" id="lnkWikipedia" href="https://en.wikipedia.org/wiki/Special:Search?search=White+Mountains+NH+peak" target="_blank" rel="noopener">Wikipedia</a>
-        <a class="btn-link" id="lnkPeakbagger" href="https://www.peakbagger.com/" target="_blank" rel="noopener">Peakbagger</a>
-        <a class="btn-link" id="lnkAllTrails" href="https://www.alltrails.com/search?q=White+Mountains+NH" target="_blank" rel="noopener">AllTrails</a>
-        <a class="btn-link" id="lnkSummitPost" href="https://www.summitpost.org/object_list.php?object_type=1&orderby=objectname%20ASC&object_name=New%20Hampshire" target="_blank" rel="noopener">SummitPost</a>
-        <a class="btn-link" id="lnkMaps" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>
-      </div>
-      <p class="subtle xsmall" style="margin-top:8px">
-        These links are generic for now; they'll auto-target this mountain when dynamic data is enabled.
-      </p>
-    </section>
-  </div>
-</div>
 
 <!-- Auth Modal -->
 <div class="modal" id="authModal" aria-hidden="true">

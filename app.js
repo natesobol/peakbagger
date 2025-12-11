@@ -32,12 +32,20 @@ function buildSlugMap() {
   if (!NH48_DATA) return;
   Object.entries(NH48_DATA).forEach(([slug, entry]) => {
     const names = [];
+    // Try multiple field names for peak names
     if (entry.peakName) names.push(entry.peakName);
     if (entry['Peak Name']) names.push(entry['Peak Name']);
+    if (entry.name) names.push(entry.name);
+    if (entry['Name']) names.push(entry['Name']);
+    // Also add the slug itself as a name variant
+    names.push(slug);
+    
     names.forEach(n => {
       const key = (n || '').toLowerCase().trim();
       if (!key) return;
       NH48_SLUG_MAP[key] = slug;
+      
+      // Try variations without 'mount' and 'mountain'
       if (key.startsWith('mount ')) {
         const base = key.replace(/^mount\s+/, '').trim();
         NH48_SLUG_MAP[base] = slug;
@@ -46,6 +54,9 @@ function buildSlugMap() {
         const base2 = key.replace(/\s*mountain$/, '').trim();
         NH48_SLUG_MAP[base2] = slug;
       }
+      // Try hyphenated versions
+      const hyphenated = key.replace(/\s+/g, '-');
+      if (hyphenated !== key) NH48_SLUG_MAP[hyphenated] = slug;
     });
   });
 }
@@ -62,10 +73,32 @@ const _imagesCache = new Map();
 async function fetchPeakImages(slug) {
   if (_imagesCache.has(slug)) return _imagesCache.get(slug);
   try {
-    const r = await fetch(API + '/nh48_images?peak=' + encodeURIComponent(slug));
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    const imgs = Array.isArray(data?.images) ? data.images : [];
+    // Try multiple slug variations
+    const slugVariants = [
+      slug,
+      slug.replace(/^mount-/, ''),  // remove mount- prefix
+      slug.replace(/-mountain$/, ''),  // remove -mountain suffix
+      slug.replace(/\s+/g, '-'),  // try hyphenated version
+      slugify(slug),  // try slugified version
+    ].filter((v, i, arr) => arr.indexOf(v) === i);  // deduplicate
+    
+    let imgs = [];
+    for (const variant of slugVariants) {
+      try {
+        const r = await fetch(API + '/nh48_images?peak=' + encodeURIComponent(variant));
+        if (r.ok) {
+          const data = await r.json();
+          const images = Array.isArray(data?.images) ? data.images : [];
+          if (images.length > 0) {
+            imgs = images;
+            break;  // Found images, stop trying variants
+          }
+        }
+      } catch (e) {
+        // Try next variant
+      }
+    }
+    
     _imagesCache.set(slug, imgs);
     return imgs;
   } catch (e) {
@@ -150,7 +183,10 @@ async function fetchListItems(name) {
       throw new Error('Invalid data format: expected object or array');
     }
     
-    // Add rank based on position
+    // Sort by elevation (descending) so highest peaks are ranked first
+    itemArray.sort((a, b) => (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0));
+    
+    // Add rank based on elevation order
     return itemArray.map((p, i) => ({ rank: i + 1, ...p }));
   } catch (e) {
     console.error('Failed to load items for ' + name, e);
@@ -444,34 +480,55 @@ function placeholderFor(name, w = 800, h = 420) {
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
-async function openDetail(it) {
-  dTitle.textContent = it.name;
-  dElev.textContent = fmtElevation(it.elevation_ft ?? null) || '—';
-  dDate.value = completions[currentList]?.[it.name]?.date || '';
+async function openPeakDetail(it) {
+  // Store current item for back button and updates
+  window._currentPeakDetail = it;
+  
+  // Show peak detail page, hide main content
+  document.getElementById('peakDetailPage').style.display = 'block';
+  document.querySelector('.content').style.display = 'none';
+  document.querySelector('.topbar').style.display = 'none';
 
+  // Set title and subtitle
+  document.getElementById('peakDetailTitle').textContent = it.name;
+  
   const slug = getSlugForName(it.name);
   const data = NH48_DATA?.[slug] || null;
 
-  dLocation.textContent = data?.["Range / Subrange"] || '—';
-  if (dLocation.textContent === '') dLocation.textContent = '—';
-  const promFt = data?.["Prominence (ft)"];
-  dProm.textContent = promFt ? (meters ? Math.round(promFt * 0.3048) + ' m' : promFt + ' ft') : '—';
-  dDiff.textContent = data?.Difficulty || '—';
+  // Update fast facts
+  document.getElementById('peakDetailElev').textContent = fmtElevation(it.elevation_ft ?? null) || '—';
+  document.getElementById('peakDetailLocation').textContent = data?.["Range / Subrange"] || data?.Range || '—';
+  if (document.getElementById('peakDetailLocation').textContent === '') {
+    document.getElementById('peakDetailLocation').textContent = '—';
+  }
+  
+  const promFt = data?.["Prominence (ft)"] || data?.Prominence_ft;
+  document.getElementById('peakDetailProm').textContent = promFt ? (meters ? Math.round(promFt * 0.3048) + ' m' : promFt + ' ft') : '—';
+  document.getElementById('peakDetailDiff').textContent = data?.Difficulty || '—';
+  
+  // Set date input
+  document.getElementById('peakDetailDateInput').value = completions[currentList]?.[it.name]?.date || '';
+  document.getElementById('peakDetailDateInput').onchange = () => {
+    const val = document.getElementById('peakDetailDateInput').value;
+    if (val) setDateFor(it.name, val);
+  };
 
-  const photoContainer = document.getElementById('detailPhotos');
+  // Load and display photos
+  const photoContainer = document.getElementById('peakDetailPhotos');
   photoContainer.innerHTML = '';
   let photos = [];
 
-  if (data && Array.isArray(data.photos) && data.photos.length > 0 && data.photos[0].url) {
-    photos = data.photos.filter(p => p && p.url);
+  if (data && Array.isArray(data.photos) && data.photos.length > 0) {
+    photos = data.photos.filter(p => p && (p.url || p.image_url));
   } else {
-    const apiImgs = await fetchPeakImages(slug);
-    photos = apiImgs.map(img => ({ url: img.url || img.thumb || '', caption: img.caption || '' })).filter(p => p.url);
-  }
-
-  if (photoContainer._carouselTimer) {
-    clearInterval(photoContainer._carouselTimer);
-    photoContainer._carouselTimer = null;
+    try {
+      const apiImgs = await fetchPeakImages(slug);
+      if (apiImgs && apiImgs.length > 0) {
+        photos = apiImgs.map(img => ({ url: img.url || img.thumb || img.image_url || '', caption: img.caption || '' })).filter(p => p.url);
+      }
+    } catch (e) {
+      console.error('Failed to load photos:', e);
+    }
   }
 
   if (photos.length > 0) {
@@ -485,7 +542,9 @@ async function openDetail(it) {
     img.src = photos[0].url;
     img.className = 'carousel-main-img';
     img.loading = 'lazy';
+    img.onerror = () => { img.src = placeholderFor(it.name, 800, 420); };
     main.appendChild(img);
+    
     const prevBtn = document.createElement('button');
     prevBtn.className = 'carousel-prev';
     prevBtn.textContent = '‹';
@@ -507,6 +566,7 @@ async function openDetail(it) {
       t.alt = it.name + ' thumbnail';
       t.dataset.i = String(i);
       t.loading = 'lazy';
+      t.onerror = () => { t.src = placeholderFor(it.name, 60, 60); };
       t.addEventListener('click', (e) => { e.stopPropagation(); setIndex(i); });
       return t;
     };
@@ -560,10 +620,12 @@ async function openDetail(it) {
     ph.appendChild(pimg);
     photoContainer.appendChild(ph);
   }
+}
 
-  dDate.onclick = (e) => e.stopPropagation();
-  dDate.onchange = () => { if (dDate.value) setDateFor(it.name, dDate.value); };
-  detail.classList.add('open');
+function closePeakDetail() {
+  document.getElementById('peakDetailPage').style.display = 'none';
+  document.querySelector('.content').style.display = 'flex';
+  document.querySelector('.topbar').style.display = 'block';
 }
 
 // =====================================================
@@ -917,7 +979,7 @@ async function renderList() {
   for (const it of pageItems) {
     const elevStr = fmtElevation(it.elevation_ft ?? null) || '—';
     const nhData = NH48_DATA?.[it.slug] || {};
-    const rangeStr = (nhData['Range / Subrange'] || '—').replace(/^Range[:\s]+/i, '').trim() || '—';
+    const rangeStr = (nhData['Range / Subrange'] || '—').replace(/^Range\s*[:\-\s]*/i, '').trim() || '—';
 
     const row = document.createElement('div');
     row.className = 'list-view-row';
@@ -931,7 +993,7 @@ async function renderList() {
     `;
 
     // Event handlers
-    row.querySelector('.name')?.addEventListener('click', () => openDetail(it));
+    row.querySelector('.name')?.addEventListener('click', () => openPeakDetail(it));
     const dateInput = row.querySelector('.list-date-input');
     dateInput?.addEventListener('click', e => e.stopPropagation());
     dateInput?.addEventListener('change', () => {
@@ -1005,7 +1067,7 @@ async function renderGrid() {
     const elevStr = fmtElevation(it.elevation_ft ?? null) || '—';
     const nhData = NH48_DATA?.[slug] || {};
     const promStr = nhData['Prominence (ft)'] ? fmtElevation(nhData['Prominence (ft)']) : '—';
-    const rangeStr = (nhData['Range / Subrange'] || '—').replace(/^Range[:\s]+/i, '').trim() || '—';
+    const rangeStr = (nhData['Range / Subrange'] || '—').replace(/^Range\s*[:\-\s]*/i, '').trim() || '—';
     const trailStr = nhData['Trail Type'] || '—';
     const diffStr = nhData['Difficulty'] || '—';
     const expStr = nhData['Exposure Level'] || nhData['Weather Exposure Rating'] || '—';
@@ -1042,7 +1104,7 @@ async function renderGrid() {
     `;
 
     // Event handlers
-    card.addEventListener('click', () => openDetail(it));
+    card.addEventListener('click', () => openPeakDetail(it));
     const dateInput = card.querySelector('.card-date-input');
     dateInput?.addEventListener('click', e => e.stopPropagation());
     dateInput?.addEventListener('change', () => {
@@ -1193,8 +1255,8 @@ async function renderTable() {
       tr.classList.add('completed');
     }
 
-    tr.querySelector('[data-cell="name"]')?.addEventListener('click', () => openDetail(it));
-    tr.querySelector('[data-cell="open"]')?.addEventListener('click', () => openDetail(it));
+    tr.querySelector('[data-cell="name"]')?.addEventListener('click', () => openPeakDetail(it));
+    tr.querySelector('[data-cell="open"]')?.addEventListener('click', () => openPeakDetail(it));
 
     if (!gridMode) {
       const dateInput = tr.querySelector('.date-input');
@@ -1342,6 +1404,7 @@ tosAgree.addEventListener('change', () => { doSignupBtn.disabled = !tosAgree.che
 
 const modeBtn = document.getElementById('modeBtn');
 const modeLabel = document.getElementById('modeLabel');
+if (modeLabel) modeLabel.textContent = 'Grid';  // Initialize to Grid
 modeBtn.onclick = () => {
   const isMobile = window.innerWidth < 960;
   const modes = isMobile ? ['grid'] : ['grid', 'list', 'compact'];
@@ -1354,6 +1417,12 @@ modeBtn.onclick = () => {
   PAGE = 1;
   renderView();
 };
+
+// Peak detail page back button
+const peakDetailBackBtn = document.getElementById('peakDetailBackBtn');
+if (peakDetailBackBtn) {
+  peakDetailBackBtn.onclick = () => closePeakDetail();
+}
 
 if (openAuthBtn) openAuthBtn.onclick = () => openModal();
 if (closeAuthBtn) closeAuthBtn.onclick = () => closeModal();
