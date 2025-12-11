@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Peakbagger's Journal Web</title>
+
+<!-- SEO -->
+<meta name="description" content="Peakbagger's Journal Web — a private, offline-friendly checklist to track progress on the NH 48 and other peak lists. Toggle units, export to XLSX, and learn more about each mountain." />
+<link rel="canonical" href="https://www.nh48pics.com/peakbagger" />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Peakbagger's Journal Web" />
+<meta property="og:description" content="Track your NH 48 and other lists privately, offline-friendly. Clean UI, XLSX export, mountain detail panel, and more." />
+<meta property="og:url" content="https://www.nh48pics.com/peakbagger" />
+<meta property="og:site_name" content="NH48pics" />
+<meta property="og:image" content="https://www.nh48pics.com/_files/og/peakbagger-og.jpg" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Peakbagger's Journal Web" />
+<meta name="twitter:description" content="Private, offline-friendly checklist for NH 48 and more." />
+<meta name="twitter:image" content="https://www.nh48pics.com/_files/og/peakbagger-og.jpg" />
+
+<!-- JSON-LD: SoftwareApplication -->
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"SoftwareApplication",
+  "name":"Peakbagger's Journal Web",
+  "applicationCategory":"LifestyleApplication",
+  "operatingSystem":"Web",
+  "author":{"@type":"Person","name":"Nathan Sobol"},
+  "description":"A private, offline-friendly checklist to track peakbagging progress (e.g., NH 48), including units toggle, XLSX export, and a mountain detail panel.",
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
+  "url":"https://www.nh48pics.com/peakbagger"
+}
+</script>
+
+<!-- External stylesheet -->
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="row1">
+      <div class="progress-wrap">
+        <div class="progress-head">
+          <span id="unitToggle" class="ctrl-btn" title="Toggle units"><span class="ico">⚙️</span><span id="unitLabel">Feet (ft)</span></span>
+
+          <!-- NEW: centered list title -->
+          <div id="listTitle" class="list-title">—</div>
+
+          <span id="progressText" class="subtle">0/0 • 0%</span>
+        </div>
+        <div class="progress" aria-label="progress"><div class="bar" id="bar"></div></div>
+      </div>
+      <div class="controls">
+        <div class="ctrl"><span class="ico">🔎</span><input id="search" type="search" placeholder="Search peaks…" /></div>
+        <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">⚙️</span> <span>Sort: <strong id="sortLabel">Rank</strong></span></div>
+        <div class="ctrl-btn" id="showComplete"><span class="ico">◯</span> <span>Hide completed</span></div>
+        <!-- NEW: Mode toggle (Checklist / Grid) -->
+        <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🔁</span> <span>Mode: <strong id="modeLabel">Checklist</strong></span></div>
+        <div class="ctrl-btn" id="exportBtn"><span class="ico">🗄️</span> <span>Export XLSX</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="logo" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border-strong)" loading="lazy" />
+        <div>
+          <h1 style="margin:0">Peakbagger (Web)</h1>
+          <div class="subtle">Private to this embed</div>
+        </div>
+      </div>
+
+      <a class="app-promo" href="https://apps.apple.com/us/app/peakbaggers-journal/idXXXXXXXXX" target="_blank" rel="noopener">
+        <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger's Journal iOS icon" loading="lazy">
+        <div class="app-promo__meta">
+          <div class="app-promo__title">Peakbagger's Journal (iOS)</div>
+          <div class="app-promo__sub">Available on the App Store</div>
+        </div>
+        <span class="btn btn-primary btn-small app-promo__cta">View</span>
+      </a>
+
+      <div class="auth" id="authCard">
+        <div id="authSignedOut">
+          <div class="row">
+            <div>
+              <div class="subtle">You're not signed in</div>
+              <div style="font-size:13px;color:var(--ink)">Sign in to save your progress</div>
+            </div>
+            <button class="btn btn-primary btn-small" id="openAuth">Sign in</button>
+          </div>
+        </div>
+        <div id="authSignedIn" style="display:none">
+          <div class="row" style="align-items:flex-start">
+            <div>
+              <div class="subtle">Signed in</div>
+              <div id="meName" style="font-weight:600;margin-top:2px"></div>
+              <div id="meEmail" class="subtle"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+              <button class="btn btn-ghost btn-small" id="logoutBtn">Sign out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <label for="listSelect" class="subtle" style="font-size:14px">Choose List:</label>
+        <select id="listSelect" class="select" style="width:100%;margin-top:6px"></select>
+      </div>
+
+      <details id="settingsDetails" class="collapsible-section"><summary>Settings</summary><div class="settings">
+        <div class="row">
+          <label>Units: meters</label>
+          <label class="switch"><input id="metersToggle" type="checkbox"><span class="slider"></span></label>
+        </div>
+
+        <!-- NEW: Row density -->
+        <div class="row">
+          <label>Row density: <strong id="densityLabel">Comfortable</strong></label>
+          <label class="switch"><input id="densityToggle" type="checkbox"><span class="slider"></span></label>
+        </div>
+        <!-- NEW: Sticky header -->
+        <div class="row">
+          <label>Sticky header</label>
+          <label class="switch"><input id="stickyToggle" type="checkbox"><span class="slider"></span></label>
+        </div>
+      </div></details>
+
+      <!-- Themes dropdown (pre-collapsed) -->
+      <details id="themeDetails" class="collapsible-section"><summary>Themes</summary>
+        <div class="panel" style="margin-top:8px">
+          <label for="themeSelect" class="subtle">Choose theme</label>
+          <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
+            <option value="dark">Dark (default)</option>
+            <option value="light">Light (white & black)</option>
+            <option value="forest">Forest Green</option>
+            <option value="sky">Sky Blue</option>
+          </select>
+        </div>
+      </details>
+
+      <!-- NEW: Resources panel -->
+      <details id="resourcesDetails" class="collapsible-section"><summary>Resources</summary><div class="panel" style="margin-top:14px">
+        <div class="links-col">
+          <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH (trip reports)</a>
+          <a class="btn-link" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Weather</a>
+          <a class="btn-link" href="https://www.peakbagger.com/" target="_blank" rel="noopener">Peakbagger (lists & facts)</a>
+          <a class="btn-link" href="https://www.mountwashington.org/" target="_blank" rel="noopener">Mount Washington Observatory</a>
+          <a class="btn-link" href="https://www.fs.usda.gov/whitemountain" target="_blank" rel="noopener">WMNF Alerts/Notices</a>
+        </div>
+        <p class="subtle xsmall" style="margin-top:8px">External links open in a new tab.</p>
+        </div></details>
+
+      <!-- NEW: Copyright -->
+      <div class="copyright">© <span id="copyrightYear"></span> Nathan Sobol</div>
+    </aside>
+
+    <main class="panel">
+      <!-- Pagination header (Top) -->
+      <div class="pager-wrap">
+        <div class="pager-stats" id="pg-stats-top">Showing —</div>
+        <div class="page-list"  id="pg-list-top"  aria-label="Pagination (top)"></div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:64px">Rank</th>
+            <th>Mountain</th>
+            <th style="width:140px">Elevation</th>
+            <th style="width:160px">Date / Months</th>
+            <th style="width:120px">Completed</th>
+            <th style="width:48px"></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+
+      <!-- Pagination footer (Bottom) -->
+      <div class="pager-wrap">
+        <div class="pager-stats" id="pg-stats-bot">Showing —</div>
+        <div class="page-list"  id="pg-list-bot"  aria-label="Pagination (bottom)"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Detail Slide-in (REPLACED/EXPANDED) -->
+<div class="detail-wrap" id="detail" aria-live="polite">
+  <div class="detail-head">
+    <div class="detail-title" id="detailTitle">—</div>
+    <button class="detail-close" id="detailClose" aria-label="Close details">Close</button>
+  </div>
+
+  <p class="subtle" id="detailSub" style="margin:6px 0 12px">
+    Quick facts, weather & helpful links. (Your progress stays private on this device.)
+  </p>
+
+  <!-- NEW: Photos for detail -->
+  <div id="detailPhotos"></div>
+
+  <div class="detail-grid">
+    <!-- Fast facts -->
+    <section class="fact">
+      <h3>Fast facts</h3>
+      <div class="kv"><span>Elevation</span><strong id="detailElev">—</strong></div>
+      <!-- Replace strong with editable date input -->
+      <div class="kv"><span>Date completed</span><input type="date" id="detailDateInput" class="date-input" value="" /></div>
+      <div class="kv"><span>Location</span><strong id="detailLocation" data-empty="—">—</strong></div>
+      <div class="kv"><span>Prominence</span><strong id="detailProm" data-empty="—">—</strong></div>
+      <div class="kv"><span>Difficulty</span><strong id="detailDiff" data-empty="—">—</strong></div>
+    </section>
+
+    <!-- Weather (link-first, embed later if desired) -->
+    <section class="fact">
+      <h3>Weather</h3>
+      <p class="subtle small">
+        Forecast links open in a new tab. NOAA point forecasts work best near the summit.
+      </p>
+      <div class="links-col">
+        <a class="btn-link" id="wxNoaa" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Point Forecast</a>
+        <a class="btn-link" id="wxOpenMeteo" href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">Open-Meteo (lat/lon)
+        </a>
+        <a class="btn-link" id="wxTrailsNH" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
+        <a class="btn-link" id="wxMWOBS" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
+      </div>
+    </section>
+
+    <!-- Helpful links (search-first, API later) -->
+    <section class="fact">
+      <h3>Learn more</h3>
+      <div class="links-col">
+        <a class="btn-link" id="lnkWikipedia" href="https://en.wikipedia.org/wiki/Special:Search?search=White+Mountains+NH+peak" target="_blank" rel="noopener">Wikipedia</a>
+        <a class="btn-link" id="lnkPeakbagger" href="https://www.peakbagger.com/" target="_blank" rel="noopener">Peakbagger</a>
+        <a class="btn-link" id="lnkAllTrails" href="https://www.alltrails.com/search?q=White+Mountains+NH" target="_blank" rel="noopener">AllTrails</a>
+        <a class="btn-link" id="lnkSummitPost" href="https://www.summitpost.org/object_list.php?object_type=1&orderby=objectname%20ASC&object_name=New%20Hampshire" target="_blank" rel="noopener">SummitPost</a>
+        <a class="btn-link" id="lnkMaps" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>
+      </div>
+      <p class="subtle xsmall" style="margin-top:8px">
+        These links are generic for now; they'll auto-target this mountain when dynamic data is enabled.
+      </p>
+    </section>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal" id="authModal" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <h2 id="authTitle">Sign in</h2>
+    <div class="subtle" id="authSubtitle">Use email and password just for this web app.</div>
+
+    <div class="field"><label for="authName">Name (for new accounts)</label><input id="authName" type="text" placeholder="Your name" autocomplete="name"></div>
+    <div class="field"><label for="authEmail">Email</label><input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+    <div class="field"><label for="authPass">Password</label><input id="authPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+
+    <!-- NEW: Terms & Conditions -->
+    <div class="tos-toggle" id="tosToggle">📄 View Terms & Conditions</div>
+    <div class="tos-box" id="tosBox">
+      <div id="tosText"></div>
+    </div>
+    <label class="tos-agree">
+      <input type="checkbox" id="tosAgree" />
+      <span>I agree to the Terms & Conditions</span>
+    </label>
+
+    <div class="row-actions">
+      <button class="btn btn-primary" id="doSignin">Sign in</button>
+      <button class="btn btn-ghost" id="doSignup" disabled>Create account</button>
+      <span class="space"></span>
+      <button class="btn btn-ghost" id="closeAuth">Close</button>
+    </div>
+    <div id="authMsg" class="note" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- XLSX lib -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- Settings labels sync (capitalized) -->
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+  const metersToggle=document.getElementById('metersToggle');
+  const themeSelect = document.getElementById('themeSelect');
+  const metersLabel=metersToggle.closest('.row').querySelector('label');
+  const updMeters=()=>{metersLabel.textContent='Units: '+(metersToggle.checked?'Meters':'Feet')};
+  updMeters();
+  metersToggle.addEventListener('change',updMeters);
+  // sync theme select default from prefs if present
+  try{ const prefs = JSON.parse(localStorage.getItem('pb_prefs_v1')||'{}'); if (themeSelect && prefs.theme) themeSelect.value = prefs.theme; }catch(e){}
+});
+</script>
+
+<!-- App Module -->
+<script type="module" src="app.js"></script>
+
+<!-- Reset helper (unchanged + grid key) -->
+<button id="pbReset" style="border:1px solid #ff8a8a;border-radius:8px;padding:8px 10px;background:#1a1a1a;color:#fff;cursor:pointer">
+  Reset all local data
+</button>
+<script>
+  (function(){
+    const KEYS_PREFIX = ['peakbagger_web_state_v3_', 'peakbagger_web_grid_v1_', 'pb_'];
+    document.getElementById('pbReset')?.addEventListener('click', () => {
+      if (!confirm('This will erase your saved progress, dates, sign-in, and preferences on this device. Continue?')) return;
+      try {
+        const toDelete = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && KEYS_PREFIX.some(p => k.startsWith(p))) toDelete.push(k);
+        }
+        toDelete.forEach(k => localStorage.removeItem(k));
+        ['pb_users_v1','pb_session_v1','pb_prefs_v1'].forEach(k => localStorage.removeItem(k));
+        alert('All Peakbagger data on this device has been cleared.');
+        location.reload();
+      } catch (e) {
+        alert('Could not clear local data. You can manually clear site data in your browser settings.');
+      }
+    });
+  })();
+</script>
+
+<!-- Auto-collapse details on mobile (NEW) -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const settingsEl = document.getElementById('settingsDetails');
+    const resourcesEl = document.getElementById('resourcesDetails');
+    function toggleDetailsByWidth() {
+      const isMobile = window.innerWidth < 960;
+      if (settingsEl) {
+        if (isMobile) settingsEl.removeAttribute('open'); else settingsEl.setAttribute('open', '');
+      }
+      if (resourcesEl) {
+        if (isMobile) resourcesEl.removeAttribute('open'); else resourcesEl.setAttribute('open', '');
+      }
+    }
+    toggleDetailsByWidth();
+    window.addEventListener('resize', toggleDetailsByWidth);
+  });
+</script>
+
+<!-- Noscript notice -->
+<noscript>
+  <div style="margin:12px; padding:12px; border:1px solid #e6a100; border-radius:8px; background:#2a2000; color:#ffd87a">
+    Peakbagger's Journal needs JavaScript for list loading and saving progress. Please enable JavaScript to use the app.
+  </div>
+</noscript>
+
+<!-- Version badge -->
+<div class="app-version" aria-hidden="true">v0.8.0.1</div>
+
+</body>
+</html>

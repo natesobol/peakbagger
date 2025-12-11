@@ -1,0 +1,1086 @@
+// Peakbagger's Journal — Application Module
+// ES6 Module with async/await support
+
+// =====================================================
+// NH48 API Integration Constants & Helpers
+// =====================================================
+const NH48_API_URL = 'https://rawcdn.githack.com/natesobol/nh48-api/main/data/nh48.json';
+
+let NH48_DATA = null;
+let NH48_SLUG_MAP = {};
+
+async function fetchNh48Data() {
+  if (NH48_DATA) return NH48_DATA;
+  try {
+    const resp = await fetch(NH48_API_URL, { mode: 'cors' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    NH48_DATA = await resp.json();
+    buildSlugMap();
+  } catch (e) {
+    console.error('Failed to load NH48 data', e);
+    NH48_DATA = {};
+  }
+  return NH48_DATA;
+}
+
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function buildSlugMap() {
+  NH48_SLUG_MAP = {};
+  if (!NH48_DATA) return;
+  Object.entries(NH48_DATA).forEach(([slug, entry]) => {
+    const names = [];
+    if (entry.peakName) names.push(entry.peakName);
+    if (entry['Peak Name']) names.push(entry['Peak Name']);
+    names.forEach(n => {
+      const key = (n || '').toLowerCase().trim();
+      if (!key) return;
+      NH48_SLUG_MAP[key] = slug;
+      if (key.startsWith('mount ')) {
+        const base = key.replace(/^mount\s+/, '').trim();
+        NH48_SLUG_MAP[base] = slug;
+      }
+      if (key.endsWith(' mountain')) {
+        const base2 = key.replace(/\s*mountain$/, '').trim();
+        NH48_SLUG_MAP[base2] = slug;
+      }
+    });
+  });
+}
+
+function getSlugForName(name) {
+  const key = (name || '').toLowerCase().trim();
+  return NH48_SLUG_MAP[key] || slugify(name || '');
+}
+
+const API = location.hostname.endsWith('nh48pics.com') ? '/_functions' : 'https://www.nh48pics.com/_functions';
+
+// Images API cache
+const _imagesCache = new Map();
+async function fetchPeakImages(slug) {
+  if (_imagesCache.has(slug)) return _imagesCache.get(slug);
+  try {
+    const r = await fetch(API + '/nh48_images?peak=' + encodeURIComponent(slug));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    const imgs = Array.isArray(data?.images) ? data.images : [];
+    _imagesCache.set(slug, imgs);
+    return imgs;
+  } catch (e) {
+    console.error('Failed to load images for', slug, e);
+    _imagesCache.set(slug, []);
+    return [];
+  }
+}
+
+// =====================================================
+// List & Item Fetching
+// =====================================================
+async function fetchAllLists() {
+  const r = await fetch(API + '/peakbagger_lists');
+  if (!r.ok) throw new Error('Failed to load lists');
+  const { lists } = await r.json();
+  return lists ?? [];
+}
+
+async function fetchListItems(name) {
+  const r = await fetch(API + '/peakbagger_list?name=' + encodeURIComponent(name));
+  if (!r.ok) throw new Error('Failed to load items for ' + name);
+  const { items } = await r.json();
+  return (items ?? []).map((p, i) => ({ rank: i + 1, ...p }));
+}
+
+// =====================================================
+// DOM Elements (Cache)
+// =====================================================
+const listSelect = document.getElementById('listSelect');
+const rows = document.getElementById('rows');
+const bar = document.getElementById('bar');
+const progressText = document.getElementById('progressText');
+const searchEl = document.getElementById('search');
+const sortBtn = document.getElementById('sortBtn');
+const sortLabel = document.getElementById('sortLabel');
+const showBtn = document.getElementById('showComplete');
+const exportBtn = document.getElementById('exportBtn');
+const unitToggle = document.getElementById('unitToggle');
+const unitLabel = document.getElementById('unitLabel');
+const metersToggle = document.getElementById('metersToggle');
+const themeSelect = document.getElementById('themeSelect');
+const openAuthBtn = document.getElementById('openAuth');
+const logoutBtn = document.getElementById('logoutBtn');
+const authModal = document.getElementById('authModal');
+const authName = document.getElementById('authName');
+const authEmail = document.getElementById('authEmail');
+const authPass = document.getElementById('authPass');
+const doSigninBtn = document.getElementById('doSignin');
+const doSignupBtn = document.getElementById('doSignup');
+const closeAuthBtn = document.getElementById('closeAuth');
+const authMsg = document.getElementById('authMsg');
+const meNameEl = document.getElementById('meName');
+const meEmailEl = document.getElementById('meEmail');
+const signedOutBox = document.getElementById('authSignedOut');
+const signedInBox = document.getElementById('authSignedIn');
+const detail = document.getElementById('detail');
+const dTitle = document.getElementById('detailTitle');
+const dElev = document.getElementById('detailElev');
+const dDate = document.getElementById('detailDateInput');
+const dLocation = document.getElementById('detailLocation');
+const dProm = document.getElementById('detailProm');
+const dDiff = document.getElementById('detailDiff');
+const listTitle = document.getElementById('listTitle');
+const densityToggle = document.getElementById('densityToggle');
+const stickyToggle = document.getElementById('stickyToggle');
+const densityLabel = document.getElementById('densityLabel');
+const copyrightYear = document.getElementById('copyrightYear');
+const tosToggle = document.getElementById('tosToggle');
+const tosBox = document.getElementById('tosBox');
+const tosAgree = document.getElementById('tosAgree');
+const tosTextEl = document.getElementById('tosText');
+
+document.getElementById('detailClose').onclick = () => detail.classList.remove('open');
+
+// =====================================================
+// Asset URLs
+// =====================================================
+const CHECKED_IMG = "https://static.wixstatic.com/media/66b1b2_43cfcfcd91f6481694959e1baed6f5cf~mv2.png";
+const UNCHECKED_IMG = "https://static.wixstatic.com/media/66b1b2_bf1066c3b19041c29c150fc56658b841~mv2.png";
+const TOS_VERSION = '1.0';
+const TERMS_TEXT = `<strong>Peakbagger's Journal – Terms & Conditions (v${TOS_VERSION})</strong><br><br>1) Local, offline-first storage. 2) No resale of your data. 3) Outdoor safety is your responsibility. 4) Clearing browser data will remove local progress. 5) Email + hashed password are stored locally for sign-in on this device.`;
+
+// =====================================================
+// State Management
+// =====================================================
+let ALL_LISTS = [];
+let currentList = '';
+const cache = new Map();
+let hideCompleted = false;
+let sortMode = 'rank';
+let meters = false;
+let gridMode = false;
+let completionsGrid = {};
+let completions = {};
+
+// Local storage keys and utilities
+const USERS_KEY = 'pb_users_v1';
+const SESSION_KEY = 'pb_session_v1';
+const PREF_KEY = 'pb_prefs_v1';
+
+function getUsers() {
+  try {
+    return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function putUsers(u) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(u));
+}
+
+function getSession() {
+  return localStorage.getItem(SESSION_KEY) || '';
+}
+
+function setSession(email) {
+  if (email) localStorage.setItem(SESSION_KEY, email);
+  else localStorage.removeItem(SESSION_KEY);
+}
+
+function currentUser() {
+  const email = getSession();
+  if (!email) return null;
+  const u = getUsers()[email];
+  return u ? { email, ...u } : null;
+}
+
+function stateKey() {
+  const em = getSession() || 'guest';
+  return 'peakbagger_web_state_v3_' + em;
+}
+
+function gridKey() {
+  const em = getSession() || 'guest';
+  return 'peakbagger_web_grid_v1_' + em;
+}
+
+function readPrefs() {
+  try {
+    return JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function writePrefs(p) {
+  localStorage.setItem(PREF_KEY, JSON.stringify(p));
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(stateKey());
+    completions = raw ? (JSON.parse(raw).completions || {}) : {};
+  } catch {
+    completions = {};
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(stateKey(), JSON.stringify({ completions }));
+  } catch {}
+}
+
+function loadGrid() {
+  try {
+    completionsGrid = JSON.parse(localStorage.getItem(gridKey()) || '{}');
+  } catch {
+    completionsGrid = {};
+  }
+}
+
+function saveGrid() {
+  try {
+    localStorage.setItem(gridKey(), JSON.stringify(completionsGrid));
+  } catch {}
+}
+
+// =====================================================
+// Grid Mode Helpers
+// =====================================================
+function ensureGridRecord(list, peak) {
+  completionsGrid[list] ??= {};
+  completionsGrid[list][peak] ??= { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "", "9": "", "10": "", "11": "", "12": "" };
+  const one = completions[list]?.[peak]?.date || "";
+  if (one) {
+    const m = new Date(one).getMonth() + 1;
+    const k = String(m);
+    if (!completionsGrid[list][peak][k]) completionsGrid[list][peak][k] = one;
+  }
+  return completionsGrid[list][peak];
+}
+
+function setGridDate(list, peak, month, dateStr) {
+  const rec = ensureGridRecord(list, peak);
+  rec[String(month)] = dateStr || "";
+  saveGrid();
+  // Sync classic mode
+  const months = Object.values(rec).filter(Boolean);
+  const any = months.length > 0;
+  completions[list] ??= {};
+  completions[list][peak] ??= { done: false, date: '' };
+  completions[list][peak].done = any;
+  completions[list][peak].date = any ? months.sort().slice(-1)[0] : '';
+  saveState();
+  queueRemoteSave();
+}
+
+function monthHasDate(list, peak, month) {
+  return !!ensureGridRecord(list, peak)[String(month)];
+}
+
+function getMonthDate(list, peak, month) {
+  return ensureGridRecord(list, peak)[String(month)] || "";
+}
+
+// =====================================================
+// Authentication
+// =====================================================
+async function sha256(text) {
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function mkSalt(len = 12) {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let s = '';
+  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+async function signUp(name, email, pass, opts = {}) {
+  email = (email || '').trim().toLowerCase();
+  if (!name || !email || !pass) throw new Error('Please enter name, email, and password.');
+  if (!opts.tosAgreed) throw new Error('Please agree to the Terms & Conditions.');
+  const users = getUsers();
+  if (users[email]) throw new Error('An account already exists for this email.');
+  const salt = mkSalt();
+  const hash = await sha256(salt + '|' + pass);
+  users[email] = { name, email, salt, hash, tosAcceptedAt: new Date().toISOString(), tosVersion: TOS_VERSION };
+  putUsers(users);
+  setSession(email);
+  return users[email];
+}
+
+async function signIn(email, pass) {
+  email = (email || '').trim().toLowerCase();
+  const users = getUsers();
+  const u = users[email];
+  if (!u) throw new Error('No account for that email.');
+  const guess = await sha256(u.salt + '|' + pass);
+  if (guess !== u.hash) throw new Error('Wrong password.');
+  setSession(email);
+  return u;
+}
+
+function signOut() {
+  setSession('');
+}
+
+function reflectAuthUI() {
+  const me = currentUser();
+  if (me) {
+    signedOutBox.style.display = 'none';
+    signedInBox.style.display = '';
+    meNameEl.textContent = me.name || me.email;
+    meEmailEl.textContent = me.email || '';
+  } else {
+    signedOutBox.style.display = '';
+    signedInBox.style.display = 'none';
+    meNameEl.textContent = '';
+    meEmailEl.textContent = '';
+  }
+  loadState();
+  loadGrid();
+  renderTable();
+  if (me && currentList) restoreFromRemote(me.email, currentList).catch(() => {});
+}
+
+// =====================================================
+// Modal Helpers
+// =====================================================
+function openModal() {
+  authModal.classList.add('open');
+  authMsg.textContent = '';
+}
+
+function closeModal() {
+  authModal.classList.remove('open');
+  authName.value = '';
+  authEmail.value = '';
+  authPass.value = '';
+  authMsg.textContent = '';
+  tosAgree.checked = false;
+  doSignupBtn.disabled = true;
+}
+
+// =====================================================
+// Detail Panel & Carousel
+// =====================================================
+function placeholderFor(name, w = 800, h = 420) {
+  const bg = encodeURIComponent('#2c2c2c');
+  const fg = encodeURIComponent('#ffffff');
+  const txt = encodeURIComponent(name || 'No Photo');
+  const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'><rect width='100%' height='100%' fill='${bg}'/><g fill='${fg}' font-family='Segoe UI, Roboto, Arial' font-weight='600' font-size='28'><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>${txt}</text></g></svg>`;
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+async function openDetail(it) {
+  dTitle.textContent = it.name;
+  dElev.textContent = fmtElevation(it.elevation_ft ?? null) || '—';
+  dDate.value = completions[currentList]?.[it.name]?.date || '';
+
+  const slug = getSlugForName(it.name);
+  const data = NH48_DATA?.[slug] || null;
+
+  dLocation.textContent = data?.["Range / Subrange"] || '—';
+  if (dLocation.textContent === '') dLocation.textContent = '—';
+  const promFt = data?.["Prominence (ft)"];
+  dProm.textContent = promFt ? (meters ? Math.round(promFt * 0.3048) + ' m' : promFt + ' ft') : '—';
+  dDiff.textContent = data?.Difficulty || '—';
+
+  const photoContainer = document.getElementById('detailPhotos');
+  photoContainer.innerHTML = '';
+  let photos = [];
+
+  if (data && Array.isArray(data.photos) && data.photos.length > 0 && data.photos[0].url) {
+    photos = data.photos.filter(p => p && p.url);
+  } else {
+    const apiImgs = await fetchPeakImages(slug);
+    photos = apiImgs.map(img => ({ url: img.url || img.thumb || '', caption: img.caption || '' })).filter(p => p.url);
+  }
+
+  if (photoContainer._carouselTimer) {
+    clearInterval(photoContainer._carouselTimer);
+    photoContainer._carouselTimer = null;
+  }
+
+  if (photos.length > 0) {
+    let idx = 0;
+    const wrap = document.createElement('div');
+    wrap.className = 'carousel-wrap';
+    const main = document.createElement('div');
+    main.className = 'carousel-main';
+    const img = document.createElement('img');
+    img.alt = it.name;
+    img.src = photos[0].url;
+    img.className = 'carousel-main-img';
+    img.loading = 'lazy';
+    main.appendChild(img);
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'carousel-prev';
+    prevBtn.textContent = '‹';
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'carousel-next';
+    nextBtn.textContent = '›';
+    main.appendChild(prevBtn);
+    main.appendChild(nextBtn);
+
+    const thumbs = document.createElement('div');
+    thumbs.className = 'carousel-thumbs';
+    const indicators = document.createElement('div');
+    indicators.className = 'carousel-indicators';
+
+    const makeThumb = (p, i) => {
+      const t = document.createElement('img');
+      t.className = 'carousel-thumb';
+      t.src = p.url;
+      t.alt = it.name + ' thumbnail';
+      t.dataset.i = String(i);
+      t.loading = 'lazy';
+      t.addEventListener('click', (e) => { e.stopPropagation(); setIndex(i); });
+      return t;
+    };
+
+    const setIndex = (n) => {
+      idx = ((n % photos.length) + photos.length) % photos.length;
+      img.src = photos[idx].url;
+      thumbs.querySelectorAll('.carousel-thumb').forEach((el) => el.classList.toggle('active', el.dataset.i == String(idx)));
+      indicators.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+    };
+
+    photos.forEach((p, i) => {
+      thumbs.appendChild(makeThumb(p, i));
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      indicators.appendChild(dot);
+    });
+
+    const AUTOPLAY_MS = 3500;
+    const startTimer = () => {
+      if (photoContainer._carouselTimer) clearInterval(photoContainer._carouselTimer);
+      photoContainer._carouselTimer = setInterval(() => { setIndex(idx + 1); }, AUTOPLAY_MS);
+    };
+    const stopTimer = () => {
+      if (photoContainer._carouselTimer) {
+        clearInterval(photoContainer._carouselTimer);
+        photoContainer._carouselTimer = null;
+      }
+    };
+
+    prevBtn.addEventListener('click', (e) => { e.stopPropagation(); setIndex(idx - 1); startTimer(); });
+    nextBtn.addEventListener('click', (e) => { e.stopPropagation(); setIndex(idx + 1); startTimer(); });
+    main.addEventListener('mouseenter', stopTimer);
+    main.addEventListener('mouseleave', startTimer);
+
+    wrap.appendChild(main);
+    wrap.appendChild(thumbs);
+    wrap.appendChild(indicators);
+    photoContainer.appendChild(wrap);
+    setIndex(0);
+    startTimer();
+  } else {
+    const ph = document.createElement('div');
+    ph.style.width = '100%';
+    ph.style.borderRadius = '8px';
+    ph.style.overflow = 'hidden';
+    const pimg = document.createElement('img');
+    pimg.alt = it.name;
+    pimg.src = placeholderFor(it.name, 800, 420);
+    pimg.loading = 'lazy';
+    ph.appendChild(pimg);
+    photoContainer.appendChild(ph);
+  }
+
+  dDate.onclick = (e) => e.stopPropagation();
+  dDate.onchange = () => { if (dDate.value) setDateFor(it.name, dDate.value); };
+  detail.classList.add('open');
+}
+
+// =====================================================
+// Appearance & Settings
+// =====================================================
+function fmtElevation(ft) {
+  if (!ft) return '';
+  return meters ? Math.round(ft * 0.3048) + ' m' : ft + ' ft';
+}
+
+function applyUnitsFlag(flag) {
+  meters = flag;
+  metersToggle.checked = meters;
+  unitLabel.textContent = meters ? 'Meters (m)' : 'Feet (ft)';
+  renderTable();
+  const prefs = readPrefs();
+  prefs.meters = meters;
+  writePrefs(prefs);
+}
+
+function applyTheme(theme) {
+  document.body.classList.remove('theme-light', 'theme-forest', 'theme-sky');
+  if (!theme || theme === 'dark') {
+    // dark = default
+  } else if (theme === 'light') {
+    document.body.classList.add('theme-light');
+  } else if (theme === 'forest') {
+    document.body.classList.add('theme-forest');
+  } else if (theme === 'sky') {
+    document.body.classList.add('theme-sky');
+  }
+  if (themeSelect) themeSelect.value = theme || 'dark';
+  const prefs = readPrefs();
+  prefs.theme = theme || 'dark';
+  writePrefs(prefs);
+}
+
+function applyDensity(compact) {
+  document.body.classList.toggle('compact-rows', !!compact);
+  if (densityToggle) densityToggle.checked = !!compact;
+  if (densityLabel) densityLabel.textContent = compact ? 'Compact' : 'Comfortable';
+  const p = readPrefs();
+  p.compact = !!compact;
+  writePrefs(p);
+}
+
+function applyStickyHeader(sticky) {
+  document.body.classList.toggle('sticky-header', !!sticky);
+  if (stickyToggle) stickyToggle.checked = !!sticky;
+  const p = readPrefs();
+  p.sticky = !!sticky;
+  writePrefs(p);
+}
+
+// =====================================================
+// Remote Persistence
+// =====================================================
+function summarizeCompletions(list, allItems) {
+  const done = allItems.filter(it => completions[list]?.[it.name]?.done).length;
+  return `${done}/${allItems.length} peaks completed`;
+}
+
+let saveTimer = null;
+function queueRemoteSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveToRemote().catch(() => {}), 400);
+}
+
+async function saveToRemote() {
+  const me = currentUser();
+  if (!me || !currentList) return;
+  const items = await baseItemsFor(currentList);
+  const body = {
+    email: me.email,
+    list: currentList,
+    grid: completionsGrid[currentList] || {},
+    completions: summarizeCompletions(currentList, items),
+    updatedAt: new Date().toISOString()
+  };
+  try {
+    await fetch(API + '/peakbagger_progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch (_e) {
+    // stay silent
+  }
+}
+
+async function restoreFromRemote(email, list) {
+  try {
+    const r = await fetch(API + '/peakbagger_progress?email=' + encodeURIComponent(email) + '&list=' + encodeURIComponent(list));
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data || !data.record) return;
+
+    const remoteGrid = data.record.grid || {};
+    completionsGrid[list] = { ...(completionsGrid[list] || {}), ...remoteGrid };
+    saveGrid();
+
+    completions[list] ??= {};
+    Object.entries(completionsGrid[list]).forEach(([peak, monthsObj]) => {
+      const dates = Object.values(monthsObj || {}).filter(Boolean).sort();
+      completions[list][peak] = {
+        done: dates.length > 0,
+        date: dates.slice(-1)[0] || ''
+      };
+    });
+    saveState();
+    renderTable();
+  } catch (_e) {}
+}
+
+// =====================================================
+// Pagination
+// =====================================================
+let PAGE = 1;
+const PAGE_SIZE = 25;
+let TOTAL_PAGES = 1;
+
+const pgStatsTop = document.getElementById('pg-stats-top');
+const pgStatsBot = document.getElementById('pg-stats-bot');
+const pgListTop = document.getElementById('pg-list-top');
+const pgListBot = document.getElementById('pg-list-bot');
+
+function pageBounds(page, size, total) {
+  const maxPages = Math.max(1, Math.ceil((total || 0) / size));
+  const p = Math.max(1, Math.min(page, maxPages));
+  const start = (p - 1) * size;
+  const end = Math.min(start + size, total);
+  return { p, start, end, maxPages };
+}
+
+function updatePager(total, from, to) {
+  const { maxPages } = pageBounds(PAGE, PAGE_SIZE, total);
+  TOTAL_PAGES = maxPages;
+
+  const label = total ? `Showing ${from}–${to} of ${total}` : 'No results';
+  if (pgStatsTop) pgStatsTop.textContent = label;
+  if (pgStatsBot) pgStatsBot.textContent = label;
+
+  const buildButtons = (host) => {
+    if (!host) return;
+    host.innerHTML = '';
+
+    const mk = (txt, disabled, onClick, aria) => {
+      const b = document.createElement('button');
+      b.className = 'page-btn';
+      b.textContent = txt;
+      if (disabled) b.disabled = true;
+      if (aria) b.setAttribute('aria-label', aria);
+      b.addEventListener('click', onClick);
+      return b;
+    };
+
+    host.appendChild(mk('«', PAGE === 1, () => gotoPage(1), 'First page'));
+    host.appendChild(mk('‹', PAGE === 1, () => gotoPage(PAGE - 1), 'Previous page'));
+
+    const windowSize = 7;
+    let start = Math.max(1, PAGE - Math.floor(windowSize / 2));
+    let end = Math.min(maxPages, start + windowSize - 1);
+    start = Math.max(1, Math.min(start, Math.max(1, end - windowSize + 1)));
+    for (let i = start; i <= end; i++) {
+      const btn = mk(String(i), false, () => gotoPage(i));
+      if (i === PAGE) btn.setAttribute('aria-current', 'page');
+      host.appendChild(btn);
+    }
+
+    host.appendChild(mk('›', PAGE === maxPages, () => gotoPage(PAGE + 1), 'Next page'));
+    host.appendChild(mk('»', PAGE === maxPages, () => gotoPage(maxPages), 'Last page'));
+  };
+
+  buildButtons(pgListTop);
+  buildButtons(pgListBot);
+}
+
+function gotoPage(p) {
+  const { p: clamped } = pageBounds(p, PAGE_SIZE, Number(rows?.dataset?.total || 0));
+  PAGE = clamped;
+  renderTable();
+  try {
+    const mainEl = document.querySelector('main.panel');
+    const y = mainEl?.getBoundingClientRect().top + window.scrollY - 8;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  } catch (_) {}
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.target && (/input|select|textarea/i).test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight') { gotoPage(PAGE + 1); }
+  if (e.key === 'ArrowLeft') { gotoPage(PAGE - 1); }
+});
+
+// =====================================================
+// Core Data & Rendering
+// =====================================================
+async function baseItemsFor(listName) {
+  if (!cache.has(listName)) {
+    cache.set(listName, await fetchListItems(listName));
+  }
+  return cache.get(listName);
+}
+
+function renderListDropdown() {
+  listSelect.innerHTML = '';
+  ALL_LISTS.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (name === currentList) opt.selected = true;
+    listSelect.appendChild(opt);
+  });
+}
+
+function setDateFor(peakName, dateStr) {
+  completions[currentList] ??= {};
+  completions[currentList][peakName] ??= { done: false, date: '' };
+  completions[currentList][peakName].date = dateStr;
+  if (dateStr && !completions[currentList][peakName].done) {
+    completions[currentList][peakName].done = true;
+  }
+  saveState();
+  queueRemoteSave();
+  renderTable();
+}
+
+function toggleComplete(peakName) {
+  completions[currentList] ??= {};
+  const rec = completions[currentList][peakName] ??= { done: false, date: '' };
+  rec.done = !rec.done;
+  if (!rec.done) rec.date = '';
+  completions[currentList][peakName] = rec;
+  saveState();
+  queueRemoteSave();
+  renderTable();
+}
+
+function renderProgressBase(allItems) {
+  const done = allItems.filter(it => completions[currentList]?.[it.name]?.done).length;
+  const total = allItems.length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  bar.style.width = pct + '%';
+  progressText.textContent = `${done}/${total} • ${pct}%`;
+}
+
+async function renderTable() {
+  if (!currentList) {
+    rows.innerHTML = '';
+    return;
+  }
+  const q = searchEl.value.trim().toLowerCase();
+
+  const allItems = (await baseItemsFor(currentList)).map(it => {
+    const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
+    return { ...it, completed: !!c.done, date: c.date || '' };
+  });
+
+  // Sort
+  allItems.sort((a, b) => {
+    if (sortMode === 'name') return a.name.localeCompare(b.name);
+    if (sortMode === 'elev') return (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0);
+    if (sortMode === 'status') return (b.completed ? 1 : 0) - (a.completed ? 1 : 0) || a.rank - b.rank;
+    return a.rank - b.rank;
+  });
+
+  // Filter
+  let items = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  if (hideCompleted) items = items.filter(it => !it.completed);
+
+  // Progress
+  renderProgressBase(allItems);
+
+  // Grid progress override
+  if (gridMode) {
+    let totalCells = items.length * 12;
+    let filled = 0;
+    items.forEach(it => {
+      const rec = ensureGridRecord(currentList, it.name);
+      filled += Object.values(rec).filter(Boolean).length;
+    });
+    const pct = totalCells ? Math.round(filled / totalCells * 100) : 0;
+    bar.style.width = pct + '%';
+    progressText.textContent = `${filled}/${totalCells} • ${pct}%`;
+  }
+
+  // Pagination
+  const total = items.length;
+  const { p, start, end } = pageBounds(PAGE, PAGE_SIZE, total);
+  PAGE = p;
+  rows.dataset.total = String(total);
+  const pageItems = items.slice(start, end);
+  updatePager(total, total ? (start + 1) : 0, end);
+
+  // Rows
+  rows.innerHTML = '';
+  for (const it of pageItems) {
+    ensureGridRecord(currentList, it.name);
+    const tr = document.createElement('tr');
+
+    // Profile image
+    const slug = getSlugForName(it.name);
+    let imgHtml = '';
+    let profileUrl = '';
+    const photoData = NH48_DATA?.[slug]?.photos;
+    const listHasImages = currentList && currentList.toLowerCase() === 'nh 48';
+    if (listHasImages && photoData && photoData.length > 0 && photoData[0].url) {
+      profileUrl = photoData[0].url;
+    } else if (listHasImages) {
+      const apiImgs = await fetchPeakImages(slug);
+      if (apiImgs.length > 0) {
+        profileUrl = apiImgs[0].thumb || apiImgs[0].url || '';
+      }
+    }
+    if (profileUrl) {
+      imgHtml = `<img src="${profileUrl}" alt="${it.name}" class="profile-img" loading="lazy" />`;
+    }
+
+    const isMobile = window.innerWidth <= 700;
+    if (imgHtml) {
+      if (isMobile) {
+        const picCell = document.createElement('td');
+        picCell.setAttribute('data-cell', 'pic');
+        picCell.innerHTML = imgHtml;
+        tr.appendChild(picCell);
+      } else {
+        const photo = document.createElement('div');
+        photo.className = 'row-photo';
+        photo.innerHTML = imgHtml;
+        tr.appendChild(photo);
+      }
+    }
+
+    if (!gridMode) {
+      // Checklist mode
+      tr.innerHTML += `
+        <td class="stat" data-cell="rank"><span class="cell-value">${it.rank}</span></td>
+        <td data-cell="name" style="text-align:center; vertical-align:middle;">
+          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
+        </td>
+        <td class="stat" data-cell="elev"><span class="cell-value">${fmtElevation(it.elevation_ft ?? null)}</span></td>
+        <td data-cell="date">
+          <input type="date" class="date-input" required value="${it.date || ''}" data-name="${it.name}">
+        </td>
+        <td class="stat" data-cell="done">
+          <img class="check js-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" loading="lazy" />
+        </td>
+        <td data-cell="open">›</td>
+      `;
+    } else {
+      // Grid mode
+      const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const chips = monthLabels.map((lbl, idx) => {
+        const m = idx + 1;
+        const done = monthHasDate(currentList, it.name, m);
+        const dot = done ? '<span class="dot"></span>' : '';
+        return `<button class="month-chip ${done ? 'done' : ''}" data-m="${m}" title="${lbl}">${lbl}${dot}</button>`;
+      }).join('');
+
+      tr.innerHTML += `
+        <td class="stat" data-cell="rank">${it.rank}</td>
+        <td data-cell="name" style="text-align:center; vertical-align:middle;">
+          <span class="mountain-link" style="cursor:pointer; display:inline-flex; align-items:center; max-width:100%;">${it.name}</span>
+        </td>
+        <td class="stat" data-cell="elev">${fmtElevation(it.elevation_ft ?? null)}</td>
+        <td data-cell="months" colspan="2">
+          <div class="grid-hint">Tap a month to add/edit a date.</div>
+          <div class="month-strip">${chips}</div>
+          <div class="month-picker">
+            <input type="date" class="grid-date" value="" />
+            <button class="btn btn-small btn-primary grid-save">Save</button>
+            <button class="btn btn-small btn-ghost grid-clear">Clear</button>
+          </div>
+        </td>
+        <td data-cell="open">›</td>
+      `;
+    }
+
+    if (it.completed) {
+      tr.classList.add('completed');
+    }
+
+    tr.querySelector('[data-cell="name"]')?.addEventListener('click', () => openDetail(it));
+    tr.querySelector('[data-cell="open"]')?.addEventListener('click', () => openDetail(it));
+
+    if (!gridMode) {
+      const dateInput = tr.querySelector('.date-input');
+      dateInput?.addEventListener('click', e => e.stopPropagation());
+      dateInput?.addEventListener('change', () => {
+        if (dateInput.value) setDateFor(it.name, dateInput.value);
+      });
+      tr.querySelector('.js-check')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleComplete(it.name);
+      });
+    } else {
+      const picker = tr.querySelector('.month-picker');
+      const dateEl = tr.querySelector('.grid-date');
+      let activeMonth = 0;
+      tr.querySelectorAll('.month-chip').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          activeMonth = parseInt(btn.dataset.m, 10);
+          dateEl.value = getMonthDate(currentList, it.name, activeMonth);
+          picker.classList.add('open');
+          dateEl.focus();
+        });
+      });
+      tr.querySelector('.grid-save')?.addEventListener('click', e => {
+        e.stopPropagation();
+        setGridDate(currentList, it.name, activeMonth, dateEl.value);
+        renderTable();
+      });
+      tr.querySelector('.grid-clear')?.addEventListener('click', e => {
+        e.stopPropagation();
+        setGridDate(currentList, it.name, activeMonth, '');
+        renderTable();
+      });
+    }
+
+    rows.appendChild(tr);
+  }
+
+  // Image preview hover handlers
+  rows.querySelectorAll('.profile-img').forEach(img => {
+    let previewEl = null;
+    const makePreview = () => {
+      if (previewEl) return previewEl;
+      previewEl = document.createElement('div');
+      previewEl.className = 'img-preview';
+      const big = document.createElement('img');
+      big.alt = img.alt || '';
+      big.src = img.src || placeholderFor(img.alt || '');
+      big.loading = 'lazy';
+      previewEl.appendChild(big);
+      document.body.appendChild(previewEl);
+      return previewEl;
+    };
+    const movePreview = (e) => {
+      const rect = img.getBoundingClientRect();
+      const px = rect.right + 10;
+      const py = Math.max(8, rect.top + window.scrollY - 8);
+      const el = previewEl;
+      if (el) {
+        el.style.left = px + 'px';
+        el.style.top = (rect.top + window.scrollY) + 'px';
+      }
+    };
+    img.addEventListener('mouseenter', (e) => {
+      makePreview();
+      previewEl.style.display = 'block';
+      movePreview(e);
+    });
+    img.addEventListener('mousemove', (e) => { if (previewEl) movePreview(e); });
+    img.addEventListener('mouseleave', () => {
+      if (previewEl) {
+        previewEl.remove();
+        previewEl = null;
+      }
+    });
+  });
+}
+
+// =====================================================
+// List Switching
+// =====================================================
+async function changeList(name) {
+  currentList = name;
+  PAGE = 1;
+  if (listTitle) listTitle.textContent = currentList || '—';
+  await renderTable();
+  const me = currentUser();
+  if (me) restoreFromRemote(me.email, currentList).catch(() => {});
+}
+
+// =====================================================
+// Event Handlers
+// =====================================================
+listSelect.onchange = async () => { await changeList(listSelect.value); };
+searchEl.oninput = () => { PAGE = 1; renderTable(); };
+sortBtn.onclick = () => {
+  const modes = ['rank', 'name', 'elev', 'status'];
+  const idx = (modes.indexOf(sortMode) + 1) % modes.length;
+  sortMode = modes[idx];
+  sortLabel.textContent = (sortMode === 'elev' ? 'Elevation' : sortMode === 'status' ? 'Status' : sortMode[0].toUpperCase() + sortMode.slice(1));
+  PAGE = 1;
+  renderTable();
+};
+showBtn.onclick = () => {
+  hideCompleted = !hideCompleted;
+  showBtn.innerHTML = hideCompleted ? '<span class="ico">◎</span> <span>Show completed</span>' : '<span class="ico">◯</span> <span>Hide completed</span>';
+  PAGE = 1;
+  renderTable();
+};
+exportBtn.onclick = async () => {
+  const base = await baseItemsFor(currentList);
+  const items = base.map((it, i) => {
+    const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
+    return [i + 1, it.name, fmtElevation(it.elevation_ft ?? null), c.date || '', c.done ? 'Yes' : 'No'];
+  });
+  const ws = XLSX.utils.aoa_to_sheet([['Rank', 'Mountain', 'Elevation', 'Date', 'Completed'], ...items]);
+  ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 14 }, { wch: 12 }, { wch: 10 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, currentList.slice(0, 31));
+  XLSX.writeFile(wb, `${currentList.replace(/\s+/g, '_')}.xlsx`);
+};
+
+unitToggle.onclick = () => applyUnitsFlag(!meters);
+metersToggle.onchange = () => applyUnitsFlag(metersToggle.checked);
+if (themeSelect) themeSelect.onchange = () => applyTheme(themeSelect.value);
+
+densityToggle.onchange = () => applyDensity(densityToggle.checked);
+stickyToggle.onchange = () => applyStickyHeader(stickyToggle.checked);
+
+tosTextEl.innerHTML = TERMS_TEXT;
+tosToggle.onclick = () => {
+  tosBox.classList.toggle('open');
+  tosToggle.textContent = tosBox.classList.contains('open') ? '📄 Hide Terms & Conditions' : '📄 View Terms & Conditions';
+};
+tosAgree.addEventListener('change', () => { doSignupBtn.disabled = !tosAgree.checked; });
+
+const modeBtn = document.getElementById('modeBtn');
+const modeLabel = document.getElementById('modeLabel');
+modeBtn.onclick = () => {
+  gridMode = !gridMode;
+  modeLabel.textContent = gridMode ? 'Grid' : 'Checklist';
+  PAGE = 1;
+  renderTable();
+};
+
+if (openAuthBtn) openAuthBtn.onclick = () => openModal();
+if (closeAuthBtn) closeAuthBtn.onclick = () => closeModal();
+if (logoutBtn) logoutBtn.onclick = () => { signOut(); reflectAuthUI(); };
+if (doSigninBtn) doSigninBtn.onclick = async () => {
+  authMsg.textContent = '';
+  try {
+    await signIn(authEmail.value, authPass.value);
+    authMsg.textContent = 'Success!';
+    authMsg.className = 'ok';
+    closeModal();
+    reflectAuthUI();
+  } catch (e) {
+    authMsg.textContent = e.message || 'Failed to sign in';
+    authMsg.className = 'err';
+  }
+};
+if (doSignupBtn) doSignupBtn.onclick = async () => {
+  authMsg.textContent = '';
+  try {
+    await signUp(authName.value, authEmail.value, authPass.value, { tosAgreed: tosAgree.checked });
+    authMsg.textContent = 'Account created & signed in!';
+    authMsg.className = 'ok';
+    closeModal();
+    reflectAuthUI();
+  } catch (e) {
+    authMsg.textContent = e.message || 'Failed to create account';
+    authMsg.className = 'err';
+  }
+};
+
+// =====================================================
+// Boot Sequence
+// =====================================================
+(async function boot() {
+  try {
+    const prefs = readPrefs();
+    applyTheme(prefs.theme || 'dark');
+    applyUnitsFlag(!!prefs.meters);
+    applyDensity(!!prefs.compact);
+    applyStickyHeader(!!prefs.sticky);
+
+    if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
+
+    reflectAuthUI();
+    loadGrid();
+    ALL_LISTS = await fetchAllLists();
+    const preferred = 'NH 48';
+    currentList = ALL_LISTS.includes(preferred) ? preferred : (ALL_LISTS[0] || '');
+    renderListDropdown();
+    if (listTitle) listTitle.textContent = currentList || '—';
+    await fetchNh48Data();
+    await changeList(currentList);
+  } catch (e) {
+    console.error(e);
+    rows.innerHTML = `<tr><td colspan="6" class="subtle">Couldn't load lists. Check that <code>/_functions/peakbagger_lists</code> and <code>/_functions/peakbagger_list</code> are published.</td></tr>`;
+  }
+})();
