@@ -4,7 +4,7 @@
 // =====================================================
 // NH48 API Integration Constants & Helpers
 // =====================================================
-const NH48_API_URL = 'https://rawcdn.githack.com/natesobol/nh48-api/main/data/nh48.json';
+const NH48_API_URL = 'https://raw.githubusercontent.com/natesobol/nh48-api/main/data/nh48.json';
 
 let NH48_DATA = null;
 let NH48_SLUG_MAP = {};
@@ -136,7 +136,7 @@ const LIST_TO_JSON_MAP = {
   'WA Bulgers': 'WABulgers.json'
 };
 
-const NH48_API_REPO_URL = 'https://rawcdn.githack.com/natesobol/nh48-api/main/data';
+const NH48_API_REPO_URL = 'https://raw.githubusercontent.com/natesobol/nh48-api/main/data';
 
 async function fetchAllLists() {
   // Return the list names from the mapping
