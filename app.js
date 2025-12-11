@@ -902,7 +902,7 @@ async function renderGrid() {
     const elevStr = fmtElevation(it.elevation_ft ?? null) || '—';
     const nhData = NH48_DATA?.[slug] || {};
     const promStr = nhData['Prominence (ft)'] ? fmtElevation(nhData['Prominence (ft)']) : '—';
-    const rangeStr = nhData['Range / Subrange'] || '—';
+    const rangeStr = (nhData['Range / Subrange'] || '—').replace(/^Range[:\s]+/i, '').trim() || '—';
     const trailStr = nhData['Trail Type'] || '—';
     const diffStr = nhData['Difficulty'] || '—';
     const expStr = nhData['Exposure Level'] || nhData['Weather Exposure Rating'] || '—';
@@ -1188,6 +1188,14 @@ async function changeList(name) {
 // =====================================================
 listSelect.onchange = async () => { await changeList(listSelect.value); };
 searchEl.oninput = () => { PAGE = 1; renderGrid(); };
+
+// Sync mobile search with desktop search
+const mobileSearch = document.getElementById('mobileSearch');
+if (mobileSearch) {
+  mobileSearch.oninput = () => { searchEl.value = mobileSearch.value; PAGE = 1; renderGrid(); };
+  searchEl.addEventListener('input', () => { mobileSearch.value = searchEl.value; });
+}
+
 sortBtn.onclick = () => {
   const modes = ['rank', 'name', 'elev', 'status'];
   const idx = (modes.indexOf(sortMode) + 1) % modes.length;

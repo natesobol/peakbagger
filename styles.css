@@ -235,6 +235,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   color:var(--ink);
   flex:1 1 auto;
   word-wrap:break-word;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 /* Completed card styling */
@@ -252,7 +255,40 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   }
 }
 
-@media (max-width:640px){
+@media (max-width:960px){
+  .ctrl:has(#search) {
+    display:flex !important;
+  }
+}
+
+@media (min-width:961px){
+  .sidebar #mobileSidebarSearch {
+    display:none;
+  }
+}
+
+.sidebar #mobileSidebarSearch {
+  margin:14px 0;
+}
+
+.sidebar #mobileSidebarSearch input {
+  width:100%;
+}
+  .sidebar {
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+  
+  .collapsible-section[open] .settings {
+    max-height:calc(100vh - 600px);
+    overflow-y:auto;
+  }
+  
+  .copyright {
+    margin-top:auto;
+    padding-top:12px;
+  }
   .peak-card-body{
     padding:12px;
   }
