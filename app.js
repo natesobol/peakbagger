@@ -577,7 +577,7 @@ function applyUnitsFlag(flag) {
   meters = flag;
   metersToggle.checked = meters;
   unitLabel.textContent = meters ? 'Meters (m)' : 'Feet (ft)';
-  renderTable();
+  renderGrid();
   const prefs = readPrefs();
   prefs.meters = meters;
   writePrefs(prefs);
@@ -743,7 +743,7 @@ function updatePager(total, from, to) {
 function gotoPage(p) {
   const { p: clamped } = pageBounds(p, PAGE_SIZE, Number(rows?.dataset?.total || 0));
   PAGE = clamped;
-  renderTable();
+  renderGrid();
   try {
     const mainEl = document.querySelector('main.panel');
     const y = mainEl?.getBoundingClientRect().top + window.scrollY - 8;
@@ -794,11 +794,44 @@ function toggleComplete(peakName) {
   completions[currentList] ??= {};
   const rec = completions[currentList][peakName] ??= { done: false, date: '' };
   rec.done = !rec.done;
-  if (!rec.done) rec.date = '';
+  if (!rec.done) {
+    rec.date = '';
+  } else {
+    // When marking as complete, auto-set today's date if no date exists
+    if (!rec.date) {
+      const today = new Date();
+      rec.date = today.toISOString().split('T')[0];
+    }
+  }
   completions[currentList][peakName] = rec;
   saveState();
   queueRemoteSave();
+  playPingSound();
   renderGrid();
+}
+
+function playPingSound() {
+  // Create a simple xylophone-like ping using Web Audio API
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const now = audioContext.currentTime;
+  
+  // Create oscillator for xylophone-like tone
+  const osc = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  osc.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  // Xylophone-like frequency (around F5: 740 Hz)
+  osc.frequency.value = 740;
+  osc.type = 'sine';
+  
+  // Sharp attack, quick decay (like xylophone)
+  gainNode.gain.setValueAtTime(1, now);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+  
+  osc.start(now);
+  osc.stop(now + 0.15);
 }
 
 function renderProgressBase(allItems) {
