@@ -1471,6 +1471,46 @@ if (peakDetailBackBtn) {
   peakDetailBackBtn.onclick = () => closePeakDetail();
 }
 
+// Intro panel toggle logic
+const introPanelDetails = document.getElementById('introPanelDetails');
+const introPanelToggle = document.getElementById('introPanelToggle');
+if (introPanelDetails) {
+  // Load saved state from localStorage
+  function getIntroPanelState() {
+    const sessionData = localStorage.getItem('pb_session_v1');
+    if (!sessionData) return false;
+    try {
+      const session = JSON.parse(sessionData);
+      return session.introPanelOpen || false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function saveIntroPanelState(isOpen) {
+    const sessionData = localStorage.getItem('pb_session_v1');
+    const session = sessionData ? JSON.parse(sessionData) : {};
+    session.introPanelOpen = isOpen;
+    localStorage.setItem('pb_session_v1', JSON.stringify(session));
+  }
+
+  // Initialize the panel state
+  introPanelDetails.open = getIntroPanelState();
+  updateIntroPanelToggle();
+
+  function updateIntroPanelToggle() {
+    if (introPanelToggle) {
+      introPanelToggle.textContent = introPanelDetails.open ? '▲' : '▼';
+    }
+  }
+
+  // Handle toggle
+  introPanelDetails.addEventListener('toggle', () => {
+    saveIntroPanelState(introPanelDetails.open);
+    updateIntroPanelToggle();
+  });
+}
+
 if (openAuthBtn) openAuthBtn.onclick = () => openModal();
 if (closeAuthBtn) closeAuthBtn.onclick = () => closeModal();
 if (logoutBtn) logoutBtn.onclick = () => { signOut(); reflectAuthUI(); };
