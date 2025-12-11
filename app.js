@@ -127,13 +127,24 @@ async function fetchListItems(name) {
       itemArray = data;
     } else if (typeof data === 'object' && data !== null) {
       // If it's an object (keyed by slug), convert to array
-      itemArray = Object.entries(data).map(([slug, peakData]) => {
-        // Ensure peak has a slug and peakName
-        if (!peakData.slug) peakData.slug = slug;
-        if (!peakData.peakName && !peakData['Peak Name']) {
-          peakData.peakName = slug;
+      itemArray = Object.entries(data).map(([keySlug, peakData]) => {
+        // Normalize the data structure
+        const normalized = { ...peakData };
+        
+        // Ensure slug is set
+        if (!normalized.slug) normalized.slug = keySlug;
+        
+        // Normalize peak name (could be peakName, Peak Name, or slug)
+        if (!normalized.name) {
+          normalized.name = normalized.peakName || normalized['Peak Name'] || keySlug;
         }
-        return peakData;
+        
+        // Ensure elevation_ft is available (could be 'Elevation (ft)' in JSON)
+        if (!normalized.elevation_ft && normalized['Elevation (ft)']) {
+          normalized.elevation_ft = normalized['Elevation (ft)'];
+        }
+        
+        return normalized;
       });
     } else {
       throw new Error('Invalid data format: expected object or array');
