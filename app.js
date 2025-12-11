@@ -281,7 +281,8 @@ const tosBox = document.getElementById('tosBox');
 const tosAgree = document.getElementById('tosAgree');
 const tosTextEl = document.getElementById('tosText');
 
-document.getElementById('detailClose').onclick = () => detail.classList.remove('open');
+// Old detail close button (from side panel) - removed in favor of peakDetailBackBtn
+// document.getElementById('detailClose').onclick = () => detail.classList.remove('open');
 
 // =====================================================
 // Asset URLs
