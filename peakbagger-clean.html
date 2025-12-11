@@ -95,20 +95,22 @@
               <div class="subtle">You're not signed in</div>
               <div style="font-size:13px;color:var(--ink)">Sign in to save your progress</div>
             </div>
-            <button class="btn btn-primary btn-small" id="openAuth">Sign in</button>
+            <button class="btn btn-primary btn-small" id="openAuth">Log in</button>
           </div>
         </div>
         <div id="authSignedIn" style="display:none">
-          <div class="row" style="align-items:flex-start">
-            <div>
-              <div class="subtle">Signed in</div>
-              <div id="meName" style="font-weight:600;margin-top:2px"></div>
-              <div id="meEmail" class="subtle"></div>
+          <a href="profile.html" id="userProfileLink" style="text-decoration:none;color:inherit;display:block;cursor:pointer;transition:background 0.2s;border-radius:8px;padding:8px;margin:-8px" title="View profile settings">
+            <div class="row" style="align-items:center;gap:12px">
+              <div id="userAvatarIcon" style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6b8cff);display:flex;align-items:center;justify-content:center;font-size:18px;color:white;font-weight:600;border:2px solid var(--border);flex-shrink:0">
+                <span id="userInitials">U</span>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div id="meName" style="font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+                <div id="meEmail" class="subtle" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+              </div>
+              <div style="color:var(--ink-weak);font-size:20px;flex-shrink:0">›</div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
-              <button class="btn btn-ghost btn-small" id="logoutBtn">Sign out</button>
-            </div>
-          </div>
+          </a>
         </div>
       </div>
 
@@ -268,30 +270,69 @@
 <!-- Auth Modal -->
 <div class="modal" id="authModal" aria-hidden="true">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-    <h2 id="authTitle">Sign in</h2>
-    <div class="subtle" id="authSubtitle">Use email and password just for this web app.</div>
-
-    <div class="field"><label for="authName">Name (for new accounts)</label><input id="authName" type="text" placeholder="Your name" autocomplete="name"></div>
-    <div class="field"><label for="authEmail">Email</label><input id="authEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
-    <div class="field"><label for="authPass">Password</label><input id="authPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
-
-    <!-- NEW: Terms & Conditions -->
-    <div class="tos-toggle" id="tosToggle">📄 View Terms & Conditions</div>
-    <div class="tos-box" id="tosBox">
-      <div id="tosText"></div>
+    <h2 id="authTitle">Log in</h2>
+    
+    <!-- LOGIN FORM (default) -->
+    <div id="loginForm">
+      <div class="subtle" style="margin-bottom:16px">Log in to access your peak tracking data.</div>
+      
+      <div class="field"><label for="loginEmail">Email *</label><input id="loginEmail" type="email" placeholder="you@email.com" autocomplete="email" required></div>
+      <div class="field"><label for="loginPass">Password *</label><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" required></div>
+      
+      <label style="display:flex;align-items:center;gap:8px;margin:12px 0">
+        <input type="checkbox" id="rememberMe" checked />
+        <span>Stay signed in</span>
+      </label>
+      
+      <div class="row-actions" style="margin-top:16px">
+        <button class="btn btn-primary" id="doLogin">Log in</button>
+        <span class="space"></span>
+        <button class="btn btn-ghost" id="closeAuth">Close</button>
+      </div>
+      
+      <div style="margin-top:16px;text-align:center">
+        <span class="subtle">Don't have an account? </span>
+        <a href="#" id="showSignup" style="color:#4a9eff;text-decoration:none">Create account</a>
+      </div>
     </div>
-    <label class="tos-agree">
-      <input type="checkbox" id="tosAgree" />
-      <span>I agree to the Terms & Conditions</span>
-    </label>
-
-    <div class="row-actions">
-      <button class="btn btn-primary" id="doSignin">Sign in</button>
-      <button class="btn btn-ghost" id="doSignup" disabled>Create account</button>
-      <span class="space"></span>
-      <button class="btn btn-ghost" id="closeAuth">Close</button>
+    
+    <!-- SIGN UP FORM (hidden by default) -->
+    <div id="signupForm" style="display:none">
+      <div class="subtle" style="margin-bottom:16px">Create your account to start tracking peaks.</div>
+      
+      <div class="field"><label for="signupFirstName">First Name *</label><input id="signupFirstName" type="text" placeholder="John" autocomplete="given-name" required></div>
+      <div class="field"><label for="signupLastName">Last Name</label><input id="signupLastName" type="text" placeholder="Doe" autocomplete="family-name"></div>
+      <div class="field"><label for="signupEmail">Email *</label><input id="signupEmail" type="email" placeholder="you@email.com" autocomplete="email" required></div>
+      <div class="field"><label for="signupPass">Password *</label><input id="signupPass" type="password" placeholder="••••••••" autocomplete="new-password" required></div>
+      <div class="field"><label for="signupPassConfirm">Confirm Password *</label><input id="signupPassConfirm" type="password" placeholder="••••••••" autocomplete="new-password" required></div>
+      
+      <!-- Honeypot for bot prevention -->
+      <div style="position:absolute;left:-9999px" aria-hidden="true">
+        <input type="text" id="signupHoneypot" tabindex="-1" autocomplete="off" />
+      </div>
+      
+      <div class="tos-toggle" id="tosToggle" style="margin-top:12px">📄 View Terms & Conditions</div>
+      <div class="tos-box" id="tosBox">
+        <div id="tosText"></div>
+      </div>
+      <label class="tos-agree">
+        <input type="checkbox" id="tosAgree" />
+        <span>I agree to the Terms & Conditions *</span>
+      </label>
+      
+      <div class="row-actions" style="margin-top:16px">
+        <button class="btn btn-primary" id="doSignup" disabled>Create account</button>
+        <span class="space"></span>
+        <button class="btn btn-ghost" id="closeAuth">Close</button>
+      </div>
+      
+      <div style="margin-top:16px;text-align:center">
+        <span class="subtle">Already have an account? </span>
+        <a href="#" id="showLogin" style="color:#4a9eff;text-decoration:none">Log in</a>
+      </div>
     </div>
-    <div id="authMsg" class="note" style="margin-top:8px"></div>
+    
+    <div id="authMsg" class="note" style="margin-top:12px"></div>
   </div>
 </div>
 

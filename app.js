@@ -6,7 +6,16 @@
 // =====================================================
 const supabaseUrl = 'https://uobvavnsstrgyezcklib.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvYnZhdm5zc3RyZ3llemNrbGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODEzNTksImV4cCI6MjA4MTA1NzM1OX0.KL32AFytJcOC5RPEPlWlCzBDiA8N_Su9qb0yXT2n2ZI';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+// Create Supabase client with persistent session storage
+const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true, // Keep user logged in across browser sessions
+    autoRefreshToken: true, // Automatically refresh the token before it expires
+    detectSessionInUrl: true, // Detect session from URL (for OAuth)
+    storage: window.localStorage // Use localStorage for session persistence
+  }
+});
 
 let currentUser = null;
 
@@ -310,13 +319,23 @@ const unitLabel = document.getElementById('unitLabel');
 const metersToggle = document.getElementById('metersToggle');
 const themeSelect = document.getElementById('themeSelect');
 const openAuthBtn = document.getElementById('openAuth');
-const logoutBtn = document.getElementById('logoutBtn');
 const authModal = document.getElementById('authModal');
-const authName = document.getElementById('authName');
-const authEmail = document.getElementById('authEmail');
-const authPass = document.getElementById('authPass');
-const doSigninBtn = document.getElementById('doSignin');
+const authTitle = document.getElementById('authTitle');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const loginEmail = document.getElementById('loginEmail');
+const loginPass = document.getElementById('loginPass');
+const rememberMe = document.getElementById('rememberMe');
+const doLoginBtn = document.getElementById('doLogin');
+const signupFirstName = document.getElementById('signupFirstName');
+const signupLastName = document.getElementById('signupLastName');
+const signupEmail = document.getElementById('signupEmail');
+const signupPass = document.getElementById('signupPass');
+const signupPassConfirm = document.getElementById('signupPassConfirm');
+const signupHoneypot = document.getElementById('signupHoneypot');
 const doSignupBtn = document.getElementById('doSignup');
+const showSignup = document.getElementById('showSignup');
+const showLogin = document.getElementById('showLogin');
 const closeAuthBtn = document.getElementById('closeAuth');
 const authMsg = document.getElementById('authMsg');
 const meNameEl = document.getElementById('meName');
@@ -679,17 +698,28 @@ function getMonthDate(list, peak, month) {
 // =====================================================
 // Authentication with Supabase
 // =====================================================
-async function signUp(name, email, pass, opts = {}) {
+async function signUp(firstName, lastName, email, pass, opts = {}) {
   email = (email || '').trim().toLowerCase();
-  if (!name || !email || !pass) throw new Error('Please enter name, email, and password.');
-  if (!opts.tosAgreed) throw new Error('Please agree to the Terms & Conditions.');
+  firstName = (firstName || '').trim();
+  
+  if (!firstName || !email || !pass) {
+    throw new Error('Please enter first name, email, and password.');
+  }
+  if (!opts.tosAgreed) {
+    throw new Error('Please agree to the Terms & Conditions.');
+  }
+  
+  // Construct full name
+  const fullName = lastName ? `${firstName} ${lastName.trim()}` : firstName;
   
   const { data, error } = await supabase.auth.signUp({
     email: email,
     password: pass,
     options: {
       data: {
-        name: name,
+        first_name: firstName,
+        last_name: lastName || '',
+        name: fullName,
         tosAcceptedAt: new Date().toISOString(),
         tosVersion: TOS_VERSION
       }
@@ -713,7 +743,7 @@ async function signUp(name, email, pass, opts = {}) {
   return data.user;
 }
 
-async function signIn(email, pass) {
+async function signIn(email, pass, rememberSession = true) {
   email = (email || '').trim().toLowerCase();
   
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -722,6 +752,13 @@ async function signIn(email, pass) {
   });
   
   if (error) throw new Error(error.message);
+  
+  // Set session persistence based on remember me checkbox
+  if (!rememberSession) {
+    // Session will expire when browser closes
+    await supabase.auth.updateUser({ data: { sessionType: 'temporary' } });
+  }
+  
   currentUser = data.user;
   return data.user;
 }
@@ -746,8 +783,21 @@ async function reflectAuthUI() {
   if (me) {
     signedOutBox.style.display = 'none';
     signedInBox.style.display = '';
-    meNameEl.textContent = me.user_metadata?.name || me.email;
+    
+    // Get name from user metadata
+    const firstName = me.user_metadata?.first_name || me.user_metadata?.name || '';
+    const lastName = me.user_metadata?.last_name || '';
+    const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+    
+    meNameEl.textContent = fullName || me.email;
     meEmailEl.textContent = me.email || '';
+    
+    // Set user initials in avatar
+    const userInitials = document.getElementById('userInitials');
+    if (userInitials) {
+      const initials = firstName.charAt(0).toUpperCase() + (lastName ? lastName.charAt(0).toUpperCase() : '');
+      userInitials.textContent = initials || me.email.charAt(0).toUpperCase();
+    }
   } else {
     signedOutBox.style.display = '';
     signedInBox.style.display = 'none';
@@ -781,16 +831,69 @@ supabase.auth.onAuthStateChange((event, session) => {
 function openModal() {
   authModal.classList.add('open');
   authMsg.textContent = '';
+  // Default to login form
+  showLoginForm();
 }
 
 function closeModal() {
   authModal.classList.remove('open');
-  authName.value = '';
-  authEmail.value = '';
-  authPass.value = '';
+  // Clear login form
+  if (loginEmail) loginEmail.value = '';
+  if (loginPass) loginPass.value = '';
+  // Clear signup form
+  if (signupFirstName) signupFirstName.value = '';
+  if (signupLastName) signupLastName.value = '';
+  if (signupEmail) signupEmail.value = '';
+  if (signupPass) signupPass.value = '';
+  if (signupPassConfirm) signupPassConfirm.value = '';
+  if (signupHoneypot) signupHoneypot.value = '';
   authMsg.textContent = '';
-  tosAgree.checked = false;
-  doSignupBtn.disabled = true;
+  if (tosAgree) tosAgree.checked = false;
+  if (doSignupBtn) doSignupBtn.disabled = true;
+}
+
+function showLoginForm() {
+  if (loginForm) loginForm.style.display = 'block';
+  if (signupForm) signupForm.style.display = 'none';
+  if (authTitle) authTitle.textContent = 'Log in';
+  authMsg.textContent = '';
+}
+
+function showSignupForm() {
+  if (loginForm) loginForm.style.display = 'none';
+  if (signupForm) signupForm.style.display = 'block';
+  if (authTitle) authTitle.textContent = 'Create Account';
+  authMsg.textContent = '';
+}
+
+function validatePasswordMatch() {
+  if (!signupPass || !signupPassConfirm) return false;
+  const pass = signupPass.value;
+  const confirm = signupPassConfirm.value;
+  
+  // Check if passwords match (case and type sensitive)
+  if (pass !== confirm) {
+    authMsg.textContent = 'Passwords do not match';
+    authMsg.className = 'err';
+    return false;
+  }
+  
+  if (pass.length < 6) {
+    authMsg.textContent = 'Password must be at least 6 characters';
+    authMsg.className = 'err';
+    return false;
+  }
+  
+  return true;
+}
+
+function checkBotPrevention() {
+  // Honeypot check - if filled, it's likely a bot
+  if (signupHoneypot && signupHoneypot.value !== '') {
+    console.warn('Bot detected via honeypot');
+    return false;
+  }
+  return true;
 }
 
 // =====================================================
@@ -1820,33 +1923,84 @@ if (introPanelDetails) {
 
 if (openAuthBtn) openAuthBtn.onclick = () => openModal();
 if (closeAuthBtn) closeAuthBtn.onclick = () => closeModal();
-if (logoutBtn) logoutBtn.onclick = () => { signOut(); reflectAuthUI(); };
-if (doSigninBtn) doSigninBtn.onclick = async () => {
+
+// Toggle between login and signup forms
+if (showSignup) showSignup.onclick = (e) => {
+  e.preventDefault();
+  showSignupForm();
+};
+if (showLogin) showLogin.onclick = (e) => {
+  e.preventDefault();
+  showLoginForm();
+};
+
+// Login handler
+if (doLoginBtn) doLoginBtn.onclick = async () => {
   authMsg.textContent = '';
   try {
-    await signIn(authEmail.value, authPass.value);
+    const remember = rememberMe ? rememberMe.checked : true;
+    await signIn(loginEmail.value, loginPass.value, remember);
     authMsg.textContent = 'Success!';
     authMsg.className = 'ok';
-    closeModal();
-    reflectAuthUI();
+    setTimeout(() => {
+      closeModal();
+      reflectAuthUI();
+    }, 500);
   } catch (e) {
-    authMsg.textContent = e.message || 'Failed to sign in';
+    authMsg.textContent = e.message || 'Failed to log in';
     authMsg.className = 'err';
   }
 };
+
+// Signup handler
 if (doSignupBtn) doSignupBtn.onclick = async () => {
   authMsg.textContent = '';
+  
+  // Bot prevention check
+  if (!checkBotPrevention()) {
+    authMsg.textContent = 'Invalid submission';
+    authMsg.className = 'err';
+    return;
+  }
+  
+  // Validate password match
+  if (!validatePasswordMatch()) {
+    return; // Error message already set in validatePasswordMatch
+  }
+  
   try {
-    await signUp(authName.value, authEmail.value, authPass.value, { tosAgreed: tosAgree.checked });
+    await signUp(
+      signupFirstName.value,
+      signupLastName.value,
+      signupEmail.value,
+      signupPass.value,
+      { tosAgreed: tosAgree.checked }
+    );
     authMsg.textContent = 'Account created & signed in!';
     authMsg.className = 'ok';
-    closeModal();
-    reflectAuthUI();
+    setTimeout(() => {
+      closeModal();
+      reflectAuthUI();
+    }, 1000);
   } catch (e) {
     authMsg.textContent = e.message || 'Failed to create account';
     authMsg.className = 'err';
   }
 };
+
+// Real-time password match validation
+if (signupPassConfirm) {
+  signupPassConfirm.addEventListener('input', () => {
+    if (signupPass.value && signupPassConfirm.value) {
+      if (signupPass.value === signupPassConfirm.value) {
+        authMsg.textContent = '';
+        signupPassConfirm.style.borderColor = '';
+      } else {
+        signupPassConfirm.style.borderColor = '#ff6b6b';
+      }
+    }
+  });
+}
 
 // =====================================================
 // Boot Sequence

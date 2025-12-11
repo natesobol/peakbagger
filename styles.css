@@ -907,3 +907,51 @@ html, body{-webkit-transform:translate3d(0, 0, 0)}
   .peak-detail-header h1{font-size:2rem}
   .peak-detail-grid{grid-template-columns:1fr;gap:16px}
 }
+
+/* ========== Auth Form Enhancements ========== */
+.field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field input.invalid {
+  border-color: #ff6b6b;
+}
+
+.field input.valid {
+  border-color: var(--good);
+}
+
+#authMsg.err {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #ff6b6b;
+}
+
+#authMsg.ok {
+  color: var(--good);
+  background: rgba(61, 220, 132, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid var(--good);
+}
+
+/* Form toggle links */
+a {
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* User profile link hover effect */
+#userProfileLink:hover {
+  background: var(--input-bg-hover) !important;
+}
+
+#userProfileLink:active {
+  transform: scale(0.98);
+}
