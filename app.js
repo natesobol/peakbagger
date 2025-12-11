@@ -344,7 +344,7 @@ function reflectAuthUI() {
   }
   loadState();
   loadGrid();
-  renderTable();
+  renderGrid();
   if (me && currentList) restoreFromRemote(me.email, currentList).catch(() => {});
 }
 
@@ -743,6 +743,132 @@ function renderProgressBase(allItems) {
   progressText.textContent = `${done}/${total} • ${pct}%`;
 }
 
+/* ======= Render Grid (Cards View) ======= */
+async function renderGrid() {
+  const gridView = document.getElementById('grid-view');
+  if (!currentList) {
+    gridView.innerHTML = '';
+    return;
+  }
+
+  const q = searchEl.value.trim().toLowerCase();
+  const allItems = (await baseItemsFor(currentList)).map(it => {
+    const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
+    return { ...it, completed: !!c.done, date: c.date || '' };
+  });
+
+  // Sort
+  allItems.sort((a, b) => {
+    if (sortMode === 'name') return a.name.localeCompare(b.name);
+    if (sortMode === 'elev') return (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0);
+    if (sortMode === 'status') return (b.completed ? 1 : 0) - (a.completed ? 1 : 0) || a.rank - b.rank;
+    return a.rank - b.rank;
+  });
+
+  // Filter
+  let items = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  if (hideCompleted) items = items.filter(it => !it.completed);
+
+  // Progress
+  renderProgressBase(allItems);
+
+  // Pagination
+  const total = items.length;
+  const { p, start, end } = pageBounds(PAGE, PAGE_SIZE, total);
+  PAGE = p;
+  const pageItems = items.slice(start, end);
+  updatePager(total, total ? (start + 1) : 0, end);
+
+  gridView.innerHTML = '';
+  for (const it of pageItems) {
+    const card = document.createElement('article');
+    card.className = 'peak-card';
+
+    // Get peak image
+    const slug = getSlugForName(it.name);
+    let imgSrc = '';
+    const photoData = NH48_DATA?.[slug]?.photos;
+    const listHasImages = currentList && currentList.toLowerCase() === 'nh 48';
+    if (listHasImages && photoData && photoData.length > 0 && photoData[0].url) {
+      imgSrc = photoData[0].url;
+    } else if (listHasImages) {
+      const apiImgs = await fetchPeakImages(slug);
+      if (apiImgs.length > 0) {
+        imgSrc = apiImgs[0].thumb || apiImgs[0].url || '';
+      }
+    }
+
+    const elevStr = fmtElevation(it.elevation_ft ?? null) || '—';
+    const nhData = NH48_DATA?.[slug] || {};
+    const promStr = nhData['Prominence (ft)'] ? fmtElevation(nhData['Prominence (ft)']) : '—';
+    const rangeStr = nhData['Range / Subrange'] || '—';
+    const trailStr = nhData['Trail Type'] || '—';
+    const diffStr = nhData['Difficulty'] || '—';
+    const expStr = nhData['Exposure Level'] || nhData['Weather Exposure Rating'] || '—';
+
+    card.innerHTML = `
+      <div class="peak-card-thumb">
+        ${imgSrc ? `<img src="${imgSrc}" alt="${it.name}" loading="lazy" decoding="async">` : `<img src="${placeholderFor(it.name, 800, 480)}" alt="${it.name}" loading="lazy">`}
+      </div>
+      <div class="peak-card-body ${it.completed ? 'completed' : ''}">
+        <h3>${it.name}</h3>
+        <div class="peak-card-meta">
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Rank</span>
+            <span class="peak-card-meta-value">${it.rank}</span>
+          </div>
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Elevation</span>
+            <span class="peak-card-meta-value">${elevStr}</span>
+          </div>
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Prominence</span>
+            <span class="peak-card-meta-value">${promStr}</span>
+          </div>
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Range</span>
+            <span class="peak-card-meta-value">${rangeStr}</span>
+          </div>
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Trail Type</span>
+            <span class="peak-card-meta-value">${trailStr}</span>
+          </div>
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Difficulty</span>
+            <span class="peak-card-meta-value">${diffStr}</span>
+          </div>
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Exposure</span>
+            <span class="peak-card-meta-value">${expStr}</span>
+          </div>
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Date</span>
+            <span class="peak-card-meta-value"><input type="date" class="card-date-input" value="${it.date || ''}" data-name="${it.name}" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--ink);font-size:0.85rem;width:100%;"></span>
+          </div>
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Completed</span>
+            <span class="peak-card-meta-value"><img class="check card-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" loading="lazy" style="width:20px;height:20px;cursor:pointer;"></span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Event handlers
+    card.addEventListener('click', () => openDetail(it));
+    const dateInput = card.querySelector('.card-date-input');
+    dateInput?.addEventListener('click', e => e.stopPropagation());
+    dateInput?.addEventListener('change', () => {
+      if (dateInput.value) setDateFor(it.name, dateInput.value);
+    });
+    card.querySelector('.card-check')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleComplete(it.name);
+    });
+
+    gridView.appendChild(card);
+  }
+}
+
 async function renderTable() {
   if (!currentList) {
     rows.innerHTML = '';
@@ -908,12 +1034,12 @@ async function renderTable() {
       tr.querySelector('.grid-save')?.addEventListener('click', e => {
         e.stopPropagation();
         setGridDate(currentList, it.name, activeMonth, dateEl.value);
-        renderTable();
+        renderGrid();
       });
       tr.querySelector('.grid-clear')?.addEventListener('click', e => {
         e.stopPropagation();
         setGridDate(currentList, it.name, activeMonth, '');
-        renderTable();
+        renderGrid();
       });
     }
 
@@ -967,7 +1093,7 @@ async function changeList(name) {
   currentList = name;
   PAGE = 1;
   if (listTitle) listTitle.textContent = currentList || '—';
-  await renderTable();
+  await renderGrid();
   const me = currentUser();
   if (me) restoreFromRemote(me.email, currentList).catch(() => {});
 }
@@ -976,20 +1102,20 @@ async function changeList(name) {
 // Event Handlers
 // =====================================================
 listSelect.onchange = async () => { await changeList(listSelect.value); };
-searchEl.oninput = () => { PAGE = 1; renderTable(); };
+searchEl.oninput = () => { PAGE = 1; renderGrid(); };
 sortBtn.onclick = () => {
   const modes = ['rank', 'name', 'elev', 'status'];
   const idx = (modes.indexOf(sortMode) + 1) % modes.length;
   sortMode = modes[idx];
   sortLabel.textContent = (sortMode === 'elev' ? 'Elevation' : sortMode === 'status' ? 'Status' : sortMode[0].toUpperCase() + sortMode.slice(1));
   PAGE = 1;
-  renderTable();
+  renderGrid();
 };
 showBtn.onclick = () => {
   hideCompleted = !hideCompleted;
   showBtn.innerHTML = hideCompleted ? '<span class="ico">◎</span> <span>Show completed</span>' : '<span class="ico">◯</span> <span>Hide completed</span>';
   PAGE = 1;
-  renderTable();
+  renderGrid();
 };
 exportBtn.onclick = async () => {
   const base = await baseItemsFor(currentList);
@@ -1024,7 +1150,7 @@ modeBtn.onclick = () => {
   gridMode = !gridMode;
   modeLabel.textContent = gridMode ? 'Grid' : 'Checklist';
   PAGE = 1;
-  renderTable();
+  renderGrid();
 };
 
 if (openAuthBtn) openAuthBtn.onclick = () => openModal();
