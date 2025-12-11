@@ -151,16 +151,43 @@ async function fetchListItems(name) {
   
   try {
     const url = `${NH48_API_REPO_URL}/${jsonFileName}?t=` + Date.now();  // Cache buster
+    console.log('Fetching from:', url);
     const r = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
+    console.log('Fetch response status:', r.status, r.statusText);
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
     const data = await r.json();
-    console.log('Raw data for', name, ':', data);
+    console.log('Raw data for', name, 'length:', Array.isArray(data) ? data.length : Object.keys(data).length, 'sample:', data);
     
     // Convert object to array (peaks are keyed by slug in the JSON)
     let itemArray;
     if (Array.isArray(data)) {
-      // If it's already an array, use it directly
-      itemArray = data;
+      // If it's already an array, normalize each item
+      itemArray = data.map((peakData, idx) => {
+        const normalized = { ...peakData };
+        
+        // Ensure slug is set
+        if (!normalized.slug) normalized.slug = normalized.peakname?.toLowerCase().replace(/\s+/g, '-') || `peak-${idx}`;
+        
+        // Normalize peak name (try multiple field names)
+        if (!normalized.name) {
+          normalized.name = normalized.peakName || normalized['Peak Name'] || normalized.peakname || normalized.name || 'Unknown';
+        }
+        
+        // Ensure elevation_ft is available (try multiple field names)
+        if (!normalized.elevation_ft) {
+          normalized.elevation_ft = normalized['Elevation (ft)'] || normalized.elevation || normalized['elevation_ft'];
+        }
+        
+        // Ensure elevation is a number
+        if (normalized.elevation_ft && typeof normalized.elevation_ft === 'string') {
+          const parsed = parseFloat(normalized.elevation_ft);
+          normalized.elevation_ft = isNaN(parsed) ? 0 : parsed;
+        } else if (!normalized.elevation_ft) {
+          normalized.elevation_ft = 0;
+        }
+        
+        return normalized;
+      });
     } else if (typeof data === 'object' && data !== null) {
       // If it's an object (keyed by slug), convert to array
       itemArray = Object.entries(data).map(([keySlug, peakData]) => {
@@ -182,7 +209,10 @@ async function fetchListItems(name) {
         
         // Ensure elevation is a number
         if (normalized.elevation_ft && typeof normalized.elevation_ft === 'string') {
-          normalized.elevation_ft = parseFloat(normalized.elevation_ft);
+          const parsed = parseFloat(normalized.elevation_ft);
+          normalized.elevation_ft = isNaN(parsed) ? 0 : parsed;
+        } else if (!normalized.elevation_ft) {
+          normalized.elevation_ft = 0;
         }
         
         return normalized;
@@ -835,12 +865,22 @@ window.addEventListener('keydown', (e) => {
 // =====================================================
 async function baseItemsFor(listName) {
   if (!cache.has(listName)) {
-    console.log('Fetching items for:', listName);
-    const items = await fetchListItems(listName);
-    console.log('Fetched', items.length, 'items for', listName, 'First item:', items[0]);
-    cache.set(listName, items);
+    console.log('🔄 Fetching items for:', listName);
+    try {
+      const items = await fetchListItems(listName);
+      console.log('✅ Fetched', items.length, 'items for', listName);
+      if (items.length > 0) console.log('   First item:', items[0]);
+      cache.set(listName, items);
+    } catch (e) {
+      console.error('❌ Error fetching items for', listName, e);
+      throw e;
+    }
+  } else {
+    console.log('📦 Using cached items for:', listName);
   }
-  return cache.get(listName);
+  const result = cache.get(listName);
+  console.log('📋 Returning', result ? result.length : 0, 'items for', listName);
+  return result;
 }
 
 function renderListDropdown() {
@@ -923,20 +963,25 @@ async function renderView() {
   const gridView = document.getElementById('grid-view');
   const listView = document.getElementById('list-view');
   
+  console.log('🎯 renderView() called, gridMode:', gridMode);
+  
   if (gridMode === 'list') {
     gridView.innerHTML = '';
     gridView.style.display = 'none';
     listView.style.display = 'table';
+    console.log('   → Rendering as LIST');
     await renderList();
   } else if (gridMode === 'compact') {
     listView.style.display = 'none';
     gridView.style.display = 'grid';
     gridView.classList.add('compact');
+    console.log('   → Rendering as COMPACT GRID');
     await renderGrid();
   } else {
     listView.style.display = 'none';
     gridView.style.display = 'grid';
     gridView.classList.remove('compact');
+    console.log('   → Rendering as GRID');
     await renderGrid();
   }
 }
@@ -946,16 +991,18 @@ async function renderList() {
   const listView = document.getElementById('list-view');
   if (!currentList) {
     listView.innerHTML = '';
-    console.warn('No current list selected');
+    console.warn('⚠️ No current list selected');
     return;
   }
 
   try {
+    console.log('🎬 renderList() starting for:', currentList);
     const q = searchEl.value.trim().toLowerCase();
     const baseItems = await baseItemsFor(currentList);
-    console.log('Got items from baseItemsFor:', baseItems.length, 'items');
+    console.log('👉 Got items from baseItemsFor:', baseItems ? baseItems.length : 0, 'items');
     
     if (!baseItems || baseItems.length === 0) {
+      console.warn('⚠️ No items returned for', currentList);
       listView.innerHTML = '<div style="padding:20px;text-align:center">No peaks found</div>';
       return;
     }
@@ -1040,16 +1087,18 @@ async function renderGrid() {
   const gridView = document.getElementById('grid-view');
   if (!currentList) {
     gridView.innerHTML = '';
-    console.warn('No current list for grid');
+    console.warn('⚠️ No current list for grid');
     return;
   }
 
   try {
+    console.log('🎬 renderGrid() starting for:', currentList);
     const q = searchEl.value.trim().toLowerCase();
     const baseItems = await baseItemsFor(currentList);
-    console.log('Rendering grid with', baseItems.length, 'items');
+    console.log('👉 Got items from baseItemsFor:', baseItems ? baseItems.length : 0, 'items');
     
     if (!baseItems || baseItems.length === 0) {
+      console.warn('⚠️ No items to render for', currentList);
       gridView.innerHTML = '<div style="padding:20px;text-align:center">No peaks found</div>';
       return;
     }
@@ -1384,12 +1433,12 @@ async function changeList(name) {
   currentList = name;
   PAGE = 1;
   if (listTitle) listTitle.textContent = currentList || '—';
-  console.log('Changing list to:', name);
+  console.log('📌 changeList() called with:', name);
   try {
     await renderView();
-    console.log('List rendered successfully');
+    console.log('✅ List rendered successfully');
   } catch (e) {
-    console.error('Error rendering list:', e);
+    console.error('❌ Error rendering list:', e);
   }
   const me = currentUser();
   if (me) restoreFromRemote(me.email, currentList).catch(() => {});
