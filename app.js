@@ -4,17 +4,19 @@
 // =====================================================
 // NH48 API Integration Constants & Helpers
 // =====================================================
-const NH48_API_URL = 'https://raw.githubusercontent.com/natesobol/nh48-api/main/data/nh48.json';
+const NH48_API_URL = 'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json';
 
 let NH48_DATA = null;
 let NH48_SLUG_MAP = {};
 
 async function fetchNh48Data() {
-  if (NH48_DATA) return NH48_DATA;
+  if (NH48_DATA && Object.keys(NH48_DATA).length > 0) return NH48_DATA;
   try {
-    const resp = await fetch(NH48_API_URL, { mode: 'cors' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const url = NH48_API_URL + '?t=' + Date.now();  // Cache buster
+    const resp = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
     NH48_DATA = await resp.json();
+    console.log('Loaded NH48 data, peaks:', Object.keys(NH48_DATA).length);
     buildSlugMap();
   } catch (e) {
     console.error('Failed to load NH48 data', e);
@@ -136,7 +138,7 @@ const LIST_TO_JSON_MAP = {
   'WA Bulgers': 'WABulgers.json'
 };
 
-const NH48_API_REPO_URL = 'https://raw.githubusercontent.com/natesobol/nh48-api/main/data';
+const NH48_API_REPO_URL = 'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data';
 
 async function fetchAllLists() {
   // Return the list names from the mapping
@@ -148,9 +150,9 @@ async function fetchListItems(name) {
   if (!jsonFileName) throw new Error('Unknown list: ' + name);
   
   try {
-    const url = `${NH48_API_REPO_URL}/${jsonFileName}`;
-    const r = await fetch(url, { mode: 'cors' });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const url = `${NH48_API_REPO_URL}/${jsonFileName}?t=` + Date.now();  // Cache buster
+    const r = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
     const data = await r.json();
     
     // Convert object to array (peaks are keyed by slug in the JSON)
