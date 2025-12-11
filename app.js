@@ -224,6 +224,7 @@ const cache = new Map();
 let hideCompleted = false;
 let sortMode = 'rank';
 let meters = false;
+let lastTotalItems = 0;  // Track total items for pagination
 let gridMode = false;
 let completionsGrid = {};
 let completions = {};
@@ -741,7 +742,7 @@ function updatePager(total, from, to) {
 }
 
 function gotoPage(p) {
-  const { p: clamped } = pageBounds(p, PAGE_SIZE, Number(rows?.dataset?.total || 0));
+  const { p: clamped } = pageBounds(p, PAGE_SIZE, lastTotalItems);
   PAGE = clamped;
   renderGrid();
   try {
@@ -873,6 +874,7 @@ async function renderGrid() {
 
   // Pagination
   const total = items.length;
+  lastTotalItems = total;  // Store for gotoPage pagination calculations
   const { p, start, end } = pageBounds(PAGE, PAGE_SIZE, total);
   PAGE = p;
   const pageItems = items.slice(start, end);
