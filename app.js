@@ -154,6 +154,7 @@ async function fetchListItems(name) {
     const r = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
     const data = await r.json();
+    console.log('Raw data for', name, ':', data);
     
     // Convert object to array (peaks are keyed by slug in the JSON)
     let itemArray;
@@ -169,14 +170,19 @@ async function fetchListItems(name) {
         // Ensure slug is set
         if (!normalized.slug) normalized.slug = keySlug;
         
-        // Normalize peak name (could be peakName, Peak Name, or slug)
+        // Normalize peak name (try multiple field names)
         if (!normalized.name) {
-          normalized.name = normalized.peakName || normalized['Peak Name'] || keySlug;
+          normalized.name = normalized.peakName || normalized['Peak Name'] || normalized.peakname || keySlug;
         }
         
-        // Ensure elevation_ft is available (could be 'Elevation (ft)' in JSON)
-        if (!normalized.elevation_ft && normalized['Elevation (ft)']) {
-          normalized.elevation_ft = normalized['Elevation (ft)'];
+        // Ensure elevation_ft is available (try multiple field names)
+        if (!normalized.elevation_ft) {
+          normalized.elevation_ft = normalized['Elevation (ft)'] || normalized.elevation || normalized['elevation_ft'];
+        }
+        
+        // Ensure elevation is a number
+        if (normalized.elevation_ft && typeof normalized.elevation_ft === 'string') {
+          normalized.elevation_ft = parseFloat(normalized.elevation_ft);
         }
         
         return normalized;
@@ -184,6 +190,8 @@ async function fetchListItems(name) {
     } else {
       throw new Error('Invalid data format: expected object or array');
     }
+    
+    console.log('Normalized items for', name, ':', itemArray.slice(0, 3));  // Log first 3 items
     
     // Sort by elevation (descending) so highest peaks are ranked first
     itemArray.sort((a, b) => (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0));
@@ -827,7 +835,10 @@ window.addEventListener('keydown', (e) => {
 // =====================================================
 async function baseItemsFor(listName) {
   if (!cache.has(listName)) {
-    cache.set(listName, await fetchListItems(listName));
+    console.log('Fetching items for:', listName);
+    const items = await fetchListItems(listName);
+    console.log('Fetched', items.length, 'items for', listName, 'First item:', items[0]);
+    cache.set(listName, items);
   }
   return cache.get(listName);
 }
@@ -935,36 +946,46 @@ async function renderList() {
   const listView = document.getElementById('list-view');
   if (!currentList) {
     listView.innerHTML = '';
+    console.warn('No current list selected');
     return;
   }
 
-  const q = searchEl.value.trim().toLowerCase();
-  const allItems = (await baseItemsFor(currentList)).map(it => {
-    const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
-    return { ...it, completed: !!c.done, date: c.date || '' };
-  });
+  try {
+    const q = searchEl.value.trim().toLowerCase();
+    const baseItems = await baseItemsFor(currentList);
+    console.log('Got items from baseItemsFor:', baseItems.length, 'items');
+    
+    if (!baseItems || baseItems.length === 0) {
+      listView.innerHTML = '<div style="padding:20px;text-align:center">No peaks found</div>';
+      return;
+    }
+    
+    const allItems = baseItems.map(it => {
+      const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
+      return { ...it, completed: !!c.done, date: c.date || '' };
+    });
 
-  // Sort
-  allItems.sort((a, b) => {
-    if (sortMode === 'name') return a.name.localeCompare(b.name);
+    // Sort
+    allItems.sort((a, b) => {
+      if (sortMode === 'name') return a.name.localeCompare(b.name);
     if (sortMode === 'elev') return (b.elevation_ft ?? 0) - (a.elevation_ft ?? 0);
     if (sortMode === 'status') return (b.completed ? 1 : 0) - (a.completed ? 1 : 0) || a.rank - b.rank;
     return a.rank - b.rank;
   });
 
   // Filter
-  let items = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
-  if (hideCompleted) items = items.filter(it => !it.completed);
+  let filteredItems = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  if (hideCompleted) filteredItems = filteredItems.filter(it => !it.completed);
 
   // Progress
   renderProgressBase(allItems);
 
   // Pagination
-  const total = items.length;
+  const total = filteredItems.length;
   lastTotalItems = total;
   const { p, start, end } = pageBounds(PAGE, PAGE_SIZE, total);
   PAGE = p;
-  const pageItems = items.slice(start, end);
+  const pageItems = filteredItems.slice(start, end);
   updatePager(total, total ? (start + 1) : 0, end);
 
   listView.innerHTML = `
@@ -1008,6 +1029,10 @@ async function renderList() {
 
     listView.appendChild(row);
   }
+  } catch (e) {
+    console.error('Error rendering list:', e);
+    listView.innerHTML = '<div style="padding:20px;text-align:center;color:red">Error loading list: ' + e.message + '</div>';
+  }
 }
 
 /* ======= Render Grid (Cards View) ======= */
@@ -1015,14 +1040,24 @@ async function renderGrid() {
   const gridView = document.getElementById('grid-view');
   if (!currentList) {
     gridView.innerHTML = '';
+    console.warn('No current list for grid');
     return;
   }
 
-  const q = searchEl.value.trim().toLowerCase();
-  const allItems = (await baseItemsFor(currentList)).map(it => {
-    const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
-    return { ...it, completed: !!c.done, date: c.date || '' };
-  });
+  try {
+    const q = searchEl.value.trim().toLowerCase();
+    const baseItems = await baseItemsFor(currentList);
+    console.log('Rendering grid with', baseItems.length, 'items');
+    
+    if (!baseItems || baseItems.length === 0) {
+      gridView.innerHTML = '<div style="padding:20px;text-align:center">No peaks found</div>';
+      return;
+    }
+    
+    const allItems = baseItems.map(it => {
+      const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
+      return { ...it, completed: !!c.done, date: c.date || '' };
+    });
 
   // Sort
   allItems.sort((a, b) => {
@@ -1033,18 +1068,18 @@ async function renderGrid() {
   });
 
   // Filter
-  let items = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
-  if (hideCompleted) items = items.filter(it => !it.completed);
+  let filteredItems = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  if (hideCompleted) filteredItems = filteredItems.filter(it => !it.completed);
 
   // Progress
   renderProgressBase(allItems);
 
   // Pagination
-  const total = items.length;
+  const total = filteredItems.length;
   lastTotalItems = total;  // Store for gotoPage pagination calculations
   const { p, start, end } = pageBounds(PAGE, PAGE_SIZE, total);
   PAGE = p;
-  const pageItems = items.slice(start, end);
+  const pageItems = filteredItems.slice(start, end);
   updatePager(total, total ? (start + 1) : 0, end);
 
   gridView.innerHTML = '';
@@ -1118,6 +1153,10 @@ async function renderGrid() {
     });
 
     gridView.appendChild(card);
+  }
+  } catch (e) {
+    console.error('Error rendering grid:', e);
+    gridView.innerHTML = '<div style="padding:20px;text-align:center;color:red">Error loading grid: ' + e.message + '</div>';
   }
 }
 
@@ -1345,7 +1384,13 @@ async function changeList(name) {
   currentList = name;
   PAGE = 1;
   if (listTitle) listTitle.textContent = currentList || '—';
-  await renderView();
+  console.log('Changing list to:', name);
+  try {
+    await renderView();
+    console.log('List rendered successfully');
+  } catch (e) {
+    console.error('Error rendering list:', e);
+  }
   const me = currentUser();
   if (me) restoreFromRemote(me.email, currentList).catch(() => {});
 }
