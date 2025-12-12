@@ -666,73 +666,9 @@ async function fetchAllLists() {
 
 async function fetchListItems(name) {
   console.log('🔍 fetchListItems called for:', name);
-  try {
-    // First, try to get peaks from Supabase
-    const { data: lists, error: listError } = await supabase
-      .from('lists')
-      .select('id, slug')
-      .eq('name', name)
-      .single();
-    
-    console.log('📊 Supabase lists query result:', lists, 'error:', listError);
-    
-    if (lists && !listError) {
-      // Get peaks for this list via list_peaks join
-      const { data: listPeaks, error } = await supabase
-        .from('list_peaks')
-        .select('rank, peak_id, peaks!inner(*)')
-        .eq('list_id', lists.id)
-        .order('rank');
-      
-      console.log('📊 Supabase list_peaks query result:', listPeaks?.length || 0, 'peaks, error:', error);
-      
-      if (error) throw error;
-      
-      if (listPeaks && listPeaks.length > 0) {
-        // Transform to match the existing format
-        const items = listPeaks.map(lp => {
-          const peak = lp.peaks;
-          return {
-            peak_id: peak.id,  // Add peak ID for favorites
-            rank: lp.rank,
-            slug: peak.slug,
-            name: peak.name,
-            elevation_ft: peak.elevation_ft,
-            prominence_ft: peak.prominence_ft,
-            range: peak.range,
-            coords_text: peak.coords_text,
-            ...peak.metadata // Spread metadata for optional fields
-          };
-        });
-        
-        console.log(`Loaded ${items.length} peaks from Supabase for ${name}`);
-        
-        // Merge with NH48 API photos data
-        await fetchNh48Data();
-        items.forEach(item => {
-          const slug = getSlugForName(item.name);
-          const nh48Data = NH48_DATA?.[slug];
-          if (nh48Data) {
-            item.photos = nh48Data.photos || [];
-            // Also merge any missing fields from NH48 API
-            if (!item.range && nh48Data['Range / Subrange']) {
-              item.range = nh48Data['Range / Subrange'];
-            }
-            if (!item.prominence_ft && nh48Data['Prominence (ft)']) {
-              item.prominence_ft = nh48Data['Prominence (ft)'];
-            }
-          }
-        });
-        
-        return items;
-      }
-    }
-  } catch (e) {
-    console.warn('⚠️ Failed to load from Supabase, falling back to static JSON:', e);
-  }
   
-  // Fallback to the original static JSON approach
-  console.log('📁 Using JSON fallback for:', name);
+  // Load from API JSON files first (original design)
+  console.log('📁 Loading from API JSON for:', name);
   const jsonFileName = LIST_TO_JSON_MAP[name];
   if (!jsonFileName) {
     console.error('❌ Unknown list:', name, 'Available lists:', Object.keys(LIST_TO_JSON_MAP));
@@ -743,10 +679,10 @@ async function fetchListItems(name) {
     const url = `${NH48_API_REPO_URL}/${jsonFileName}?t=` + Date.now();
     console.log('🌐 Fetching from:', url);
     const r = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
-    console.log('Fetch response status:', r.status, r.statusText);
+    console.log('✅ Fetch response status:', r.status, r.statusText);
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
     const data = await r.json();
-    console.log('Raw data for', name, 'length:', Array.isArray(data) ? data.length : Object.keys(data).length, 'sample:', data);
+    console.log('✅ Raw data for', name, 'length:', Array.isArray(data) ? data.length : Object.keys(data).length);
     
     // Convert object to array (peaks are keyed by slug in the JSON)
     let itemArray;
@@ -887,6 +823,7 @@ let statusFilter = 'all';  // Filter: 'all', 'completed', 'favorites', 'wishlist
 let rangeFilter = 'all';  // Filter by mountain range
 let elevationMin = '';  // Minimum elevation filter
 let elevationMax = '';  // Maximum elevation filter
+let gridTrackingEnabled = false;  // Grid tracking mode (12 months/peak)
 
 // Local storage keys and utilities (still used for preferences)
 const PREF_KEY = 'pb_prefs_v1';
