@@ -1631,18 +1631,18 @@ async function openPeakDetail(it) {
   }
   
   try {
-    console.log('Opening peak detail for:', it.name, 'ID:', it.id);
+    console.log('Opening peak detail for:', it.name, 'ID:', it.id, 'Slug:', it.slug);
     
     // Always store all peaks data in localStorage for the detail page to access
     const allPeaks = window._filteredPeaks || window._allPeaks || [];
     console.log('Storing', allPeaks.length, 'peaks in localStorage');
     localStorage.setItem('peakbagger_peaks', JSON.stringify(allPeaks));
     
-    // Navigate to the standalone detail page with api_slug if available
+    // Navigate to the standalone detail page with slug if available
     let url = `peak-detail.html?id=${it.id}`;
-    if (it.api_slug) {
-      console.log('Using api_slug:', it.api_slug);
-      url += `&slug=${it.api_slug}`;
+    if (it.slug) {
+      console.log('Using slug:', it.slug);
+      url += `&slug=${it.slug}`;
     }
     console.log('Navigating to:', url);
     window.location.href = url;

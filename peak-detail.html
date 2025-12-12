@@ -469,7 +469,7 @@
               difficulty: apiData.difficulty,
               lat: apiData.latitude,
               lon: apiData.longitude,
-              api_slug: slugParam
+              slug: slugParam
             };
             renderPeak(peak);
             return;
@@ -536,10 +536,10 @@
       // Learn more links
       const searchName = encodeURIComponent(peak.name);
       
-      // NH48 link (show only if api_slug exists)
-      if (peak.api_slug) {
+      // NH48 link (show only if slug exists)
+      if (peak.slug) {
         const nh48Link = document.getElementById('lnkNH48');
-        nh48Link.href = `https://nh48pics.com/peak.html?peak=${peak.api_slug}`;
+        nh48Link.href = `https://nh48pics.com/peak.html?peak=${peak.slug}`;
         nh48Link.style.display = 'block';
       }
       
@@ -559,9 +559,9 @@
       
       // Get images from API
       let images = [];
-      if (peak.api_slug) {
+      if (peak.slug) {
         try {
-          const response = await fetch(`https://natesobol.github.io/NH48-API/peaks/${peak.api_slug}.json`);
+          const response = await fetch(`https://natesobol.github.io/NH48-API/peaks/${peak.slug}.json`);
           const data = await response.json();
           if (data.photos && data.photos.length > 0) {
             images = data.photos.map(p => p.url);
