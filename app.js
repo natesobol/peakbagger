@@ -1631,6 +1631,28 @@ async function openPeakDetail(it) {
   }
   
   try {
+    // Store peaks data in localStorage for the detail page to access
+    const stored = localStorage.getItem('peakbagger_peaks');
+    if (!stored) {
+      const allPeaks = window._filteredPeaks || window._allPeaks || [];
+      localStorage.setItem('peakbagger_peaks', JSON.stringify(allPeaks));
+    }
+    
+    // Navigate to the standalone detail page
+    window.location.href = `peak-detail.html?id=${it.id}`;
+  } catch (err) {
+    console.error('Error opening peak detail:', err);
+  }
+}
+
+// Keep old implementation for reference (can be removed later)
+async function openPeakDetailOLD(it) {
+  if (!it || !it.name) {
+    console.error('Cannot open detail: invalid peak data');
+    return;
+  }
+  
+  try {
     // Store current item for back button and updates
     window._currentPeakDetail = it;
     
