@@ -5,483 +5,66 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Profile Settings - Peakbagger's Journal</title>
 <link rel="stylesheet" href="styles.css">
-<style>
-.profile-page {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 40px 20px;
-  min-height: 100vh;
-  background: var(--bg);
-}
-
-.profile-header {
-  margin-bottom: 32px;
-}
-
-.profile-header h1 {
-  margin: 0 0 8px 0;
-  color: var(--ink);
-}
-
-.profile-header .subtitle {
-  color: var(--ink-weak);
-  font-size: 14px;
-}
-
-.profile-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-}
-
-.profile-card h2 {
-  margin: 0 0 20px 0;
-  font-size: 18px;
-  color: var(--ink);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 12px;
-}
-
-.profile-avatar {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.profile-avatar-icon {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #6b8cff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36px;
-  color: white;
-  font-weight: 600;
-  border: 3px solid var(--border);
-}
-
-.profile-avatar-info h3 {
-  margin: 0 0 4px 0;
-  color: var(--ink);
-  font-size: 20px;
-}
-
-.profile-avatar-info p {
-  margin: 0;
-  color: var(--ink-weak);
-  font-size: 14px;
-}
-
-.info-grid {
-  display: grid;
-  gap: 16px;
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.info-item:last-child {
-  border-bottom: none;
-}
-
-.info-item label {
-  color: var(--ink-weak);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.info-item .value {
-  color: var(--ink);
-  font-weight: 500;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--ink);
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--input-bg);
-  color: var(--ink);
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.form-group .hint {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--ink-weak);
-}
-
-.btn-group {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.message {
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  font-size: 14px;
-}
-
-.message.success {
-  background: rgba(61, 220, 132, 0.1);
-  color: var(--good);
-  border-left: 3px solid var(--good);
-}
-
-.message.error {
-  background: rgba(255, 107, 107, 0.1);
-  color: #ff6b6b;
-  border-left: 3px solid #ff6b6b;
-}
-
-.danger-zone {
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 2px solid var(--border);
-}
-
-.danger-zone h3 {
-  color: #ff6b6b;
-  margin: 0 0 12px 0;
-  font-size: 16px;
-}
-
-.danger-zone .btn-danger {
-  background: rgba(255, 107, 107, 0.1);
-  color: #ff6b6b;
-  border: 1px solid #ff6b6b;
-}
-
-.danger-zone .btn-danger:hover {
-  background: rgba(255, 107, 107, 0.2);
-}
-
-@media (max-width: 640px) {
-  .profile-page {
-    padding: 20px 16px;
-  }
-  
-  .profile-avatar {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .btn-group {
-    flex-direction: column;
-  }
-  
-  .btn-group .btn {
-    width: 100%;
-  }
-}
-
-/* Hike Logs Styles */
-.hike-logs-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-}
-
-.hike-logs-table th {
-  text-align: left;
-  padding: 12px;
-  background: var(--bg);
-  color: var(--ink-weak);
-  font-size: 13px;
-  font-weight: 600;
-  border-bottom: 2px solid var(--border);
-}
-
-.hike-logs-table td {
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
-  color: var(--ink);
-  font-size: 14px;
-}
-
-.hike-logs-table tr:hover {
-  background: var(--bg);
-}
-
-.no-logs-message {
-  text-align: center;
-  padding: 32px;
-  color: var(--ink-weak);
-  font-size: 14px;
-}
-
-/* Social Styles */
-.social-container {
-  display: grid;
-  gap: 24px;
-  grid-template-columns: 1fr 1fr;
-  margin-top: 24px;
-}
-
-.social-section {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.social-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 16px;
-  color: var(--ink);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 10px;
-}
-
-.search-box {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.search-box input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--input-bg);
-  color: var(--ink);
-  font-size: 14px;
-}
-
-.search-box button {
-  padding: 10px 20px;
-}
-
-.user-list, .friend-list, .request-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.user-item, .friend-item, .request-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  transition: background 0.2s;
-}
-
-.user-item:hover, .friend-item:hover, .request-item:hover {
-  background: var(--bg);
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-}
-
-.user-avatar-small {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #6b8cff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  color: white;
-  font-weight: 600;
-}
-
-.user-details {
-  flex: 1;
-}
-
-.user-details .name {
-  font-weight: 600;
-  color: var(--ink);
-  font-size: 14px;
-  margin-bottom: 2px;
-}
-
-.user-details .email {
-  font-size: 12px;
-  color: var(--ink-weak);
-}
-
-.action-buttons {
-  display: flex;
-  gap: 6px;
-}
-
-.btn-icon {
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 24px;
-  color: var(--ink-weak);
-  font-size: 14px;
-}
-
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.badge-pending {
-  background: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
-}
-
-.badge-accepted {
-  background: rgba(61, 220, 132, 0.15);
-  color: var(--good);
-}
-
-/* Toggle Switch */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 26px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--border);
-  transition: 0.3s;
-  border-radius: 26px;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: var(--accent);
-}
-
-input:checked + .slider:before {
-  transform: translateX(24px);
-}
-
-@media (max-width: 960px) {
-  .social-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .hike-logs-table {
-    font-size: 12px;
-  }
-  
-  .hike-logs-table th,
-  .hike-logs-table td {
-    padding: 8px;
-  }
-}
-</style>
+<link rel="stylesheet" href="profile.css">
 </head>
 <body>
 
 <div class="profile-page">
   <div class="profile-header">
-    <button onclick="window.location.href='peakbagger-clean.html'" class="btn btn-ghost btn-small" style="margin-bottom: 16px;">
-      ← Back to Peakbagger
-    </button>
+    <a href="peakbagger-clean.html" class="back-link">← Back to Peakbagger</a>
     <h1>Profile Settings</h1>
     <p class="subtitle">Manage your account information and security settings</p>
   </div>
 
   <!-- Dashboard Stats -->
   <div class="profile-card" id="dashboardStats" style="display:none">
-    <h2>📊 Your Progress</h2>
+    <h2><span class="card-icon">📊</span> Your Progress</h2>
     
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:24px">
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:32px;font-weight:700;color:var(--accent)" id="statTotalCompleted">0</div>
-        <div style="font-size:13px;color:var(--ink-weak);margin-top:4px">Completed</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value accent" id="statTotalCompleted">0</div>
+        <div class="stat-label">Peaks Completed</div>
       </div>
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:32px;font-weight:700;color:#d4af37" id="statFavorites">0</div>
-        <div style="font-size:13px;color:var(--ink-weak);margin-top:4px">Favorites</div>
+      <div class="stat-card">
+        <div class="stat-value gold" id="statFavorites">0</div>
+        <div class="stat-label">Favorites</div>
       </div>
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:32px;font-weight:700;color:#800000" id="statWishlist">0</div>
-        <div style="font-size:13px;color:var(--ink-weak);margin-top:4px">Wishlist</div>
+      <div class="stat-card">
+        <div class="stat-value red" id="statWishlist">0</div>
+        <div class="stat-label">Wishlist</div>
       </div>
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:32px;font-weight:700;color:#3ddc84" id="statPercentComplete">0%</div>
-        <div style="font-size:13px;color:var(--ink-weak);margin-top:4px">Progress</div>
+      <div class="stat-card">
+        <div class="stat-value blue" id="statPercentComplete">0%</div>
+        <div class="stat-label">Progress</div>
       </div>
     </div>
 
-    <!-- Activity Graph -->
-    <div style="margin-top:24px">
-      <h3 style="margin:0 0 16px 0;font-size:16px;color:var(--ink)">Recent Activity</h3>
-      <canvas id="activityGraph" style="width:100%;height:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px"></canvas>
+    <!-- GitHub-style Pulse Graph (104 weeks / 2 years) -->
+    <div class="pulse-section">
+      <div class="pulse-header">
+        <h3 class="pulse-title">
+          <span>🏔️ Hiking Activity</span>
+          <span class="pulse-count" id="pulseHikeCount"></span>
+        </h3>
+      </div>
+      <div class="pulse-subtitle">Peaks completed in the last 2 years</div>
+      <div class="pulse-container" id="pulseGraph"></div>
+      <div class="pulse-legend">
+        <span>Less</span>
+        <div class="pulse-legend-dots">
+          <div class="pulse-legend-dot" style="background:rgba(34,197,94,0.1)"></div>
+          <div class="pulse-legend-dot" style="background:rgba(34,197,94,0.3)"></div>
+          <div class="pulse-legend-dot" style="background:rgba(34,197,94,0.6)"></div>
+          <div class="pulse-legend-dot" style="background:#22c55e"></div>
+        </div>
+        <span>More</span>
+      </div>
     </div>
   </div>
 
   <!-- User Information Card -->
   <div class="profile-card">
-    <h2>User Information</h2>
+    <h2><span class="card-icon">👤</span> User Information</h2>
     
     <div class="profile-avatar">
       <div class="profile-avatar-icon" id="profileAvatarIcon">
@@ -490,6 +73,7 @@ input:checked + .slider:before {
       <div class="profile-avatar-info">
         <h3 id="profileName">Loading...</h3>
         <p id="profileEmail">Loading...</p>
+        <span class="user-badge badge-member" id="memberBadge">🏔️ Member</span>
       </div>
     </div>
 
@@ -504,22 +88,38 @@ input:checked + .slider:before {
       </div>
       <div class="info-item">
         <label>User ID</label>
-        <span class="value subtle" id="userId" style="font-family: monospace; font-size: 12px;">—</span>
+        <span class="value subtle" id="userId">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Achievements Card -->
+  <div class="profile-card">
+    <h2><span class="card-icon">🏆</span> Achievements</h2>
+    <div id="achievementsContainer">
+      <div class="achievements-grid" id="achievementsGrid">
+        <div class="no-logs-message">
+          <div class="empty-icon">🎯</div>
+          <div>Loading achievements...</div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Recent Hikes Card -->
   <div class="profile-card">
-    <h2>Recent Hikes</h2>
+    <h2><span class="card-icon">🥾</span> Recent Hikes</h2>
     <div id="hikesContainer">
-      <div class="no-logs-message">Loading hikes...</div>
+      <div class="no-logs-message">
+        <div class="empty-icon">🏔️</div>
+        <div>Loading your hiking history...</div>
+      </div>
     </div>
   </div>
 
   <!-- Social Features -->
   <div class="profile-card">
-    <h2>Social</h2>
+    <h2><span class="card-icon">🤝</span> Social</h2>
     
     <div class="social-container">
       <!-- User Search -->
@@ -541,18 +141,77 @@ input:checked + .slider:before {
       </div>
 
       <!-- Friends List -->
-      <div class="social-section" style="grid-column: 1 / -1;">
+      <div class="social-section full-width">
         <h3>👥 My Friends</h3>
         <ul id="friendsList" class="friend-list">
-          <li class="empty-state">No friends yet</li>
+          <li class="empty-state">No friends yet. Search for hikers above to connect!</li>
         </ul>
       </div>
     </div>
   </div>
 
+  <!-- Preferences Card -->
+  <div class="profile-card">
+    <h2><span class="card-icon">⚙️</span> Preferences</h2>
+    
+    <div class="preference-grid">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-label">Email Notifications</div>
+          <div class="toggle-description">Receive weekly summaries and friend activity updates</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="emailNotifications" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-label">Public Profile</div>
+          <div class="toggle-description">Allow other users to see your hiking progress</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="publicProfile" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-label">Sound Effects</div>
+          <div class="toggle-description">Play sounds when completing peaks</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="soundEffects" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Export Card -->
+  <div class="profile-card">
+    <h2><span class="card-icon">💾</span> Export Your Data</h2>
+    <p style="color: var(--ink-weak); font-size: 14px; margin: 0 0 16px 0;">
+      Download your hiking data for backup or to use in other applications.
+    </p>
+    
+    <div class="export-section">
+      <button class="export-btn" id="exportJsonBtn">
+        <span class="icon">📄</span>
+        <span>Export as JSON</span>
+      </button>
+      <button class="export-btn" id="exportCsvBtn">
+        <span class="icon">📊</span>
+        <span>Export as CSV</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Change Password Card -->
   <div class="profile-card">
-    <h2>Change Password</h2>
+    <h2><span class="card-icon">🔐</span> Change Password</h2>
     
     <div id="passwordMessage" class="message" style="display: none;"></div>
 
@@ -584,10 +243,23 @@ input:checked + .slider:before {
   <div class="profile-card">
     <div class="danger-zone">
       <h3>⚠️ Danger Zone</h3>
-      <p style="color: var(--ink-weak); font-size: 14px; margin: 0 0 16px 0;">
-        These actions are permanent and cannot be undone.
-      </p>
-      <button class="btn btn-danger" id="signOutBtn">Sign Out</button>
+      <p>These actions are permanent and cannot be undone.</p>
+      <div class="danger-actions">
+        <button class="btn btn-danger" id="signOutBtn">Sign Out</button>
+        <button class="btn btn-danger" id="deleteAccountBtn" style="display:none">Delete Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <h3 id="modalTitle">Confirm Action</h3>
+    <p id="modalMessage">Are you sure you want to proceed?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modalCancel">Cancel</button>
+      <button class="btn btn-danger" id="modalConfirm">Confirm</button>
     </div>
   </div>
 </div>
@@ -748,27 +420,41 @@ input:checked + .slider:before {
   loadUserProfile();
   
   // =====================================================
-  // Hike Logs
+  // Hike Logs - Load from user_peak_progress (completed peaks)
   // =====================================================
   async function loadRecentHikes() {
     if (!currentUser) return;
     
+    const hikesContainer = document.getElementById('hikesContainer');
+    
     try {
-      const { data: hikes, error } = await supabase
-        .from('user_hike_logs')
+      // Load from user_peak_progress which has actual completions
+      const { data: completions, error } = await supabase
+        .from('user_peak_progress')
         .select(`
-          *,
+          peak_id,
+          completed,
+          first_completed_at,
+          last_completed_at,
           peaks(name, slug),
           lists(name)
         `)
         .eq('user_id', currentUser.id)
-        .order('hike_date', { ascending: false })
+        .eq('completed', true)
+        .order('first_completed_at', { ascending: false })
         .limit(10);
       
       if (error) throw error;
       
-      if (!hikes || hikes.length === 0) {
-        hikesContainer.innerHTML = '<div class="no-logs-message">No hikes logged yet</div>';
+      if (!completions || completions.length === 0) {
+        hikesContainer.innerHTML = `
+          <div class="no-logs-message">
+            <div class="empty-icon">🥾</div>
+            <div>No peaks completed yet</div>
+            <p style="margin-top:8px;font-size:13px">Start tracking your hikes to see them here!</p>
+            <a href="peakbagger-clean.html" class="btn btn-primary btn-small" style="margin-top:16px">Browse Peaks</a>
+          </div>
+        `;
         return;
       }
       
@@ -776,25 +462,25 @@ input:checked + .slider:before {
         <table class="hike-logs-table">
           <thead>
             <tr>
-              <th>Date</th>
+              <th>Date Completed</th>
               <th>Peak</th>
               <th>List</th>
-              <th>Trail</th>
-              <th>Miles</th>
-              <th>Duration</th>
             </tr>
           </thead>
           <tbody>
-            ${hikes.map(hike => `
-              <tr>
-                <td>${new Date(hike.hike_date).toLocaleDateString()}</td>
-                <td>${hike.peaks?.name || '—'}</td>
-                <td>${hike.lists?.name || '—'}</td>
-                <td>${hike.trail_name || '—'}</td>
-                <td>${hike.miles ? parseFloat(hike.miles).toFixed(1) : '—'}</td>
-                <td>${hike.duration_minutes ? Math.floor(hike.duration_minutes / 60) + 'h ' + (hike.duration_minutes % 60) + 'm' : '—'}</td>
-              </tr>
-            `).join('')}
+            ${completions.map(item => {
+              const date = item.first_completed_at || item.last_completed_at;
+              const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
+                year: 'numeric', month: 'short', day: 'numeric' 
+              }) : '—';
+              return `
+                <tr style="cursor:pointer" onclick="window.location.href='peak-detail.html?slug=${item.peaks?.slug || ''}'">
+                  <td>${formattedDate}</td>
+                  <td style="color:var(--accent)">${item.peaks?.name || '—'}</td>
+                  <td>${item.lists?.name || '—'}</td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       `;
@@ -802,7 +488,13 @@ input:checked + .slider:before {
       hikesContainer.innerHTML = tableHtml;
     } catch (e) {
       console.error('Error loading hikes:', e);
-      hikesContainer.innerHTML = '<div class="no-logs-message">Error loading hikes</div>';
+      hikesContainer.innerHTML = `
+        <div class="no-logs-message">
+          <div class="empty-icon">⚠️</div>
+          <div>Error loading hikes</div>
+          <button onclick="loadRecentHikes()" class="btn btn-ghost btn-small" style="margin-top:12px">Try Again</button>
+        </div>
+      `;
     }
   }
   
@@ -1113,9 +805,342 @@ input:checked + .slider:before {
   async function initializeSocialFeatures() {
     await loadDefaultList();
     await loadRecentHikes();
+    await loadAchievements();
     await loadFriendRequests();
     await loadFriends();
     await loadDashboardStats();
+  }
+  
+  // =====================================================
+  // Achievements (25 total)
+  // =====================================================
+  // Icon files go in /ico folder as 512x512 PNG
+  // Named: {achievement_type}.png (e.g., first_ascent.png)
+  // =====================================================
+  const ALL_ACHIEVEMENTS = [
+    // Milestones (1-5)
+    { type: 'first_ascent', name: 'First Summit', desc: 'Log your first ascent', icon: '🏔️', category: 'milestones' },
+    { type: 'rookie_hiker', name: 'Rookie Hiker', desc: 'Log 5 ascents', icon: '🥾', category: 'milestones' },
+    { type: 'mountaineer', name: 'Mountaineer', desc: 'Log 25 ascents', icon: '⛰️', category: 'milestones' },
+    { type: 'peakbagger_club', name: 'Peakbagger Club', desc: 'Log 100 ascents', icon: '🏆', category: 'milestones' },
+    { type: 'century_unique', name: 'Century of Peaks', desc: 'Visit 100 unique summits', icon: '💯', category: 'milestones' },
+    // Exploration (6-7)
+    { type: 'world_explorer', name: 'World Explorer', desc: 'Ascents in 5 countries', icon: '🌍', category: 'exploration' },
+    { type: 'state_high_points', name: 'State High Points', desc: 'High-point 5 U.S. states', icon: '🗺️', category: 'exploration' },
+    // Lists (8-9, 15)
+    { type: 'range_completer', name: 'Range Completer', desc: 'Finish a peak range', icon: '🏔️', category: 'lists' },
+    { type: 'list_master', name: 'List Master', desc: 'Complete 3 peak lists', icon: '📋', category: 'lists' },
+    // Altitude (10-11, 19, 25)
+    { type: 'altitude_seeker', name: 'Altitude Seeker', desc: 'Summit above 4,000m (13,123 ft)', icon: '🎯', category: 'altitude' },
+    { type: 'fourteeners', name: 'Fourteen Fourteeners', desc: 'Summit 14 peaks above 14,000 ft', icon: '🔝', category: 'altitude' },
+    // Community (12-14)
+    { type: 'trip_reporter', name: 'Trip Reporter', desc: 'Publish 10 trip reports', icon: '📝', category: 'community' },
+    { type: 'photographer', name: 'Trail Photographer', desc: 'Upload 20 photos', icon: '📷', category: 'community' },
+    { type: 'trailblazer', name: 'Trailblazer', desc: 'First to log a new peak', icon: '🔥', category: 'community' },
+    // Lists continued
+    { type: 'custom_completist', name: 'Custom Completist', desc: 'Finish a custom list', icon: '✨', category: 'lists' },
+    // Seasons (16, 23)
+    { type: 'seasonal_hiker', name: 'Seasonal Hiker', desc: 'Ascents in all 4 seasons', icon: '🍂', category: 'seasons' },
+    // Streaks (17, 20)
+    { type: 'week_streak', name: 'Week-long Streak', desc: 'Ascents on 7 consecutive days', icon: '🔥', category: 'streaks' },
+    // Social (18)
+    { type: 'partner_climber', name: 'Partner Climber', desc: 'Tag 10 companions', icon: '👥', category: 'social' },
+    // Altitude continued
+    { type: 'elevation_gain', name: 'Elevation Gain', desc: 'One ascent with >1,000m elevation gain', icon: '📈', category: 'altitude' },
+    // Streaks continued
+    { type: 'year_marathon', name: 'Yearly Marathon', desc: '50 ascents in one year', icon: '🗓️', category: 'streaks' },
+    // Exploration continued
+    { type: 'globetrotter', name: 'Globetrotter', desc: 'Ascents on 3 continents', icon: '✈️', category: 'exploration' },
+    // Special (22, 24)
+    { type: 'night_hiker', name: 'Night Hiker', desc: 'Ascent starting after 6pm or finishing after midnight', icon: '🌙', category: 'special' },
+    // Seasons continued
+    { type: 'winter_warrior', name: 'Winter Warrior', desc: 'Winter summit (December-February)', icon: '❄️', category: 'seasons' },
+    // Special continued
+    { type: 'repeat_offender', name: 'Repeat Offender', desc: 'Same summit on 10 occasions', icon: '🔄', category: 'special' },
+    // Altitude continued
+    { type: 'personal_best', name: 'Personal Best', desc: 'Highest elevation record above 5,000m', icon: '👑', category: 'altitude' },
+  ];
+  
+  // Get icon URL for achievement (PNG from /ico folder, fallback to emoji)
+  function getAchievementIcon(type, fallbackEmoji) {
+    return `<img src="/ico/${type}.png" alt="" class="achievement-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="achievement-icon-emoji" style="display:none">${fallbackEmoji}</span>`;
+  }
+  
+  async function loadAchievements() {
+    if (!currentUser) return;
+    
+    const container = document.getElementById('achievementsGrid');
+    
+    try {
+      // Load earned achievements from database
+      const { data: earned, error } = await supabase
+        .from('user_achievements')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('earned_at', { ascending: false });
+      
+      if (error) {
+        console.log('Achievements table may not exist yet:', error.message);
+        // Fall back to calculated achievements
+        await loadCalculatedAchievements(container);
+        return;
+      }
+      
+      const earnedMap = new Map(earned?.map(a => [a.achievement_type, a]) || []);
+      
+      // Render all achievements (earned + locked)
+      let html = '';
+      
+      ALL_ACHIEVEMENTS.forEach(ach => {
+        const earnedAch = earnedMap.get(ach.type);
+        const isEarned = !!earnedAch;
+        const earnedDate = earnedAch ? new Date(earnedAch.earned_at).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        }) : null;
+        
+        html += `
+          <div class="achievement-card ${isEarned ? '' : 'locked'}" title="${ach.desc}" data-category="${ach.category}">
+            <div class="achievement-icon">
+              <img src="/ico/${ach.type}.png" alt="${ach.name}" class="achievement-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <span class="achievement-icon-emoji" style="display:none">${ach.icon}</span>
+            </div>
+            <div class="achievement-name">${earnedAch?.achievement_name || ach.name}</div>
+            <div class="achievement-desc">${ach.desc}</div>
+            <span class="achievement-date">${isEarned ? earnedDate : 'Not earned'}</span>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html || '<div class="empty-state">Start hiking to earn achievements!</div>';
+      
+    } catch (e) {
+      console.error('Error loading achievements:', e);
+      await loadCalculatedAchievements(container);
+    }
+  }
+  
+  // Fallback: Calculate achievements from progress data if table doesn't exist
+  async function loadCalculatedAchievements(container) {
+    try {
+      const { data: progress } = await supabase
+        .from('user_peak_progress')
+        .select('peak_id, first_completed_at')
+        .eq('user_id', currentUser.id)
+        .eq('completed', true)
+        .order('first_completed_at', { ascending: true });
+      
+      const count = progress?.length || 0;
+      const uniquePeaks = new Set(progress?.map(p => p.peak_id) || []);
+      const uniqueCount = uniquePeaks.size;
+      const earnedAchievements = [];
+      
+      // 1. first_ascent - First Summit (1 ascent)
+      if (count >= 1) {
+        earnedAchievements.push({
+          type: 'first_ascent',
+          name: 'First Summit',
+          icon: '🏔️',
+          desc: 'Log your first ascent',
+          date: progress[0]?.first_completed_at,
+          category: 'milestones'
+        });
+      }
+      
+      // 2. rookie_hiker - Rookie Hiker (5 ascents)
+      if (count >= 5) {
+        earnedAchievements.push({
+          type: 'rookie_hiker',
+          name: 'Rookie Hiker',
+          icon: '🥾',
+          desc: 'Log 5 ascents',
+          date: progress[4]?.first_completed_at,
+          category: 'milestones'
+        });
+      }
+      
+      // 3. mountaineer - Mountaineer (25 ascents)
+      if (count >= 25) {
+        earnedAchievements.push({
+          type: 'mountaineer',
+          name: 'Mountaineer',
+          icon: '⛰️',
+          desc: 'Log 25 ascents',
+          date: progress[24]?.first_completed_at,
+          category: 'milestones'
+        });
+      }
+      
+      // 4. peakbagger_club - Peakbagger Club (100 ascents)
+      if (count >= 100) {
+        earnedAchievements.push({
+          type: 'peakbagger_club',
+          name: 'Peakbagger Club',
+          icon: '🏆',
+          desc: 'Log 100 ascents',
+          date: progress[99]?.first_completed_at,
+          category: 'milestones'
+        });
+      }
+      
+      // 5. century_unique - Century of Peaks (100 unique summits)
+      if (uniqueCount >= 100) {
+        earnedAchievements.push({
+          type: 'century_unique',
+          name: 'Century of Peaks',
+          icon: '💯',
+          desc: 'Visit 100 unique summits',
+          date: progress[99]?.first_completed_at,
+          category: 'milestones'
+        });
+      }
+      
+      // 23. winter_warrior - Winter Warrior (Dec, Jan, Feb ascent)
+      const winterPeaks = progress?.filter(p => {
+        if (!p.first_completed_at) return false;
+        const month = new Date(p.first_completed_at).getMonth() + 1;
+        return month === 12 || month === 1 || month === 2;
+      });
+      if (winterPeaks?.length > 0) {
+        earnedAchievements.push({
+          type: 'winter_warrior',
+          name: 'Winter Warrior',
+          icon: '❄️',
+          desc: 'Winter summit (December-February)',
+          date: winterPeaks[0]?.first_completed_at,
+          category: 'seasons'
+        });
+      }
+      
+      // 16. seasonal_hiker - Seasonal Hiker (ascents in all 4 seasons)
+      const seasons = new Set();
+      progress?.forEach(p => {
+        if (!p.first_completed_at) return;
+        const month = new Date(p.first_completed_at).getMonth() + 1;
+        if (month === 12 || month === 1 || month === 2) seasons.add('winter');
+        else if (month >= 3 && month <= 5) seasons.add('spring');
+        else if (month >= 6 && month <= 8) seasons.add('summer');
+        else seasons.add('fall');
+      });
+      if (seasons.size === 4) {
+        earnedAchievements.push({
+          type: 'seasonal_hiker',
+          name: 'Seasonal Hiker',
+          icon: '🍂',
+          desc: 'Ascents in all 4 seasons',
+          date: progress[progress.length - 1]?.first_completed_at,
+          category: 'seasons'
+        });
+      }
+      
+      // 17. week_streak - Week-long Streak (7 consecutive days)
+      const dates = progress?.map(p => p.first_completed_at).filter(Boolean).sort();
+      let maxStreak = 1, currentStreak = 1;
+      let streakDate = dates?.[0];
+      for (let i = 1; i < (dates?.length || 0); i++) {
+        const prev = new Date(dates[i-1]);
+        const curr = new Date(dates[i]);
+        const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          currentStreak++;
+          if (currentStreak > maxStreak) {
+            maxStreak = currentStreak;
+            streakDate = dates[i];
+          }
+        } else if (diffDays > 1) {
+          currentStreak = 1;
+        }
+      }
+      if (maxStreak >= 7) {
+        earnedAchievements.push({
+          type: 'week_streak',
+          name: 'Week-long Streak',
+          icon: '🔥',
+          desc: 'Ascents on 7 consecutive days',
+          date: streakDate,
+          category: 'streaks'
+        });
+      }
+      
+      // 20. year_marathon - Yearly Marathon (50 ascents in one year)
+      const yearCounts = {};
+      progress?.forEach(p => {
+        if (!p.first_completed_at) return;
+        const year = new Date(p.first_completed_at).getFullYear();
+        yearCounts[year] = (yearCounts[year] || 0) + 1;
+      });
+      const marathonYear = Object.entries(yearCounts).find(([y, c]) => c >= 50);
+      if (marathonYear) {
+        earnedAchievements.push({
+          type: 'year_marathon',
+          name: 'Yearly Marathon',
+          icon: '🗓️',
+          desc: '50 ascents in one year',
+          date: `${marathonYear[0]}-12-31`,
+          category: 'streaks'
+        });
+      }
+      
+      // 24. repeat_offender - Repeat Offender (same peak 10 times)
+      const peakCounts = {};
+      progress?.forEach(p => {
+        peakCounts[p.peak_id] = (peakCounts[p.peak_id] || 0) + 1;
+      });
+      const repeatPeak = Object.entries(peakCounts).find(([id, c]) => c >= 10);
+      if (repeatPeak) {
+        earnedAchievements.push({
+          type: 'repeat_offender',
+          name: 'Repeat Offender',
+          icon: '🔄',
+          desc: 'Same summit on 10 occasions',
+          date: progress[progress.length - 1]?.first_completed_at,
+          category: 'special'
+        });
+      }
+      
+      const earnedTypes = new Set(earnedAchievements.map(a => a.type));
+      
+      let html = '';
+      
+      // Show earned achievements first
+      earnedAchievements.forEach(ach => {
+        const dateStr = ach.date ? new Date(ach.date).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        }) : 'Earned';
+        
+        html += `
+          <div class="achievement-card" title="${ach.desc}" data-category="${ach.category}">
+            <div class="achievement-icon">
+              <img src="/ico/${ach.type}.png" alt="${ach.name}" class="achievement-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <span class="achievement-icon-emoji" style="display:none">${ach.icon}</span>
+            </div>
+            <div class="achievement-name">${ach.name}</div>
+            <div class="achievement-desc">${ach.desc}</div>
+            <span class="achievement-date">${dateStr}</span>
+          </div>
+        `;
+      });
+      
+      // Show locked achievements
+      ALL_ACHIEVEMENTS.filter(a => !earnedTypes.has(a.type)).forEach(ach => {
+        html += `
+          <div class="achievement-card locked" title="${ach.desc}" data-category="${ach.category}">
+            <div class="achievement-icon">
+              <img src="/ico/${ach.type}.png" alt="${ach.name}" class="achievement-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <span class="achievement-icon-emoji" style="display:none">${ach.icon}</span>
+            </div>
+            <div class="achievement-name">${ach.name}</div>
+            <div class="achievement-desc">${ach.desc}</div>
+            <span class="achievement-date">Not earned</span>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html || '<div class="empty-state">Start hiking to earn achievements!</div>';
+      
+    } catch (e) {
+      console.error('Error calculating achievements:', e);
+      container.innerHTML = '<div class="empty-state">Could not load achievements</div>';
+    }
   }
   
   // Load dashboard stats
@@ -1176,96 +1201,272 @@ input:checked + .slider:before {
     }
   }
   
-  // Load activity graph data and render
+  // Load GitHub-style pulse graph (104 weeks / 2 years)
   async function loadActivityGraph() {
-    if (!currentUser || !currentListId) return;
+    if (!currentUser) return;
+    
+    const pulseGraph = document.getElementById('pulseGraph');
+    const pulseHikeCount = document.getElementById('pulseHikeCount');
+    if (!pulseGraph) return;
     
     try {
-      // Get hike logs from the past 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      // Get all completed peaks with dates from past 2 years
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
       
-      const { data: logs } = await supabase
-        .from('user_hike_logs')
-        .select('hike_date')
+      const { data: completions, error } = await supabase
+        .from('user_peak_progress')
+        .select('first_completed_at, last_completed_at')
         .eq('user_id', currentUser.id)
-        .eq('list_id', currentListId)
-        .gte('hike_date', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('hike_date', { ascending: true });
+        .eq('completed', true)
+        .gte('first_completed_at', twoYearsAgo.toISOString());
       
-      // Create activity map by day
-      const activityMap = {};
-      if (logs) {
-        logs.forEach(log => {
-          const date = log.hike_date;
-          activityMap[date] = (activityMap[date] || 0) + 1;
+      if (error) throw error;
+      
+      // Build week-by-week activity map (Sunday-based weeks)
+      const weekMap = {}; // key: 'YYYY-WW' -> count
+      let totalHikes = 0;
+      
+      if (completions) {
+        completions.forEach(c => {
+          const dateStr = c.first_completed_at || c.last_completed_at;
+          if (!dateStr) return;
+          
+          const date = new Date(dateStr);
+          const weekKey = getWeekKey(date);
+          weekMap[weekKey] = (weekMap[weekKey] || 0) + 1;
+          totalHikes++;
         });
       }
       
-      // Render simple bar graph using canvas
-      const canvas = document.getElementById('activityGraph');
-      if (!canvas) return;
+      // Update total count
+      pulseHikeCount.textContent = `${totalHikes} peaks in this period`;
       
-      const ctx = canvas.getContext('2d');
-      const width = canvas.offsetWidth;
-      const height = canvas.offsetHeight;
-      canvas.width = width;
-      canvas.height = height;
+      // Generate 104 weeks (2 years) of dots
+      const weeks = [];
+      const today = new Date();
       
-      // Clear canvas
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-      ctx.fillRect(0, 0, width, height);
-      
-      if (Object.keys(activityMap).length === 0) {
-        // No data message
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink-weak').trim();
-        ctx.font = '14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('No activity in the past 30 days', width / 2, height / 2);
-        return;
+      for (let i = 103; i >= 0; i--) {
+        const weekDate = new Date(today);
+        weekDate.setDate(weekDate.getDate() - (i * 7));
+        const weekKey = getWeekKey(weekDate);
+        weeks.push({
+          key: weekKey,
+          count: weekMap[weekKey] || 0,
+          date: weekDate
+        });
       }
       
-      // Get all dates in range
-      const dates = [];
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        dates.push(d.toISOString().split('T')[0]);
-      }
+      // Find max for intensity scaling
+      const maxCount = Math.max(...weeks.map(w => w.count), 1);
       
-      // Find max value for scaling
-      const maxValue = Math.max(...Object.values(activityMap), 1);
+      // Build the pulse graph HTML (7 rows for days, 52 columns for weeks)
+      // We'll show 104 dots in a flowing grid (like GitHub but simpler)
+      let html = '<div style="display:flex;flex-wrap:wrap;gap:3px">';
       
-      // Draw bars
-      const barWidth = (width - 40) / dates.length;
-      const maxBarHeight = height - 40;
-      
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-      
-      dates.forEach((date, i) => {
-        const value = activityMap[date] || 0;
-        const barHeight = (value / maxValue) * maxBarHeight;
-        const x = 20 + (i * barWidth);
-        const y = height - 20 - barHeight;
+      weeks.forEach(week => {
+        const intensity = week.count === 0 ? 0 : Math.min(Math.ceil((week.count / maxCount) * 4), 4);
+        const colors = [
+          'rgba(34,197,94,0.1)',  // 0: empty
+          'rgba(34,197,94,0.3)',  // 1: light
+          'rgba(34,197,94,0.5)',  // 2: medium
+          'rgba(34,197,94,0.75)', // 3: high
+          '#22c55e'               // 4: max
+        ];
+        const color = colors[intensity];
+        const monthName = week.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        const tooltip = week.count > 0 
+          ? `${week.count} peak${week.count > 1 ? 's' : ''} - Week of ${monthName}`
+          : `No activity - Week of ${monthName}`;
         
-        ctx.fillRect(x, y, Math.max(barWidth - 2, 1), barHeight);
+        html += `<div style="width:10px;height:10px;border-radius:2px;background:${color};cursor:pointer" title="${tooltip}"></div>`;
       });
       
-      // Draw axis labels
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink-weak').trim();
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'center';
+      html += '</div>';
       
-      // Show first, middle, and last date
-      if (dates.length > 0) {
-        ctx.fillText(new Date(dates[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 20, height - 5);
-        ctx.fillText(new Date(dates[Math.floor(dates.length / 2)]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), width / 2, height - 5);
-        ctx.fillText(new Date(dates[dates.length - 1]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), width - 20, height - 5);
+      // Add month labels below
+      html += '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--ink-weak)">';
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const currentMonth = today.getMonth();
+      // Show ~8 month markers spread across 2 years
+      for (let i = 0; i < 8; i++) {
+        const monthIdx = (currentMonth - 23 + (i * 3) + 12) % 12;
+        html += `<span>${months[monthIdx]}</span>`;
       }
+      html += '</div>';
+      
+      pulseGraph.innerHTML = html;
     } catch (e) {
-      console.error('Error loading activity graph:', e);
+      console.error('Error loading pulse graph:', e);
+      pulseGraph.innerHTML = '<div style="text-align:center;color:var(--ink-weak);padding:20px">Could not load activity data</div>';
     }
   }
+  
+  // Get ISO week key for a date
+  function getWeekKey(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, '0')}`;
+  }
+  
+  // =====================================================
+  // Data Export Functions
+  // =====================================================
+  async function exportData(format) {
+    if (!currentUser) return;
+    
+    try {
+      // Fetch all user data
+      const { data: progress } = await supabase
+        .from('user_peak_progress')
+        .select('*, peaks(name, slug, elevation), lists(name)')
+        .eq('user_id', currentUser.id)
+        .eq('completed', true);
+      
+      const { data: favorites } = await supabase
+        .from('user_favorite_peaks')
+        .select('*, peaks(name, slug)')
+        .eq('user_id', currentUser.id);
+      
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        user: {
+          email: currentUser.email,
+          name: profileName.textContent
+        },
+        completedPeaks: progress?.map(p => ({
+          peak: p.peaks?.name,
+          slug: p.peaks?.slug,
+          elevation: p.peaks?.elevation,
+          list: p.lists?.name,
+          completedAt: p.first_completed_at
+        })) || [],
+        favorites: favorites?.filter(f => f.favorite_type === 'favorite').map(f => ({
+          peak: f.peaks?.name,
+          slug: f.peaks?.slug
+        })) || [],
+        wishlist: favorites?.filter(f => f.favorite_type === 'wishlist').map(f => ({
+          peak: f.peaks?.name,
+          slug: f.peaks?.slug
+        })) || []
+      };
+      
+      let content, filename, mimeType;
+      
+      if (format === 'json') {
+        content = JSON.stringify(exportData, null, 2);
+        filename = `peakbagger-export-${new Date().toISOString().split('T')[0]}.json`;
+        mimeType = 'application/json';
+      } else {
+        // CSV format
+        let csv = 'Peak Name,Slug,Elevation,List,Completed Date,Type\n';
+        exportData.completedPeaks.forEach(p => {
+          csv += `"${p.peak}","${p.slug}",${p.elevation || ''},"${p.list}","${p.completedAt || ''}","completed"\n`;
+        });
+        exportData.favorites.forEach(p => {
+          csv += `"${p.peak}","${p.slug}","","","","favorite"\n`;
+        });
+        exportData.wishlist.forEach(p => {
+          csv += `"${p.peak}","${p.slug}","","","","wishlist"\n`;
+        });
+        content = csv;
+        filename = `peakbagger-export-${new Date().toISOString().split('T')[0]}.csv`;
+        mimeType = 'text/csv';
+      }
+      
+      // Download file
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showMessage(`Data exported as ${format.toUpperCase()}!`);
+    } catch (e) {
+      console.error('Export error:', e);
+      showMessage('Error exporting data', true);
+    }
+  }
+  
+  document.getElementById('exportJsonBtn')?.addEventListener('click', () => exportData('json'));
+  document.getElementById('exportCsvBtn')?.addEventListener('click', () => exportData('csv'));
+  
+  // =====================================================
+  // Preferences
+  // =====================================================
+  function loadPreferences() {
+    const prefs = JSON.parse(localStorage.getItem('peakbagger_prefs') || '{}');
+    document.getElementById('emailNotifications').checked = prefs.emailNotifications !== false;
+    document.getElementById('publicProfile').checked = prefs.publicProfile !== false;
+    document.getElementById('soundEffects').checked = prefs.soundEffects !== false;
+  }
+  
+  function savePreferences() {
+    const prefs = {
+      emailNotifications: document.getElementById('emailNotifications').checked,
+      publicProfile: document.getElementById('publicProfile').checked,
+      soundEffects: document.getElementById('soundEffects').checked
+    };
+    localStorage.setItem('peakbagger_prefs', JSON.stringify(prefs));
+  }
+  
+  document.getElementById('emailNotifications')?.addEventListener('change', savePreferences);
+  document.getElementById('publicProfile')?.addEventListener('change', savePreferences);
+  document.getElementById('soundEffects')?.addEventListener('change', savePreferences);
+  
+  // Load preferences on page load
+  loadPreferences();
+  
+  // =====================================================
+  // Modal Functions
+  // =====================================================
+  const modal = document.getElementById('confirmModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMessage = document.getElementById('modalMessage');
+  const modalCancel = document.getElementById('modalCancel');
+  const modalConfirm = document.getElementById('modalConfirm');
+  let modalCallback = null;
+  
+  function showModal(title, message, callback, confirmText = 'Confirm') {
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    modalConfirm.textContent = confirmText;
+    modalCallback = callback;
+    modal.classList.add('active');
+  }
+  
+  function hideModal() {
+    modal.classList.remove('active');
+    modalCallback = null;
+  }
+  
+  modalCancel?.addEventListener('click', hideModal);
+  modalConfirm?.addEventListener('click', () => {
+    if (modalCallback) modalCallback();
+    hideModal();
+  });
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) hideModal();
+  });
+  
+  // Update sign out to use modal
+  signOutBtn.addEventListener('click', () => {
+    showModal(
+      'Sign Out',
+      'Are you sure you want to sign out of your account?',
+      async () => {
+        await supabase.auth.signOut();
+        window.location.href = 'peakbagger-clean.html';
+      },
+      'Sign Out'
+    );
+  });
   
   // Update loadUserProfile to call social features
   const originalLoadUserProfile = loadUserProfile;
@@ -1273,6 +1474,21 @@ input:checked + .slider:before {
     await originalLoadUserProfile();
     if (currentUser) {
       await initializeSocialFeatures();
+      // Update member badge based on completed peaks
+      const completed = parseInt(document.getElementById('statTotalCompleted')?.textContent || '0');
+      const badge = document.getElementById('memberBadge');
+      if (badge) {
+        if (completed >= 48) {
+          badge.textContent = '🏆 NH48 Finisher';
+          badge.classList.add('badge-accepted');
+        } else if (completed >= 24) {
+          badge.textContent = '⭐ Experienced Hiker';
+        } else if (completed >= 10) {
+          badge.textContent = '🥾 Active Hiker';
+        } else {
+          badge.textContent = '🏔️ Member';
+        }
+      }
     }
   };
 </script>

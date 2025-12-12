@@ -1039,9 +1039,11 @@ async function loadStateFromSupabase() {
     if (progressRows) {
       progressRows.forEach(row => {
         const peakName = row.peaks?.name || `peak-${row.peak_id}`;
+        // Use 'done' key for consistency with local state (not 'checked')
+        const dateVal = row.first_completed_at || row.last_completed_at || '';
         completions[currentList][peakName] = {
-          checked: true,
-          date: row.first_completed_at || row.last_completed_at || ''
+          done: true,
+          date: dateVal ? dateVal.split('T')[0] : ''  // Strip time portion for date input
         };
       });
     }
@@ -2301,16 +2303,21 @@ function setDateFor(peakName, dateStr) {
   completions[currentList] ??= {};
   completions[currentList][peakName] ??= { done: false, date: '' };
   completions[currentList][peakName].date = dateStr;
-  if (dateStr && !completions[currentList][peakName].done) {
+  
+  // SYNC: When date is set, always mark as completed
+  // When date is cleared, always mark as not completed
+  if (dateStr) {
     completions[currentList][peakName].done = true;
+  } else {
+    completions[currentList][peakName].done = false;
   }
   
-  // Save to Supabase
+  // Save to Supabase with synced values
   saveStateToSupabase(peakName, !!dateStr, dateStr);
   
   saveState();
   queueRemoteSave();
-  renderTable();
+  renderView();  // Full re-render to update checkbox UI
 }
 
 function toggleComplete(peakName) {
@@ -2482,7 +2489,8 @@ async function renderList() {
     const dateInput = row.querySelector('.list-date-input');
     dateInput?.addEventListener('click', e => e.stopPropagation());
     dateInput?.addEventListener('change', () => {
-      if (dateInput.value) setDateFor(it.name, dateInput.value);
+      // Always sync date and completion
+      setDateFor(it.name, dateInput.value || '');
     });
     row.querySelector('.list-check')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -2702,7 +2710,8 @@ async function renderGrid() {
       const dateInput = card.querySelector('.card-date-input');
       dateInput?.addEventListener('click', e => e.stopPropagation());
       dateInput?.addEventListener('change', () => {
-        if (dateInput.value) setDateFor(it.name, dateInput.value);
+        // Always sync date and completion - setting date marks complete, clearing date marks incomplete
+        setDateFor(it.name, dateInput.value || '');
       });
     }
     
@@ -2868,7 +2877,8 @@ async function renderTable() {
       const dateInput = tr.querySelector('.date-input');
       dateInput?.addEventListener('click', e => e.stopPropagation());
       dateInput?.addEventListener('change', () => {
-        if (dateInput.value) setDateFor(it.name, dateInput.value);
+        // Always sync date and completion
+        setDateFor(it.name, dateInput.value || '');
       });
       tr.querySelector('.js-check')?.addEventListener('click', (e) => {
         e.stopPropagation();
