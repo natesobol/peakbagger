@@ -240,6 +240,101 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   text-overflow:ellipsis;
 }
 
+/* Month Grid for Grid Mode */
+.peak-card-month-grid-container {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.peak-card-month-grid-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-light);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.peak-card-month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.month-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.month-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.month-date-input {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: var(--ink);
+  font-size: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.month-date-input:hover {
+  border-color: var(--accent);
+}
+
+.month-date-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Compact layout for smaller cards */
+@media (max-width: 960px) {
+  .peak-card-month-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  
+  .month-label {
+    font-size: 0.65rem;
+  }
+  
+  .month-date-input {
+    font-size: 0.7rem;
+    padding: 3px 5px;
+  }
+}
+
+/* Detail view month grid */
+.detail-month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.detail-month-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (max-width: 960px) {
+  .detail-month-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Completed card styling */
 .peak-card-body.completed h3{
   color:var(--good);

@@ -940,6 +940,39 @@ async function openPeakDetail(it) {
     if (val) setDateFor(it.name, val);
   };
 
+  // Populate month grid
+  const monthGridContainer = document.getElementById('peakDetailMonthGrid');
+  const monthGridEl = monthGridContainer?.querySelector('.detail-month-grid');
+  if (monthGridEl) {
+    monthGridEl.innerHTML = '';
+    const gridData = completionsGrid[currentList]?.[it.name] || {};
+    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach((month, idx) => {
+      const monthNum = idx + 1;
+      const dateValue = gridData[monthNum] || '';
+      const cell = document.createElement('div');
+      cell.className = 'detail-month-cell';
+      cell.innerHTML = `
+        <label class="month-label">${month}</label>
+        <input type="date" class="month-date-input" data-month="${monthNum}" data-name="${it.name}" value="${dateValue}">
+      `;
+      
+      const input = cell.querySelector('.month-date-input');
+      input.addEventListener('change', async () => {
+        const monthNum = parseInt(input.dataset.month, 10);
+        const peakName = input.dataset.name;
+        const dateValue = input.value;
+        await setGridDate(currentList, peakName, monthNum, dateValue);
+      });
+      
+      monthGridEl.appendChild(cell);
+    });
+    
+    // Show month grid in grid mode
+    if (monthGridContainer) {
+      monthGridContainer.style.display = 'block';
+    }
+  }
+
   // Load and display photos
   const photoContainer = document.getElementById('peakDetailPhotos');
   photoContainer.innerHTML = '';
@@ -1535,9 +1568,21 @@ async function renderGrid() {
             <span class="peak-card-meta-label">Range</span>
             <span class="peak-card-meta-value">${rangeStr}</span>
           </div>
-          <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Date</span>
-            <span class="peak-card-meta-value"><input type="date" class="card-date-input" value="${it.date || ''}" data-name="${it.name}" placeholder="mm/dd/yyyy" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--ink);font-size:0.85rem;width:100%;min-width:120px;box-sizing:border-box;"></span>
+          <div class="peak-card-month-grid-container">
+            <div class="peak-card-month-grid-label">Monthly Completions</div>
+            <div class="peak-card-month-grid">
+              ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
+                const monthNum = idx + 1;
+                const gridData = completionsGrid[currentList]?.[it.name] || {};
+                const dateValue = gridData[monthNum] || '';
+                return `
+                  <div class="month-cell">
+                    <label class="month-label">${month}</label>
+                    <input type="date" class="month-date-input" data-month="${monthNum}" data-name="${it.name}" value="${dateValue}">
+                  </div>
+                `;
+              }).join('')}
+            </div>
           </div>
           <div class="peak-card-meta-row">
             <span class="peak-card-meta-label">Completed</span>
@@ -1549,11 +1594,19 @@ async function renderGrid() {
 
     // Event handlers
     card.addEventListener('click', () => openPeakDetail(it));
-    const dateInput = card.querySelector('.card-date-input');
-    dateInput?.addEventListener('click', e => e.stopPropagation());
-    dateInput?.addEventListener('change', () => {
-      if (dateInput.value) setDateFor(it.name, dateInput.value);
+    
+    // Wire up all month date inputs
+    const monthInputs = card.querySelectorAll('.month-date-input');
+    monthInputs.forEach(input => {
+      input.addEventListener('click', e => e.stopPropagation());
+      input.addEventListener('change', async () => {
+        const monthNum = parseInt(input.dataset.month, 10);
+        const peakName = input.dataset.name;
+        const dateValue = input.value;
+        await setGridDate(currentList, peakName, monthNum, dateValue);
+      });
     });
+    
     card.querySelector('.card-check')?.addEventListener('click', (e) => {
       e.stopPropagation();
       toggleComplete(it.name);
