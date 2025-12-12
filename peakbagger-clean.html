@@ -60,28 +60,28 @@
       </div>
       <div class="controls">
         <div class="ctrl"><span class="ico">🔎</span><input id="search" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." /></div>
-        <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">⚙️</span> <span>Sort: <strong id="sortLabel">Rank</strong></span></div>
-        <div class="ctrl-btn" id="showComplete"><span class="ico">◯</span> <span>Hide completed</span></div>
+        <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">⚙️</span> <span><span data-i18n="Sort">Sort:</span> <strong id="sortLabel">Rank</strong></span></div>
+        <div class="ctrl-btn" id="showComplete"><span class="ico">◯</span> <span data-i18n="Hide completed">Hide completed</span></div>
         <!-- Status Filter -->
         <div class="ctrl" style="min-width:150px">
           <span class="ico">🔽</span>
           <select id="statusFilter" class="select" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--ink);font-size:14px;cursor:pointer">
-            <option value="all">All Peaks</option>
-            <option value="completed">Completed</option>
-            <option value="favorites">Favorites</option>
-            <option value="wishlist">Wishlist</option>
-            <option value="incomplete">Incomplete</option>
+            <option value="all" data-i18n-option="All Peaks">All Peaks</option>
+            <option value="completed" data-i18n-option="Completed">Completed</option>
+            <option value="favorites" data-i18n-option="Favorites">Favorites</option>
+            <option value="wishlist" data-i18n-option="Wishlist">Wishlist</option>
+            <option value="incomplete" data-i18n-option="Incomplete">Incomplete</option>
           </select>
         </div>
         <!-- Advanced Filters (collapsible) -->
         <details class="ctrl-advanced-filters" style="position:relative">
           <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
             <span class="ico">⚙️</span>
-            <span>Filters</span>
+            <span data-i18n="Filters">Filters</span>
           </summary>
           <div class="advanced-filters-panel">
             <div class="filter-row">
-              <label>Range:</label>
+              <label data-i18n="Range">Range:</label>
               <select id="rangeFilter" class="select">
                 <option value="all">All Ranges</option>
                 <option value="Presidential">Presidential</option>
@@ -101,12 +101,12 @@
               <label>Max Elevation (ft):</label>
               <input type="number" id="elevationMax" class="filter-input" placeholder="6288" min="0" max="10000">
             </div>
-            <button id="clearFilters" class="btn btn-ghost btn-small" style="width:100%;margin-top:8px">Clear All Filters</button>
+            <button id="clearFilters" class="btn btn-ghost btn-small" style="width:100%;margin-top:8px" data-i18n="Clear All Filters">Clear All Filters</button>
           </div>
         </details>
         <!-- NEW: Mode toggle (Checklist / Grid) -->
-        <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🔁</span> <span>Mode: <strong id="modeLabel">Checklist</strong></span></div>
-        <div class="ctrl-btn" id="exportBtn"><span class="ico">🗄️</span> <span>Export XLSX</span></div>
+        <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🔁</span> <span><span data-i18n="Mode">Mode:</span> <strong id="modeLabel">Checklist</strong></span></div>
+        <div class="ctrl-btn" id="exportBtn"><span class="ico">🗄️</span> <span data-i18n="Export XLSX">Export XLSX</span></div>
       </div>
     </div>
   </div>
@@ -159,7 +159,7 @@
       <!-- About Peakbagger Info Panel -->
       <details class="collapsible-section" id="introPanelDetails">
         <summary>
-          <span>ℹ️ About Peakbagger</span>
+          <span data-i18n="About Peakbagger">ℹ️ About Peakbagger</span>
           <span id="introPanelToggle" style="font-size:12px;color:var(--ink-weak)">▼</span>
         </summary>
         <div class="panel" style="font-size:14px;line-height:1.5;color:var(--ink)">
@@ -169,40 +169,40 @@
       </details>
 
       <div style="margin-top:14px">
-        <label for="listSelect" class="subtle" style="font-size:14px">Choose List:</label>
+        <label for="listSelect" class="subtle" style="font-size:14px" data-i18n="Choose List">Choose List:</label>
         <select id="listSelect" class="select" style="width:100%;margin-top:6px"></select>
       </div>
 
       <!-- Mobile Search -->
       <div id="mobileSidebarSearch" style="display:none">
-        <label for="mobileSearch" class="subtle" style="font-size:14px">Search:</label>
-        <input id="mobileSearch" type="search" placeholder="Search peaks…" style="width:100%;margin-top:6px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--input-bg);color:var(--ink);font-size:14px;" />
+        <label for="mobileSearch" class="subtle" style="font-size:14px" data-i18n="Search">Search:</label>
+        <input id="mobileSearch" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." style="width:100%;margin-top:6px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--input-bg);color:var(--ink);font-size:14px;" />
       </div>
 
-      <details id="settingsDetails" class="collapsible-section"><summary>Settings</summary><div class="settings">
+      <details id="settingsDetails" class="collapsible-section"><summary data-i18n="Settings">Settings</summary><div class="settings">
         <div class="row">
-          <label>Units: meters</label>
+          <label data-i18n="Units: Meters">Units: meters</label>
           <label class="switch"><input id="metersToggle" type="checkbox"><span class="slider"></span></label>
         </div>
 
         <!-- NEW: Row density -->
         <div class="row">
-          <label>Row density: <strong id="densityLabel">Comfortable</strong></label>
+          <label><span data-i18n="Row density">Row density:</span> <strong id="densityLabel" data-i18n="Comfortable">Comfortable</strong></label>
           <label class="switch"><input id="densityToggle" type="checkbox"><span class="slider"></span></label>
         </div>
         <!-- NEW: Sticky header -->
         <div class="row">
-          <label>Sticky header</label>
+          <label data-i18n="Sticky header">Sticky header</label>
           <label class="switch"><input id="stickyToggle" type="checkbox"><span class="slider"></span></label>
         </div>
         <!-- NEW: Grid Tracking Mode -->
         <div class="row">
-          <label>Grid tracking (12 months/peak)</label>
+          <label data-i18n="Grid tracking (12 months/peak)">Grid tracking (12 months/peak)</label>
           <label class="switch"><input id="gridTrackingToggle" type="checkbox"><span class="slider"></span></label>
         </div>
         <!-- Language selector -->
         <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
-          <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Language</div>
+          <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="Language">Language</div>
           <div class="language-selector">
             <button class="lang-btn active" data-lang="en" title="English">🇺🇸</button>
             <button class="lang-btn" data-lang="es" title="Español">🇪🇸</button>
@@ -214,43 +214,43 @@
         </div>
         <!-- Color Legend -->
         <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
-          <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Card Color Legend</div>
+          <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="Card Color Legend">Card Color Legend</div>
           <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:4px;height:16px;background:#3ddc84;border-radius:2px"></div>
-              <span>Completed</span>
+              <span data-i18n="Completed">Completed</span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:4px;height:16px;background:#d4af37;border-radius:2px"></div>
-              <span>Favorite</span>
+              <span data-i18n="Favorite">Favorite</span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:4px;height:16px;background:#800000;border-radius:2px"></div>
-              <span>Wishlist</span>
+              <span data-i18n="Wishlist">Wishlist</span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:4px;height:16px;background:#646464;border-radius:2px"></div>
-              <span>Incomplete</span>
+              <span data-i18n="Incomplete">Incomplete</span>
             </div>
           </div>
         </div>
       </div></details>
 
       <!-- Themes dropdown (pre-collapsed) -->
-      <details id="themeDetails" class="collapsible-section"><summary>Themes</summary>
+      <details id="themeDetails" class="collapsible-section"><summary data-i18n="Themes">Themes</summary>
         <div class="panel" style="margin-top:8px">
-          <label for="themeSelect" class="subtle">Choose theme</label>
+          <label for="themeSelect" class="subtle" data-i18n="Choose theme">Choose theme</label>
           <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
-            <option value="dark">Dark (default)</option>
-            <option value="light">Light (white & black)</option>
-            <option value="forest">Forest Green</option>
-            <option value="sky">Sky Blue</option>
+            <option value="dark" data-i18n-option="Dark (default)">Dark (default)</option>
+            <option value="light" data-i18n-option="Light (white & black)">Light (white & black)</option>
+            <option value="forest" data-i18n-option="Forest Green">Forest Green</option>
+            <option value="sky" data-i18n-option="Sky Blue">Sky Blue</option>
           </select>
         </div>
       </details>
 
       <!-- NEW: Resources panel -->
-      <details id="resourcesDetails" class="collapsible-section"><summary>Resources</summary><div class="panel" style="margin-top:14px">
+      <details id="resourcesDetails" class="collapsible-section"><summary data-i18n="Resources">Resources</summary><div class="panel" style="margin-top:14px">
         <div class="links-col">
           <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH (trip reports)</a>
           <a class="btn-link" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Weather</a>
@@ -281,40 +281,54 @@
       <!-- Full-page Peak Detail View -->
       <div id="peakDetailPage" class="peak-detail-page" style="display:none">
         <div class="peak-detail-header">
-          <button id="peakDetailBackBtn" class="btn btn-ghost btn-small" style="margin-bottom:16px">← Back to Peakbagger</button>
+          <button id="peakDetailBackBtn" class="btn btn-ghost btn-small" style="margin-bottom:16px" data-i18n="← Back to Peakbagger">← Back to Peakbagger</button>
           <h1 id="peakDetailTitle" style="margin:0 0 8px 0">—</h1>
-          <p id="peakDetailSub" class="subtle" style="margin:0">Quick facts, weather & helpful links.</p>
+          <p id="peakDetailSub" class="subtle" style="margin:0" data-i18n="Quick facts, weather & helpful links.">Quick facts, weather & helpful links.</p>
         </div>
 
-        <div id="peakDetailPhotos" class="peak-detail-photos"></div>
+        <div id="peakDetailPhotos" class="peak-detail-photos">
+          <div id="peakCarousel" class="peak-carousel"></div>
+          <div id="peakDots" class="peak-carousel-dots"></div>
+          <div class="peak-carousel-controls">
+            <button id="peakPrevBtn" aria-label="Previous image">‹</button>
+            <button id="peakNextBtn" aria-label="Next image">›</button>
+          </div>
+          <!-- Countdown timer overlay -->
+          <div class="peak-carousel-timer" id="peakCarouselTimer" style="display:none">
+            <svg viewBox="0 0 40 40">
+              <circle id="peakTimerRing" class="peak-timer-ring" cx="20" cy="20" r="18"></circle>
+            </svg>
+            <span id="peakTimerText" class="peak-timer-text"></span>
+          </div>
+        </div>
 
         <div class="peak-detail-grid">
           <!-- Fast facts -->
           <section class="fact">
-            <h3>Fast facts</h3>
-            <div class="kv"><span>Elevation</span><strong id="peakDetailElev">—</strong></div>
-            <div class="kv"><span>Date completed</span><input type="date" id="peakDetailDateInput" class="date-input" value="" /></div>
+            <h3 data-i18n="Fast facts">Fast facts</h3>
+            <div class="kv"><span data-i18n="Elevation">Elevation</span><strong id="peakDetailElev">—</strong></div>
+            <div class="kv"><span data-i18n="Date completed">Date completed</span><input type="date" id="peakDetailDateInput" class="date-input" value="" /></div>
             <div id="peakDetailMonthGrid" class="peak-detail-month-grid" style="margin-top:16px;display:none;">
-              <h4 style="margin:0 0 10px 0;font-size:0.85rem;color:var(--ink-light);text-transform:uppercase;letter-spacing:0.5px;">Monthly Completions</h4>
+              <h4 style="margin:0 0 10px 0;font-size:0.85rem;color:var(--ink-light);text-transform:uppercase;letter-spacing:0.5px;" data-i18n="Monthly Completions">Monthly Completions</h4>
               <div class="detail-month-grid"></div>
             </div>
-            <div class="kv"><span>Location</span><strong id="peakDetailLocation">—</strong></div>
-            <div class="kv"><span>Prominence</span><strong id="peakDetailProm">—</strong></div>
-            <div class="kv"><span>Difficulty</span><strong id="peakDetailDiff">—</strong></div>
+            <div class="kv"><span data-i18n="Location">Location</span><strong id="peakDetailLocation">—</strong></div>
+            <div class="kv"><span data-i18n="Prominence">Prominence</span><strong id="peakDetailProm">—</strong></div>
+            <div class="kv"><span data-i18n="Difficulty">Difficulty</span><strong id="peakDetailDiff">—</strong></div>
             <div class="kv" style="border-top:2px solid var(--border);padding-top:12px;margin-top:8px;">
               <button id="peakDetailFavBtn" class="btn btn-secondary btn-small" style="flex:1">
-                <span id="peakDetailFavIcon">⭐</span> <span id="peakDetailFavText">Favorite</span>
+                <span id="peakDetailFavIcon">⭐</span> <span id="peakDetailFavText" data-i18n="Favorite">Favorite</span>
               </button>
               <button id="peakDetailWishBtn" class="btn btn-secondary btn-small" style="flex:1;margin-left:8px">
-                <span id="peakDetailWishIcon">❤️</span> <span id="peakDetailWishText">Wishlist</span>
+                <span id="peakDetailWishIcon">❤️</span> <span id="peakDetailWishText" data-i18n="Wishlist">Wishlist</span>
               </button>
             </div>
           </section>
 
           <!-- Weather -->
           <section class="fact">
-            <h3>Weather</h3>
-            <p class="subtle small">Forecast links open in a new tab. NOAA point forecasts work best near the summit.</p>
+            <h3 data-i18n="Weather">Weather</h3>
+            <p class="subtle small" data-i18n="Forecast links open in a new tab. NOAA point forecasts work best near the summit.">Forecast links open in a new tab. NOAA point forecasts work best near the summit.</p>
             <div class="links-col">
               <a class="btn-link" id="peakWxNoaa" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Point Forecast</a>
               <a class="btn-link" id="peakWxOpenMeteo" href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">Open-Meteo (lat/lon)</a>
@@ -325,7 +339,7 @@
 
           <!-- Learn more -->
           <section class="fact">
-            <h3>Learn more</h3>
+            <h3 data-i18n="Learn more">Learn more</h3>
             <div class="links-col">
               <a class="btn-link" id="peakLnkWikipedia" href="https://en.wikipedia.org/wiki/" target="_blank" rel="noopener">Wikipedia</a>
               <a class="btn-link" id="peakLnkPeakbagger" href="https://www.peakbagger.com/" target="_blank" rel="noopener">Peakbagger</a>
@@ -363,60 +377,60 @@
 <!-- Auth Modal -->
 <div class="modal" id="authModal" aria-hidden="true">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-    <h2 id="authTitle">Log in</h2>
+    <h2 id="authTitle" data-i18n="Log in">Log in</h2>
     
     <!-- LOGIN FORM (default) -->
     <div id="loginForm">
-      <div class="subtle" style="margin-bottom:16px">Log in to access your peak tracking data.</div>
+      <div class="subtle" style="margin-bottom:16px" data-i18n="Log in to access your peak tracking data.">Log in to access your peak tracking data.</div>
       
-      <div class="field"><label for="loginEmail">Email *</label><input id="loginEmail" type="email" placeholder="you@email.com" autocomplete="email" required></div>
-      <div class="field"><label for="loginPass">Password *</label><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" required></div>
+      <div class="field"><label for="loginEmail" data-i18n="Email *">Email *</label><input id="loginEmail" type="email" placeholder="you@email.com" data-i18n-placeholder="you@email.com" autocomplete="email" required></div>
+      <div class="field"><label for="loginPass" data-i18n="Password *">Password *</label><input id="loginPass" type="password" placeholder="••••••••" data-i18n-placeholder="••••••••" autocomplete="current-password" required></div>
       
       <label style="display:flex;align-items:center;gap:8px;margin:12px 0">
         <input type="checkbox" id="rememberMe" checked />
-        <span>Stay signed in</span>
+        <span data-i18n="Stay signed in">Stay signed in</span>
       </label>
       
       <div class="row-actions" style="margin-top:16px">
-        <button class="btn btn-primary" id="doLogin">Log in</button>
+        <button class="btn btn-primary" id="doLogin" data-i18n="Log in">Log in</button>
         <span class="space"></span>
-        <button class="btn btn-ghost" id="closeAuth">Close</button>
+        <button class="btn btn-ghost" id="closeAuth" data-i18n="Close">Close</button>
       </div>
       
       <div style="margin-top:16px;text-align:center">
-        <span class="subtle">Don't have an account? </span>
-        <a href="#" id="showSignup" style="color:#4a9eff;text-decoration:none">Create account</a>
+        <span class="subtle" data-i18n="Don't have an account?">Don't have an account? </span>
+        <a href="#" id="showSignup" style="color:#4a9eff;text-decoration:none" data-i18n="Create account">Create account</a>
       </div>
     </div>
     
     <!-- SIGN UP FORM (hidden by default) -->
     <div id="signupForm" style="display:none">
-      <div class="subtle" style="margin-bottom:16px">Create your account to start tracking peaks.</div>
+      <div class="subtle" style="margin-bottom:16px" data-i18n="Create your account to start tracking peaks.">Create your account to start tracking peaks.</div>
       
-      <div class="field"><label for="signupFirstName">First Name *</label><input id="signupFirstName" type="text" placeholder="John" autocomplete="given-name" required></div>
-      <div class="field"><label for="signupLastName">Last Name</label><input id="signupLastName" type="text" placeholder="Doe" autocomplete="family-name"></div>
-      <div class="field"><label for="signupEmail">Email *</label><input id="signupEmail" type="email" placeholder="you@email.com" autocomplete="email" required></div>
-      <div class="field"><label for="signupPass">Password *</label><input id="signupPass" type="password" placeholder="••••••••" autocomplete="new-password" required></div>
-      <div class="field"><label for="signupPassConfirm">Confirm Password *</label><input id="signupPassConfirm" type="password" placeholder="••••••••" autocomplete="new-password" required></div>
+      <div class="field"><label for="signupFirstName" data-i18n="First Name *">First Name *</label><input id="signupFirstName" type="text" placeholder="John" data-i18n-placeholder="John" autocomplete="given-name" required></div>
+      <div class="field"><label for="signupLastName" data-i18n="Last Name">Last Name</label><input id="signupLastName" type="text" placeholder="Doe" data-i18n-placeholder="Doe" autocomplete="family-name"></div>
+      <div class="field"><label for="signupEmail" data-i18n="Email *">Email *</label><input id="signupEmail" type="email" placeholder="you@email.com" data-i18n-placeholder="you@email.com" autocomplete="email" required></div>
+      <div class="field"><label for="signupPass" data-i18n="Password *">Password *</label><input id="signupPass" type="password" placeholder="••••••••" data-i18n-placeholder="••••••••" autocomplete="new-password" required></div>
+      <div class="field"><label for="signupPassConfirm" data-i18n="Confirm Password *">Confirm Password *</label><input id="signupPassConfirm" type="password" placeholder="••••••••" data-i18n-placeholder="••••••••" autocomplete="new-password" required></div>
       
       <!-- Honeypot for bot prevention -->
       <div style="position:absolute;left:-9999px" aria-hidden="true">
         <input type="text" id="signupHoneypot" tabindex="-1" autocomplete="off" />
       </div>
       
-      <div class="tos-toggle" id="tosToggle" style="margin-top:12px">📄 View Terms & Conditions</div>
+      <div class="tos-toggle" id="tosToggle" style="margin-top:12px" data-i18n="📄 View Terms & Conditions">📄 View Terms & Conditions</div>
       <div class="tos-box" id="tosBox">
         <div id="tosText"></div>
       </div>
       <label class="tos-agree">
         <input type="checkbox" id="tosAgree" />
-        <span>I agree to the Terms & Conditions *</span>
+        <span data-i18n="I agree to the Terms & Conditions *">I agree to the Terms & Conditions *</span>
       </label>
       
       <div class="row-actions" style="margin-top:16px">
-        <button class="btn btn-primary" id="doSignup" disabled>Create account</button>
+        <button class="btn btn-primary" id="doSignup" disabled data-i18n="Create account">Create account</button>
         <span class="space"></span>
-        <button class="btn btn-ghost" id="closeAuth">Close</button>
+        <button class="btn btn-ghost" id="closeAuth" data-i18n="Close">Close</button>
       </div>
       
       <div style="margin-top:16px;text-align:center">

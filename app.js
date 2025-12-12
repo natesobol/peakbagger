@@ -75,6 +75,43 @@ const translations = {
     'Remove from Favorites': 'Remove from Favorites',
     'Add to Wishlist': 'Add to Wishlist',
     'Remove from Wishlist': 'Remove from Wishlist',
+    'Fast facts': 'Fast facts',
+    'Weather': 'Weather',
+    'Learn more': 'Learn more',
+    '← Back to Peakbagger': '← Back to Peakbagger',
+    'Quick facts, weather & helpful links.': 'Quick facts, weather & helpful links.',
+    'Date completed': 'Date completed',
+    'Location': 'Location',
+    'Monthly Completions': 'Monthly Completions',
+    'Forecast links open in a new tab. NOAA point forecasts work best near the summit.': 'Forecast links open in a new tab. NOAA point forecasts work best near the summit.',
+    'Favorite': 'Favorite',
+    
+    // Sidebar & misc
+    'About Peakbagger': 'About Peakbagger',
+    'Choose List': 'Choose List',
+    'Search': 'Search',
+    'Resources': 'Resources',
+    'Clear All Filters': 'Clear All Filters',
+    'Filters': 'Filters',
+    'Close': 'Close',
+    
+    // Auth
+    'Log in to access your peak tracking data.': 'Log in to access your peak tracking data.',
+    'Email *': 'Email *',
+    'Password *': 'Password *',
+    'Stay signed in': 'Stay signed in',
+    'Don\'t have an account?': 'Don\'t have an account?',
+    'Create account': 'Create account',
+    'Create your account to start tracking peaks.': 'Create your account to start tracking peaks.',
+    'First Name *': 'First Name *',
+    'Last Name': 'Last Name',
+    'Confirm Password *': 'Confirm Password *',
+    '📄 View Terms & Conditions': '📄 View Terms & Conditions',
+    'I agree to the Terms & Conditions *': 'I agree to the Terms & Conditions *',
+    'you@email.com': 'you@email.com',
+    'John': 'John',
+    'Doe': 'Doe',
+    '••••••••': '••••••••',
     
     // Settings
     'Settings': 'Settings',
@@ -153,6 +190,41 @@ const translations = {
     'Remove from Favorites': 'Quitar de Favoritos',
     'Add to Wishlist': 'Añadir a Lista de Deseos',
     'Remove from Wishlist': 'Quitar de Lista de Deseos',
+    'Fast facts': 'Datos rápidos',
+    'Weather': 'Clima',
+    'Learn more': 'Aprende más',
+    '← Back to Peakbagger': '← Volver a Peakbagger',
+    'Quick facts, weather & helpful links.': 'Datos rápidos, clima y enlaces útiles.',
+    'Date completed': 'Fecha completada',
+    'Location': 'Ubicación',
+    'Monthly Completions': 'Completaciones mensuales',
+    'Forecast links open in a new tab. NOAA point forecasts work best near the summit.': 'Los enlaces de pronóstico se abren en una nueva pestaña. Los pronósticos puntuales de NOAA funcionan mejor cerca de la cumbre.',
+    'Favorite': 'Favorito',
+    
+    'About Peakbagger': 'Acerca de Peakbagger',
+    'Choose List': 'Elegir Lista',
+    'Search': 'Buscar',
+    'Resources': 'Recursos',
+    'Clear All Filters': 'Borrar Todos los Filtros',
+    'Filters': 'Filtros',
+    'Close': 'Cerrar',
+    
+    'Log in to access your peak tracking data.': 'Inicia sesión para acceder a tus datos de seguimiento de picos.',
+    'Email *': 'Correo electrónico *',
+    'Password *': 'Contraseña *',
+    'Stay signed in': 'Mantener sesión iniciada',
+    'Don\'t have an account?': '¿No tienes una cuenta?',
+    'Create account': 'Crear cuenta',
+    'Create your account to start tracking peaks.': 'Crea tu cuenta para comenzar a rastrear picos.',
+    'First Name *': 'Nombre *',
+    'Last Name': 'Apellido',
+    'Confirm Password *': 'Confirmar Contraseña *',
+    '📄 View Terms & Conditions': '📄 Ver Términos y Condiciones',
+    'I agree to the Terms & Conditions *': 'Acepto los Términos y Condiciones *',
+    'you@email.com': 'tu@email.com',
+    'John': 'Juan',
+    'Doe': 'Pérez',
+    '••••••••': '••••••••',
     
     'Settings': 'Configuración',
     'Units: Meters': 'Unidades: Metros',
@@ -520,6 +592,20 @@ function translatePage() {
     }
   });
   
+  // Translate select options
+  document.querySelectorAll('[data-i18n-option]').forEach(option => {
+    const key = option.getAttribute('data-i18n-option');
+    const translated = t(key);
+    if (translated) {
+      option.textContent = translated;
+    }
+  });
+  
+  // Update unit toggle
+  if (unitLabel) {
+    unitLabel.textContent = meters ? t('Meters (m)') : t('Feet (ft)');
+  }
+  
   // Update sort label
   if (sortLabel) {
     const sortKey = sortMode === 'elev' ? 'Elevation' : sortMode === 'status' ? 'Status' : sortMode[0].toUpperCase() + sortMode.slice(1);
@@ -530,6 +616,14 @@ function translatePage() {
   if (modeLabel) {
     const modeLabels = { grid: 'Grid', list: 'List', compact: 'Compact' };
     modeLabel.textContent = t(modeLabels[gridMode]);
+  }
+  
+  // Update show completed button
+  const showBtn = document.getElementById('showComplete');
+  if (showBtn) {
+    const text = hideCompleted ? 'Show completed' : 'Hide completed';
+    const span = showBtn.querySelector('span:last-child');
+    if (span) span.textContent = t(text);
   }
   
   // Re-render current view to translate dynamic content
@@ -1561,6 +1655,10 @@ async function openPeakDetail(it) {
     if (sidebar) sidebar.style.display = 'none';
     if (topbar) topbar.style.display = 'none';
     
+    // Remove content padding for full frame
+    const content = document.querySelector('.content');
+    if (content) content.style.padding = '0';
+    
     // Show peakDetailPage
     peakDetailPage.style.display = 'block';
 
@@ -1696,7 +1794,15 @@ async function openPeakDetail(it) {
 
   // Load and display photos
   const photoContainer = document.getElementById('peakDetailPhotos');
-  photoContainer.innerHTML = '';
+  const carouselEl = document.getElementById('peakCarousel');
+  const dotsEl = document.getElementById('peakDots');
+  const timerEl = document.getElementById('peakCarouselTimer');
+  
+  if (!carouselEl || !dotsEl) return;
+  
+  carouselEl.innerHTML = '';
+  dotsEl.innerHTML = '';
+  
   let photos = [];
 
   if (data && Array.isArray(data.photos) && data.photos.length > 0) {
@@ -1713,94 +1819,78 @@ async function openPeakDetail(it) {
     }
 
     if (photos.length > 0) {
-      let idx = 0;
-      const wrap = document.createElement('div');
-      wrap.className = 'carousel-wrap';
-      const main = document.createElement('div');
-      main.className = 'carousel-main';
-      const img = document.createElement('img');
-      img.alt = it.name;
-      img.src = photos[0].url;
-      img.className = 'carousel-main-img';
-      img.loading = 'lazy';
-      img.onerror = () => { img.src = placeholderFor(it.name, 800, 420); };
-      main.appendChild(img);
+      window.peakCarouselImages = photos;
+      window.peakCarouselIndex = 0;
       
-      const prevBtn = document.createElement('button');
-      prevBtn.className = 'carousel-prev';
-      prevBtn.textContent = '‹';
-      const nextBtn = document.createElement('button');
-      nextBtn.className = 'carousel-next';
-      nextBtn.textContent = '›';
-      main.appendChild(prevBtn);
-      main.appendChild(nextBtn);
-
-      const thumbs = document.createElement('div');
-      thumbs.className = 'carousel-thumbs';
-      const indicators = document.createElement('div');
-      indicators.className = 'carousel-indicators';
-
-      const makeThumb = (p, i) => {
-        const t = document.createElement('img');
-        t.className = 'carousel-thumb';
-        t.src = p.url;
-        t.alt = it.name + ' thumbnail';
-        t.dataset.i = String(i);
-        t.loading = 'lazy';
-        t.onerror = () => { t.src = placeholderFor(it.name, 60, 60); };
-        t.addEventListener('click', (e) => { e.stopPropagation(); setIndex(i); });
-        return t;
-      };
-
-      const setIndex = (n) => {
-        idx = ((n % photos.length) + photos.length) % photos.length;
-        img.src = photos[idx].url;
-        thumbs.querySelectorAll('.carousel-thumb').forEach((el) => el.classList.toggle('active', el.dataset.i == String(idx)));
-        indicators.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-      };
-
-      photos.forEach((p, i) => {
-        thumbs.appendChild(makeThumb(p, i));
+      // Build slides
+      photos.forEach((photo, i) => {
+        const slide = document.createElement('div');
+        slide.className = 'peak-carousel-slide' + (i === 0 ? ' active' : '');
+        
+        const img = document.createElement('img');
+        img.alt = `${it.name} image ${i+1} of ${photos.length}`;
+        img.src = i === 0 ? photo.url : '';
+        img.loading = i === 0 ? 'eager' : 'lazy';
+        img.dataset.src = photo.url;
+        img.onerror = () => { img.src = placeholderFor(it.name, 800, 600); };
+        
+        slide.appendChild(img);
+        carouselEl.appendChild(slide);
+        
+        // Create dot
         const dot = document.createElement('div');
-        dot.className = 'dot';
-        indicators.appendChild(dot);
+        dot.className = 'dot' + (i === 0 ? ' active' : '');
+        dot.onclick = () => window.goToPeakSlide(i, true);
+        dotsEl.appendChild(dot);
       });
-
-      const AUTOPLAY_MS = 3500;
-      const startTimer = () => {
-        if (photoContainer._carouselTimer) clearInterval(photoContainer._carouselTimer);
-        photoContainer._carouselTimer = setInterval(() => { setIndex(idx + 1); }, AUTOPLAY_MS);
-      };
-      const stopTimer = () => {
-        if (photoContainer._carouselTimer) {
-          clearInterval(photoContainer._carouselTimer);
-          photoContainer._carouselTimer = null;
-        }
-      };
-
-      prevBtn.addEventListener('click', (e) => { e.stopPropagation(); setIndex(idx - 1); startTimer(); });
-      nextBtn.addEventListener('click', (e) => { e.stopPropagation(); setIndex(idx + 1); startTimer(); });
-      main.addEventListener('mouseenter', stopTimer);
-      main.addEventListener('mouseleave', startTimer);
-
-      wrap.appendChild(main);
-      wrap.appendChild(thumbs);
-      wrap.appendChild(indicators);
-      photoContainer.appendChild(wrap);
-      setIndex(0);
-      startTimer();
+      
+      // Wire up controls
+      document.getElementById('peakPrevBtn').onclick = () => window.prevPeakSlide(true);
+      document.getElementById('peakNextBtn').onclick = () => window.nextPeakSlide(true);
+      
+      // Show timer and start carousel
+      if (timerEl) timerEl.style.display = 'flex';
+      window.startPeakCarousel();
     } else {
-      const ph = document.createElement('div');
-      ph.style.width = '100%';
-      ph.style.borderRadius = '8px';
-      ph.style.overflow = 'hidden';
-      const pimg = document.createElement('img');
-      pimg.alt = it.name;
-      pimg.src = placeholderFor(it.name, 800, 420);
-      pimg.loading = 'lazy';
-      ph.appendChild(pimg);
-      photoContainer.appendChild(ph);
+      // No photos - show placeholder
+      const slide = document.createElement('div');
+      slide.className = 'peak-carousel-slide active';
+      const img = document.createElement('img');
+      img.src = placeholderFor(it.name, 800, 600);
+      img.alt = it.name;
+      slide.appendChild(img);
+      carouselEl.appendChild(slide);
     }
+  
+  // Update links
+  const wxNoaa = document.getElementById('peakWxNoaa');
+  const wxOpenMeteo = document.getElementById('peakWxOpenMeteo');
+  const wxTrailsNH = document.getElementById('peakWxTrailsNH');
+  const wxMWOBS = document.getElementById('peakWxMWOBS');
+  const lnkWikipedia = document.getElementById('peakLnkWikipedia');
+  const lnkPeakbagger = document.getElementById('peakLnkPeakbagger');
+  const lnkAllTrails = document.getElementById('peakLnkAllTrails');
+  const lnkSummitPost = document.getElementById('peakLnkSummitPost');
+  const lnkMaps = document.getElementById('peakLnkMaps');
+  
+  if (data) {
+    const lat = parseFloat(data.Latitude_dd);
+    const lon = parseFloat(data.Longitude_dd);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      if (wxNoaa) wxNoaa.href = `https://forecast.weather.gov/MapClick.php?lat=${lat}&lon=${lon}`;
+      if (wxOpenMeteo) wxOpenMeteo.href = `https://open-meteo.com/en/docs#latitude=${lat}&longitude=${lon}`;
+      if (lnkMaps) lnkMaps.href = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=14`;
+    }
+    
+    const searchName = encodeURIComponent(it.name.replace(/\bMount\b/gi, 'Mt'));
+    if (lnkWikipedia) lnkWikipedia.href = `https://en.wikipedia.org/wiki/${searchName.replace(/ /g, '_')}`;
+    if (lnkPeakbagger) lnkPeakbagger.href = `https://www.peakbagger.com/search.aspx?tid=S&ss=${searchName}`;
+    if (lnkAllTrails) lnkAllTrails.href = `https://www.alltrails.com/search?q=${searchName}`;
+    if (lnkSummitPost) lnkSummitPost.href = `https://www.summitpost.org/search?query=${searchName}`;
+    if (wxTrailsNH) wxTrailsNH.href = `https://trailsnh.com/search?q=${searchName}`;
+    if (wxMWOBS) wxMWOBS.href = 'https://www.mountwashington.org/experience-the-weather/';
+  }
+  
   } catch (e) {
     console.error('Error opening peak detail:', e);
     alert('An error occurred while loading peak details. Please try again.');
@@ -1808,18 +1898,127 @@ async function openPeakDetail(it) {
   }
 }
 
+// NH48-style carousel functions
+window.updatePeakSlides = function() {
+  const slides = document.querySelectorAll('.peak-carousel-slide');
+  const dots = document.querySelectorAll('.peak-carousel-dots .dot');
+  const idx = window.peakCarouselIndex || 0;
+  
+  slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  
+  // Lazy load current image
+  const currentSlide = slides[idx];
+  if (currentSlide) {
+    const img = currentSlide.querySelector('img');
+    if (img && img.dataset.src && !img.src.includes(img.dataset.src)) {
+      img.src = img.dataset.src;
+    }
+  }
+};
+
+window.nextPeakSlide = function(manual = false) {
+  const photos = window.peakCarouselImages || [];
+  if (photos.length === 0) return;
+  
+  window.peakCarouselIndex = (window.peakCarouselIndex + 1) % photos.length;
+  window.updatePeakSlides();
+  if (manual) window.startPeakCarousel();
+};
+
+window.prevPeakSlide = function(manual = false) {
+  const photos = window.peakCarouselImages || [];
+  if (photos.length === 0) return;
+  
+  window.peakCarouselIndex = (window.peakCarouselIndex - 1 + photos.length) % photos.length;
+  window.updatePeakSlides();
+  if (manual) window.startPeakCarousel();
+};
+
+window.goToPeakSlide = function(index, manual = false) {
+  const photos = window.peakCarouselImages || [];
+  if (photos.length === 0) return;
+  
+  window.peakCarouselIndex = index % photos.length;
+  window.updatePeakSlides();
+  if (manual) window.startPeakCarousel();
+};
+
+window.startPeakCarousel = function() {
+  window.stopPeakCarousel();
+  
+  const delay = 8000; // 8 seconds like NH48
+  window.startPeakTimer(delay);
+  
+  window.peakCarouselTimer = setInterval(() => {
+    window.nextPeakSlide(false);
+    window.startPeakTimer(delay);
+  }, delay);
+};
+
+window.stopPeakCarousel = function() {
+  if (window.peakCarouselTimer) {
+    clearInterval(window.peakCarouselTimer);
+    window.peakCarouselTimer = null;
+  }
+  if (window.peakTimerInterval) {
+    clearInterval(window.peakTimerInterval);
+    window.peakTimerInterval = null;
+  }
+};
+
+window.startPeakTimer = function(duration) {
+  const ring = document.getElementById('peakTimerRing');
+  const textEl = document.getElementById('peakTimerText');
+  if (!ring || !textEl) return;
+  
+  const radius = 18;
+  const circumference = 2 * Math.PI * radius;
+  ring.style.strokeDasharray = circumference;
+  ring.style.strokeDashoffset = 0;
+  
+  const start = Date.now();
+  const end = start + duration;
+  
+  if (window.peakTimerInterval) clearInterval(window.peakTimerInterval);
+  
+  window.peakTimerInterval = setInterval(() => {
+    const now = Date.now();
+    const remaining = Math.max(end - now, 0);
+    const percent = remaining / duration;
+    const offset = circumference * (1 - percent);
+    ring.style.strokeDashoffset = offset;
+    const secs = Math.ceil(remaining / 1000);
+    textEl.textContent = secs;
+    if (remaining <= 0) {
+      clearInterval(window.peakTimerInterval);
+      window.peakTimerInterval = null;
+    }
+  }, 100);
+  
+  textEl.textContent = Math.ceil(duration / 1000);
+};
+
 function closePeakDetail() {
+  // Stop carousel timer
+  if (window.stopPeakCarousel) {
+    window.stopPeakCarousel();
+  }
+  
   const gridView = document.getElementById('grid-view');
   const listView = document.getElementById('list-view');
   const pagerWraps = document.querySelectorAll('.pager-wrap');
   const sidebar = document.querySelector('.sidebar');
+  const topbar = document.querySelector('.topbar');
+  const content = document.querySelector('.content');
   
   // Hide detail page
   document.getElementById('peakDetailPage').style.display = 'none';
   
   // Show main content
   if (sidebar) sidebar.style.display = 'block';
-  document.querySelector('.topbar').style.display = 'block';
+  if (topbar) topbar.style.display = 'block';
+  if (content) content.style.padding = '';
   
   // Show the appropriate view (grid or list)
   if (gridMode) {
