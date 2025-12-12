@@ -44,7 +44,8 @@
 
 /* ---------- Base / app frame ---------- */
 *{box-sizing:border-box}
-html, body { height:auto; min-height:100%; }
+html { scroll-behavior: smooth; }
+html, body { height:auto; min-height:100%; overflow-x: hidden; }
 body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 .app{display:grid;grid-template-rows:auto 1fr;min-height:100vh;gap:16px;border:2px solid var(--border-strong);border-radius:10px;overflow:hidden}
 

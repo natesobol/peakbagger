@@ -697,7 +697,9 @@ function getSlugForName(name) {
   return NH48_SLUG_MAP[key] || slugify(name || '');
 }
 
-const API = location.hostname.endsWith('nh48pics.com') ? '/_functions' : 'https://www.nh48pics.com/_functions';
+const API = (location.hostname.endsWith('nh48pics.com') || location.hostname === 'nh48.app') 
+  ? '/_functions' 
+  : 'https://www.nh48pics.com/_functions';
 
 // Images API cache
 const _imagesCache = new Map();

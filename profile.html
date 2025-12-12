@@ -1194,6 +1194,22 @@
     console.log('loadAchievements: Loading for user:', currentUser.id);
     
     try {
+      // DB Load: Get user progress count first
+      let userProgressCount = 0;
+      let progressData = [];
+      try {
+        const { data: progress, count } = await supabase
+          .from('user_peak_progress')
+          .select('peak_id, first_completed_at', { count: 'exact' })
+          .eq('user_id', currentUser.id)
+          .eq('completed', true)
+          .order('first_completed_at', { ascending: true });
+        userProgressCount = count || 0;
+        progressData = progress || [];
+      } catch (e) {
+        console.log('Could not get progress count for achievements');
+      }
+      
       // DB Load: Try to load earned achievements from user_achievements table
       const { data: earned, error } = await supabase
         .from('user_achievements')
@@ -1211,20 +1227,21 @@
       
       console.log('loadAchievements: DB Load successful, found', earned?.length || 0, 'earned achievements');
       
+      // Build earned map from DB
       const earnedMap = new Map(earned?.map(a => [a.achievement_type, a]) || []);
       
-      // Get user progress count for calculating achievement progress
-      let userProgressCount = 0;
-      try {
-        const { count } = await supabase
-          .from('user_peak_progress')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', currentUser.id)
-          .eq('completed', true);
-        userProgressCount = count || 0;
-      } catch (e) {
-        console.log('Could not get progress count for achievements');
-      }
+      // Calculate achievements that SHOULD be earned based on progress
+      // This fills in any gaps where the DB wasn't updated
+      const calculatedEarned = calculateEarnedAchievements(progressData, userProgressCount);
+      calculatedEarned.forEach(calc => {
+        if (!earnedMap.has(calc.type)) {
+          earnedMap.set(calc.type, {
+            achievement_type: calc.type,
+            achievement_name: calc.name,
+            earned_at: calc.date
+          });
+        }
+      });
       
       // Render all achievements (earned + locked with progress bars)
       let html = '';
@@ -1232,7 +1249,7 @@
       ALL_ACHIEVEMENTS.forEach(ach => {
         const earnedAch = earnedMap.get(ach.type);
         const isEarned = !!earnedAch;
-        const earnedDate = earnedAch ? new Date(earnedAch.earned_at).toLocaleDateString('en-US', {
+        const earnedDate = earnedAch?.earned_at ? new Date(earnedAch.earned_at).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         }) : null;
         
@@ -1247,7 +1264,7 @@
             </div>
             <div class="achievement-name">${earnedAch?.achievement_name || ach.name}</div>
             <div class="achievement-desc">${ach.desc}</div>
-            <span class="achievement-date">${isEarned ? earnedDate : 'Not earned'}</span>
+            <span class="achievement-date">${isEarned ? (earnedDate || 'Earned') : 'Not earned'}</span>
             ${!isEarned && progressInfo ? `
               <div class="achievement-progress">
                 <div class="achievement-progress-bar">
@@ -1274,6 +1291,57 @@
         container.innerHTML = '<div class="empty-state">Could not load achievements</div>';
       }
     }
+  }
+  
+  // Calculate which achievements should be earned based on progress data
+  function calculateEarnedAchievements(progress, count) {
+    const earned = [];
+    
+    // Milestone achievements
+    if (count >= 1 && progress[0]) {
+      earned.push({ type: 'first_ascent', name: 'First Summit', date: progress[0].first_completed_at });
+    }
+    if (count >= 5 && progress[4]) {
+      earned.push({ type: 'rookie_hiker', name: 'Rookie Hiker', date: progress[4].first_completed_at });
+    }
+    if (count >= 25 && progress[24]) {
+      earned.push({ type: 'mountaineer', name: 'Mountaineer', date: progress[24].first_completed_at });
+    }
+    if (count >= 100 && progress[99]) {
+      earned.push({ type: 'peakbagger_club', name: 'Peakbagger Club', date: progress[99].first_completed_at });
+    }
+    
+    // Unique peaks
+    const uniquePeaks = new Set(progress.map(p => p.peak_id));
+    if (uniquePeaks.size >= 100) {
+      earned.push({ type: 'century_unique', name: 'Century of Peaks', date: progress[progress.length - 1]?.first_completed_at });
+    }
+    
+    // Winter Warrior
+    const winterPeaks = progress.filter(p => {
+      if (!p.first_completed_at) return false;
+      const month = new Date(p.first_completed_at).getMonth() + 1;
+      return month === 12 || month === 1 || month === 2;
+    });
+    if (winterPeaks.length > 0) {
+      earned.push({ type: 'winter_warrior', name: 'Winter Warrior', date: winterPeaks[0].first_completed_at });
+    }
+    
+    // Seasonal Hiker
+    const seasons = new Set();
+    progress.forEach(p => {
+      if (!p.first_completed_at) return;
+      const month = new Date(p.first_completed_at).getMonth() + 1;
+      if (month === 12 || month === 1 || month === 2) seasons.add('winter');
+      else if (month >= 3 && month <= 5) seasons.add('spring');
+      else if (month >= 6 && month <= 8) seasons.add('summer');
+      else seasons.add('fall');
+    });
+    if (seasons.size === 4) {
+      earned.push({ type: 'seasonal_hiker', name: 'Seasonal Hiker', date: progress[progress.length - 1]?.first_completed_at });
+    }
+    
+    return earned;
   }
   
   // Fallback: Calculate achievements from progress data if table doesn't exist
@@ -1626,7 +1694,7 @@
   }
   
   // =====================================================
-  // Load GitHub-style pulse graph (104 weeks / 2 years)
+  // Load GitHub-style pulse graph (208 dots / 2 years)
   // DB Load: user_peak_progress
   // =====================================================
   async function loadActivityGraph() {
@@ -1672,9 +1740,11 @@
       
       console.log('loadActivityGraph: Found', completions?.length || 0, 'completions in date range');
       
-      // Build week-by-week activity map (Sunday-based weeks)
-      const weekMap = {}; // key: 'YYYY-WW' -> count
+      // Build period-by-period activity map (208 periods over 2 years = ~3.5 days each)
+      const periodMap = {}; // key: period index -> count
       let totalHikes = 0;
+      const today = new Date();
+      const msPerPeriod = (2 * 365.25 * 24 * 60 * 60 * 1000) / 208; // ~3.5 days per period
       
       if (completions) {
         completions.forEach(c => {
@@ -1682,39 +1752,39 @@
           if (!dateStr) return;
           
           const date = new Date(dateStr);
-          const weekKey = getWeekKey(date);
-          weekMap[weekKey] = (weekMap[weekKey] || 0) + 1;
-          totalHikes++;
+          const daysAgo = (today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000);
+          const periodIndex = Math.floor(207 - (daysAgo / 3.5)); // 0-207, 207 = most recent
+          
+          if (periodIndex >= 0 && periodIndex < 208) {
+            periodMap[periodIndex] = (periodMap[periodIndex] || 0) + 1;
+            totalHikes++;
+          }
         });
       }
       
       // Update total count
       pulseHikeCount.textContent = `${totalHikes} peaks in this period`;
       
-      // Generate 104 weeks (2 years) of dots
-      const weeks = [];
-      const today = new Date();
-      
-      for (let i = 103; i >= 0; i--) {
-        const weekDate = new Date(today);
-        weekDate.setDate(weekDate.getDate() - (i * 7));
-        const weekKey = getWeekKey(weekDate);
-        weeks.push({
-          key: weekKey,
-          count: weekMap[weekKey] || 0,
-          date: weekDate
+      // Generate 208 dots (2 years)
+      const periods = [];
+      for (let i = 0; i < 208; i++) {
+        const daysAgo = (207 - i) * 3.5;
+        const periodDate = new Date(today.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
+        periods.push({
+          index: i,
+          count: periodMap[i] || 0,
+          date: periodDate
         });
       }
       
       // Find max for intensity scaling
-      const maxCount = Math.max(...weeks.map(w => w.count), 1);
+      const maxCount = Math.max(...periods.map(p => p.count), 1);
       
-      // Build the pulse graph HTML (7 rows for days, 52 columns for weeks)
-      // We'll show 104 dots in a flowing grid (like GitHub but simpler)
-      let html = '<div style="display:flex;flex-wrap:wrap;gap:3px">';
+      // Build the pulse graph HTML (208 dots in a flowing grid)
+      let html = '<div style="display:flex;flex-wrap:wrap;gap:2px">';
       
-      weeks.forEach(week => {
-        const intensity = week.count === 0 ? 0 : Math.min(Math.ceil((week.count / maxCount) * 4), 4);
+      periods.forEach(period => {
+        const intensity = period.count === 0 ? 0 : Math.min(Math.ceil((period.count / maxCount) * 4), 4);
         const colors = [
           'rgba(34,197,94,0.1)',  // 0: empty
           'rgba(34,197,94,0.3)',  // 1: light
@@ -1723,24 +1793,27 @@
           '#22c55e'               // 4: max
         ];
         const color = colors[intensity];
-        const monthName = week.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        const tooltip = week.count > 0 
-          ? `${week.count} peak${week.count > 1 ? 's' : ''} - Week of ${monthName}`
-          : `No activity - Week of ${monthName}`;
+        const monthName = period.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const tooltip = period.count > 0 
+          ? `${period.count} peak${period.count > 1 ? 's' : ''} - ${monthName}`
+          : `No activity - ${monthName}`;
         
-        html += `<div style="width:10px;height:10px;border-radius:2px;background:${color};cursor:pointer" title="${tooltip}"></div>`;
+        html += `<div style="width:8px;height:8px;border-radius:2px;background:${color};cursor:pointer" title="${tooltip}"></div>`;
       });
       
       html += '</div>';
       
       // Add month labels below
       html += '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--ink-weak)">';
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const months = ['Jan', 'Apr', 'Jul', 'Oct', 'Jan', 'Apr', 'Jul', 'Oct'];
       const currentMonth = today.getMonth();
-      // Show ~8 month markers spread across 2 years
+      // Show month markers across 2 years
       for (let i = 0; i < 8; i++) {
-        const monthIdx = (currentMonth - 23 + (i * 3) + 12) % 12;
-        html += `<span>${months[monthIdx]}</span>`;
+        const monthsBack = 24 - (i * 3);
+        const markerDate = new Date(today);
+        markerDate.setMonth(markerDate.getMonth() - monthsBack);
+        const monthName = markerDate.toLocaleDateString('en-US', { month: 'short' });
+        html += `<span>${monthName}</span>`;
       }
       html += '</div>';
       
@@ -1751,7 +1824,7 @@
     }
   }
   
-  // Get ISO week key for a date
+  // Get ISO week key for a date (kept for backwards compatibility)
   function getWeekKey(date) {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));

@@ -1,6 +1,6 @@
 # peakbagger
 
-Peakbagger’s Journal Web is a **single-page peak-logging web app** designed to run as a static HTML file (`peakbagger.html` / `index.html`) with **no build step**. It’s optimized for embedding on [nh48pics.com](https://www.nh48pics.com) and other sites via an `<iframe>` or Wix HTML Embed.
+Peakbagger's Journal Web is a **single-page peak-logging web app** hosted at [nh48.app](https://nh48.app). It runs as a static HTML file with **no build step** and is deployed via GitHub Pages.
 
 The app connects to:
 
@@ -182,8 +182,30 @@ The theme system uses CSS custom properties and `.theme-light`, `.theme-forest`,
 
 ## Files
 
-- `peakbagger.html` (or `index.html` depending on your setup)  
-  The entire web app: HTML, CSS, and JS in a single file.
+- `peakbagger-clean.html`  
+  The main web app entry point.
+
+- `index.html`  
+  Redirects to `peakbagger-clean.html` for GitHub Pages.
+
+- `CNAME`  
+  Contains the custom domain `nh48.app` for GitHub Pages.
+
+---
+
+## Deployment
+
+The app is deployed via **GitHub Pages** with a custom domain:
+
+- **URL**: [https://nh48.app](https://nh48.app)
+- **Branch**: `main` (or your deployment branch)
+- **Custom Domain**: `nh48.app`
+
+### DNS Configuration
+
+For the custom domain to work, configure your DNS:
+- A record pointing to GitHub Pages IPs (185.199.108.153, 185.199.109.153, 185.199.110.153, 185.199.111.153)
+- Or CNAME record pointing to `<username>.github.io`
 
 ---
 
@@ -193,6 +215,6 @@ The app currently expects:
 
 - **Functions base URL**  
   ```js
-  const API = location.hostname.endsWith("nh48pics.com")
-    ? "/_functions"
-    : "https://www.nh48pics.com/_functions";
+  const API = (location.hostname.endsWith('nh48pics.com') || location.hostname === 'nh48.app')
+    ? '/_functions'
+    : 'https://www.nh48pics.com/_functions';

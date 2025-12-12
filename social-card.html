@@ -30,6 +30,8 @@
         
         <!-- Info Panel -->
         <div class="card-info-panel">
+          <div class="card-user-name" id="cardUserName"></div>
+          
           <div class="card-badge">
             <span class="badge-icon">🏔️</span>
             <span class="badge-text">SUMMIT ACHIEVED</span>
@@ -58,7 +60,7 @@
           
           <div class="card-footer">
             <span class="footer-brand">Peakbagger's Journal</span>
-            <span class="footer-url">peakbagger.app</span>
+            <span class="footer-url">nh48.app</span>
           </div>
         </div>
       </div>
@@ -281,11 +283,16 @@
       }
       
       // Convert progress to hike log format for display
+      // Extract just the date part if it's a timestamp
+      let dateValue = progress.first_completed_at || progress.last_completed_at;
+      if (dateValue && dateValue.includes('T')) {
+        dateValue = dateValue.split('T')[0];
+      }
       hikeLogData = {
-        hike_date: progress.first_completed_at || progress.last_completed_at,
+        hike_date: dateValue,
         peak_id: progress.peak_id
       };
-      console.log('DB Load Success: Progress loaded');
+      console.log('DB Load Success: Progress loaded, date:', dateValue);
     } catch (e) {
       console.error('Error loading progress:', e);
     }
@@ -297,11 +304,20 @@
   function updateCard() {
     const card = document.getElementById('socialCard');
     const peakImage = document.getElementById('peakImage');
+    const userNameEl = document.getElementById('cardUserName');
     const peakName = document.getElementById('cardPeakName');
     const dateEl = document.getElementById('cardDate');
     const elevationEl = document.getElementById('cardElevation');
     const locationEl = document.getElementById('cardLocation');
     const secondaryStats = document.getElementById('cardSecondaryStats');
+    
+    // Set user display name
+    if (currentUser) {
+      const firstName = currentUser.user_metadata?.first_name || currentUser.user_metadata?.name || '';
+      const lastName = currentUser.user_metadata?.last_name || '';
+      const displayName = lastName ? `${firstName} ${lastName}` : firstName;
+      userNameEl.textContent = displayName || currentUser.email?.split('@')[0] || '';
+    }
     
     // Set peak image
     let imageUrl = PLACEHOLDER_IMAGE;
@@ -315,9 +331,16 @@
     // Set peak name
     peakName.textContent = peakData?.name || 'Unknown Peak';
     
-    // Set date
-    if (hikeLogData?.hike_date) {
-      const date = new Date(hikeLogData.hike_date);
+    // Set date - handle various date formats
+    let dateStr = hikeLogData?.hike_date;
+    if (dateStr) {
+      // Handle ISO timestamps by extracting just the date part
+      if (dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      }
+      // Parse as local date (YYYY-MM-DD)
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
       dateEl.textContent = date.toLocaleDateString('en-US', {
         month: 'long', day: 'numeric', year: 'numeric'
       });
