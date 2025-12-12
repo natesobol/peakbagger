@@ -417,34 +417,46 @@
   });
 
   // Load profile on page load
-  loadUserProfile();
+  // Note: We call initializeProfile() instead of loadUserProfile() directly
+  // to ensure social features are loaded after user data
+  initializeProfile();
   
   // =====================================================
   // Hike Logs - Load from user_peak_progress (completed peaks)
   // =====================================================
   async function loadRecentHikes() {
-    if (!currentUser) return;
-    
     const hikesContainer = document.getElementById('hikesContainer');
     
+    // Safety check - wait for user
+    if (!currentUser) {
+      console.log('loadRecentHikes: No currentUser yet, skipping');
+      hikesContainer.innerHTML = `
+        <div class="no-logs-message">
+          <div class="empty-icon">⏳</div>
+          <div>Loading user data...</div>
+        </div>
+      `;
+      return;
+    }
+    
     try {
-      // Load from user_peak_progress which has actual completions
+      console.log('loadRecentHikes: Fetching completions for user:', currentUser.id);
+      
+      // Load from user_peak_progress - use separate queries for reliability
       const { data: completions, error } = await supabase
         .from('user_peak_progress')
-        .select(`
-          peak_id,
-          completed,
-          first_completed_at,
-          last_completed_at,
-          peaks(name, slug),
-          lists(name)
-        `)
+        .select('peak_id, list_id, completed, first_completed_at, last_completed_at')
         .eq('user_id', currentUser.id)
         .eq('completed', true)
         .order('first_completed_at', { ascending: false })
         .limit(10);
       
-      if (error) throw error;
+      if (error) {
+        console.error('loadRecentHikes: Query error:', error);
+        throw error;
+      }
+      
+      console.log('loadRecentHikes: Found completions:', completions?.length || 0);
       
       if (!completions || completions.length === 0) {
         hikesContainer.innerHTML = `
@@ -458,6 +470,45 @@
         return;
       }
       
+      // Now fetch peak and list names separately for each completion
+      const enrichedCompletions = await Promise.all(completions.map(async (item) => {
+        let peakName = '—';
+        let peakSlug = '';
+        let listName = '—';
+        
+        // Get peak info
+        if (item.peak_id) {
+          const { data: peak } = await supabase
+            .from('peaks')
+            .select('name, slug')
+            .eq('id', item.peak_id)
+            .single();
+          if (peak) {
+            peakName = peak.name;
+            peakSlug = peak.slug || '';
+          }
+        }
+        
+        // Get list info
+        if (item.list_id) {
+          const { data: list } = await supabase
+            .from('lists')
+            .select('name')
+            .eq('id', item.list_id)
+            .single();
+          if (list) {
+            listName = list.name;
+          }
+        }
+        
+        return {
+          ...item,
+          peakName,
+          peakSlug,
+          listName
+        };
+      }));
+      
       const tableHtml = `
         <table class="hike-logs-table">
           <thead>
@@ -468,16 +519,17 @@
             </tr>
           </thead>
           <tbody>
-            ${completions.map(item => {
+            ${enrichedCompletions.map(item => {
               const date = item.first_completed_at || item.last_completed_at;
               const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
                 year: 'numeric', month: 'short', day: 'numeric' 
               }) : '—';
+              const rowClick = item.peakSlug ? `onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'"` : '';
               return `
-                <tr style="cursor:pointer" onclick="window.location.href='peak-detail.html?slug=${item.peaks?.slug || ''}'">
+                <tr style="cursor:${item.peakSlug ? 'pointer' : 'default'}" ${rowClick}>
                   <td>${formattedDate}</td>
-                  <td style="color:var(--accent)">${item.peaks?.name || '—'}</td>
-                  <td>${item.lists?.name || '—'}</td>
+                  <td style="color:var(--accent)">${item.peakName}</td>
+                  <td>${item.listName}</td>
                 </tr>
               `;
             }).join('')}
@@ -486,12 +538,15 @@
       `;
       
       hikesContainer.innerHTML = tableHtml;
+      console.log('loadRecentHikes: Successfully rendered', enrichedCompletions.length, 'hikes');
+      
     } catch (e) {
       console.error('Error loading hikes:', e);
       hikesContainer.innerHTML = `
         <div class="no-logs-message">
           <div class="empty-icon">⚠️</div>
           <div>Error loading hikes</div>
+          <p style="margin-top:8px;font-size:12px;color:var(--ink-weak)">${e.message || 'Unknown error'}</p>
           <button onclick="loadRecentHikes()" class="btn btn-ghost btn-small" style="margin-top:12px">Try Again</button>
         </div>
       `;
@@ -608,27 +663,46 @@
   // Social Features - Friend Requests
   // =====================================================
   async function loadFriendRequests() {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('loadFriendRequests: No user, skipping');
+      return;
+    }
     
     try {
+      // Simple query without complex joins first
       const { data: requests, error } = await supabase
         .from('friend_requests')
-        .select(`
-          *,
-          from_user:profiles!friend_requests_from_user_id_fkey(id, email, display_name)
-        `)
+        .select('id, from_user_id, to_user_id, status, created_at')
         .eq('to_user_id', currentUser.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.warn('loadFriendRequests: Query error (table may not exist):', error.message);
+        friendRequests.innerHTML = '<li class="empty-state">No pending requests</li>';
+        return;
+      }
       
       if (!requests || requests.length === 0) {
         friendRequests.innerHTML = '<li class="empty-state">No pending requests</li>';
         return;
       }
       
-      friendRequests.innerHTML = requests.map(req => {
+      // Fetch user profiles separately
+      const enrichedRequests = await Promise.all(requests.map(async (req) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, email, display_name')
+          .eq('id', req.from_user_id)
+          .single();
+        
+        return {
+          ...req,
+          from_user: profile || { id: req.from_user_id, email: 'Unknown', display_name: null }
+        };
+      }));
+      
+      friendRequests.innerHTML = enrichedRequests.map(req => {
         const user = req.from_user;
         const initials = getInitials(user.display_name || user.email);
         
@@ -650,6 +724,7 @@
       }).join('');
     } catch (e) {
       console.error('Error loading friend requests:', e);
+      friendRequests.innerHTML = '<li class="empty-state">No pending requests</li>';
     }
   }
   
@@ -711,26 +786,45 @@
   // Social Features - Friends List
   // =====================================================
   async function loadFriends() {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('loadFriends: No user, skipping');
+      return;
+    }
     
     try {
+      // Simple query without complex joins first
       const { data: friendships, error } = await supabase
         .from('friendships')
-        .select(`
-          *,
-          friend:profiles!friendships_friend_user_id_fkey(id, email, display_name)
-        `)
+        .select('id, user_id, friend_user_id, created_at')
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.warn('loadFriends: Query error (table may not exist):', error.message);
+        friendsList.innerHTML = '<li class="empty-state">No friends yet</li>';
+        return;
+      }
       
       if (!friendships || friendships.length === 0) {
         friendsList.innerHTML = '<li class="empty-state">No friends yet</li>';
         return;
       }
       
-      friendsList.innerHTML = friendships.map(friendship => {
+      // Fetch friend profiles separately
+      const enrichedFriendships = await Promise.all(friendships.map(async (friendship) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, email, display_name')
+          .eq('id', friendship.friend_user_id)
+          .single();
+        
+        return {
+          ...friendship,
+          friend: profile || { id: friendship.friend_user_id, email: 'Unknown', display_name: null }
+        };
+      }));
+      
+      friendsList.innerHTML = enrichedFriendships.map(friendship => {
         const friend = friendship.friend;
         const initials = getInitials(friend.display_name || friend.email);
         
@@ -751,6 +845,7 @@
       }).join('');
     } catch (e) {
       console.error('Error loading friends:', e);
+      friendsList.innerHTML = '<li class="empty-state">No friends yet</li>';
     }
   }
   
@@ -787,14 +882,31 @@
   // Load default list ID
   async function loadDefaultList() {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('lists')
         .select('id')
         .eq('slug', 'nh48')
         .single();
       
+      if (error) {
+        console.warn('loadDefaultList: Could not find nh48 list:', error.message);
+        // Try to get any list as fallback
+        const { data: anyList } = await supabase
+          .from('lists')
+          .select('id')
+          .limit(1)
+          .single();
+        
+        if (anyList) {
+          currentListId = anyList.id;
+          console.log('loadDefaultList: Using fallback list:', currentListId);
+        }
+        return;
+      }
+      
       if (data) {
         currentListId = data.id;
+        console.log('loadDefaultList: Set to nh48 list:', currentListId);
       }
     } catch (e) {
       console.error('Error loading default list:', e);
@@ -803,12 +915,35 @@
   
   // Initialize social features after user loads
   async function initializeSocialFeatures() {
-    await loadDefaultList();
-    await loadRecentHikes();
-    await loadAchievements();
-    await loadFriendRequests();
-    await loadFriends();
-    await loadDashboardStats();
+    console.log('initializeSocialFeatures: Starting initialization');
+    
+    try {
+      // Load default list first - needed for dashboard stats
+      await loadDefaultList();
+      console.log('initializeSocialFeatures: Default list loaded, currentListId:', currentListId);
+    } catch (e) {
+      console.error('initializeSocialFeatures: Error loading default list:', e);
+    }
+    
+    // Load features in parallel where possible, but catch individual errors
+    const loadPromises = [
+      loadRecentHikes().catch(e => console.error('Failed to load recent hikes:', e)),
+      loadAchievements().catch(e => console.error('Failed to load achievements:', e)),
+      loadFriendRequests().catch(e => console.error('Failed to load friend requests:', e)),
+      loadFriends().catch(e => console.error('Failed to load friends:', e)),
+    ];
+    
+    await Promise.all(loadPromises);
+    
+    // Load dashboard stats last (depends on list being loaded)
+    try {
+      await loadDashboardStats();
+      console.log('initializeSocialFeatures: Dashboard stats loaded');
+    } catch (e) {
+      console.error('initializeSocialFeatures: Error loading dashboard stats:', e);
+    }
+    
+    console.log('initializeSocialFeatures: All features initialized');
   }
   
   // =====================================================
@@ -867,12 +1002,19 @@
   }
   
   async function loadAchievements() {
-    if (!currentUser) return;
-    
     const container = document.getElementById('achievementsGrid');
     
+    // Safety check - wait for user
+    if (!currentUser) {
+      console.log('loadAchievements: No currentUser yet, skipping');
+      container.innerHTML = '<div class="empty-state">Loading user data...</div>';
+      return;
+    }
+    
+    console.log('loadAchievements: Loading for user:', currentUser.id);
+    
     try {
-      // Load earned achievements from database
+      // First try to load earned achievements from database
       const { data: earned, error } = await supabase
         .from('user_achievements')
         .select('*')
@@ -880,11 +1022,14 @@
         .order('earned_at', { ascending: false });
       
       if (error) {
-        console.log('Achievements table may not exist yet:', error.message);
-        // Fall back to calculated achievements
+        // Table might not exist yet - fall back to calculated achievements
+        console.log('loadAchievements: user_achievements table query failed:', error.message);
+        console.log('loadAchievements: Falling back to calculated achievements');
         await loadCalculatedAchievements(container);
         return;
       }
+      
+      console.log('loadAchievements: Found earned achievements:', earned?.length || 0);
       
       const earnedMap = new Map(earned?.map(a => [a.achievement_type, a]) || []);
       
@@ -912,22 +1057,38 @@
       });
       
       container.innerHTML = html || '<div class="empty-state">Start hiking to earn achievements!</div>';
+      console.log('loadAchievements: Rendered', ALL_ACHIEVEMENTS.length, 'achievement cards');
       
     } catch (e) {
       console.error('Error loading achievements:', e);
-      await loadCalculatedAchievements(container);
+      // Try fallback to calculated achievements
+      try {
+        await loadCalculatedAchievements(container);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        container.innerHTML = '<div class="empty-state">Could not load achievements</div>';
+      }
     }
   }
   
   // Fallback: Calculate achievements from progress data if table doesn't exist
   async function loadCalculatedAchievements(container) {
+    console.log('loadCalculatedAchievements: Starting fallback calculation');
+    
     try {
-      const { data: progress } = await supabase
+      const { data: progress, error } = await supabase
         .from('user_peak_progress')
         .select('peak_id, first_completed_at')
         .eq('user_id', currentUser.id)
         .eq('completed', true)
         .order('first_completed_at', { ascending: true });
+      
+      if (error) {
+        console.error('loadCalculatedAchievements: Query error:', error);
+        throw error;
+      }
+      
+      console.log('loadCalculatedAchievements: Found progress records:', progress?.length || 0);
       
       const count = progress?.length || 0;
       const uniquePeaks = new Set(progress?.map(p => p.peak_id) || []);
@@ -1145,47 +1306,91 @@
   
   // Load dashboard stats
   async function loadDashboardStats() {
-    if (!currentUser || !currentListId) return;
+    console.log('loadDashboardStats: Starting, user:', !!currentUser, 'listId:', currentListId);
+    
+    if (!currentUser) {
+      console.log('loadDashboardStats: No user, skipping');
+      return;
+    }
     
     try {
-      // Get all peaks in the current list
-      const { data: listPeaks } = await supabase
-        .from('list_peaks')
-        .select('peak_id')
-        .eq('list_id', currentListId);
+      let completed = 0;
+      let totalPeaks = 0;
       
-      const totalPeaks = listPeaks?.length || 0;
+      // If we have a specific list, get stats for that list
+      if (currentListId) {
+        // Get all peaks in the current list
+        const { data: listPeaks, error: listError } = await supabase
+          .from('list_peaks')
+          .select('peak_id')
+          .eq('list_id', currentListId);
+        
+        if (listError) {
+          console.warn('loadDashboardStats: Error fetching list peaks:', listError);
+        }
+        
+        totalPeaks = listPeaks?.length || 0;
+        
+        // Get completed peaks for this list
+        const { data: completedPeaks, error: completedError } = await supabase
+          .from('user_peak_progress')
+          .select('peak_id')
+          .eq('user_id', currentUser.id)
+          .eq('list_id', currentListId)
+          .eq('completed', true);
+        
+        if (completedError) {
+          console.warn('loadDashboardStats: Error fetching completed peaks:', completedError);
+        }
+        
+        completed = completedPeaks?.length || 0;
+      } else {
+        // No list - get all completed peaks across all lists
+        console.log('loadDashboardStats: No list ID, getting all completed peaks');
+        const { data: allCompleted, error: allError } = await supabase
+          .from('user_peak_progress')
+          .select('peak_id')
+          .eq('user_id', currentUser.id)
+          .eq('completed', true);
+        
+        if (allError) {
+          console.warn('loadDashboardStats: Error fetching all completed peaks:', allError);
+        }
+        
+        completed = allCompleted?.length || 0;
+        totalPeaks = 48; // Default to NH48
+      }
       
-      // Get completed peaks
-      const { data: completedPeaks } = await supabase
-        .from('user_peak_progress')
-        .select('peak_id')
-        .eq('user_id', currentUser.id)
-        .eq('list_id', currentListId)
-        .eq('completed', true);
-      
-      const completed = completedPeaks?.length || 0;
-      
-      // Get favorites
-      const { data: favoritePeaks } = await supabase
+      // Get favorites (not list-specific)
+      const { data: favoritePeaks, error: favError } = await supabase
         .from('user_favorite_peaks')
         .select('peak_id')
         .eq('user_id', currentUser.id)
         .eq('favorite_type', 'favorite');
       
+      if (favError) {
+        console.warn('loadDashboardStats: Error fetching favorites:', favError);
+      }
+      
       const favoritesCount = favoritePeaks?.length || 0;
       
       // Get wishlist
-      const { data: wishlistPeaks } = await supabase
+      const { data: wishlistPeaks, error: wishError } = await supabase
         .from('user_favorite_peaks')
         .select('peak_id')
         .eq('user_id', currentUser.id)
         .eq('favorite_type', 'wishlist');
       
+      if (wishError) {
+        console.warn('loadDashboardStats: Error fetching wishlist:', wishError);
+      }
+      
       const wishlistCount = wishlistPeaks?.length || 0;
       
       // Calculate percentage
       const percentage = totalPeaks > 0 ? Math.round((completed / totalPeaks) * 100) : 0;
+      
+      console.log('loadDashboardStats: Stats -', { completed, totalPeaks, favoritesCount, wishlistCount, percentage });
       
       // Update UI
       document.getElementById('statTotalCompleted').textContent = completed;
@@ -1198,30 +1403,53 @@
       await loadActivityGraph();
     } catch (e) {
       console.error('Error loading dashboard stats:', e);
+      // Still show the dashboard with zeros if there's an error
+      document.getElementById('dashboardStats').style.display = 'block';
     }
   }
   
   // Load GitHub-style pulse graph (104 weeks / 2 years)
   async function loadActivityGraph() {
-    if (!currentUser) return;
+    if (!currentUser) {
+      console.log('loadActivityGraph: No user, skipping');
+      return;
+    }
     
     const pulseGraph = document.getElementById('pulseGraph');
     const pulseHikeCount = document.getElementById('pulseHikeCount');
-    if (!pulseGraph) return;
+    if (!pulseGraph) {
+      console.log('loadActivityGraph: No pulseGraph element found');
+      return;
+    }
     
     try {
       // Get all completed peaks with dates from past 2 years
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
       
-      const { data: completions, error } = await supabase
+      console.log('loadActivityGraph: Fetching completions since', twoYearsAgo.toISOString());
+      
+      // First try with date filter
+      let { data: completions, error } = await supabase
         .from('user_peak_progress')
         .select('first_completed_at, last_completed_at')
         .eq('user_id', currentUser.id)
-        .eq('completed', true)
-        .gte('first_completed_at', twoYearsAgo.toISOString());
+        .eq('completed', true);
       
-      if (error) throw error;
+      if (error) {
+        console.error('loadActivityGraph: Query error:', error);
+        throw error;
+      }
+      
+      // Filter by date in JS (more flexible than SQL date comparison)
+      const twoYearsAgoTime = twoYearsAgo.getTime();
+      completions = (completions || []).filter(c => {
+        const dateStr = c.first_completed_at || c.last_completed_at;
+        if (!dateStr) return false;
+        return new Date(dateStr).getTime() >= twoYearsAgoTime;
+      });
+      
+      console.log('loadActivityGraph: Found', completions?.length || 0, 'completions in date range');
       
       // Build week-by-week activity map (Sunday-based weeks)
       const weekMap = {}; // key: 'YYYY-WW' -> count
@@ -1468,29 +1696,38 @@
     );
   });
   
-  // Update loadUserProfile to call social features
-  const originalLoadUserProfile = loadUserProfile;
-  loadUserProfile = async function() {
-    await originalLoadUserProfile();
-    if (currentUser) {
-      await initializeSocialFeatures();
-      // Update member badge based on completed peaks
-      const completed = parseInt(document.getElementById('statTotalCompleted')?.textContent || '0');
-      const badge = document.getElementById('memberBadge');
-      if (badge) {
-        if (completed >= 48) {
-          badge.textContent = '🏆 NH48 Finisher';
-          badge.classList.add('badge-accepted');
-        } else if (completed >= 24) {
-          badge.textContent = '⭐ Experienced Hiker';
-        } else if (completed >= 10) {
-          badge.textContent = '🥾 Active Hiker';
-        } else {
-          badge.textContent = '🏔️ Member';
-        }
+  // Main initialization function - called on page load
+  async function initializeProfile() {
+    try {
+      // First load user profile
+      await loadUserProfile();
+      
+      // If user is logged in, load all social features
+      if (currentUser) {
+        await initializeSocialFeatures();
+        
+        // Update member badge based on completed peaks (after stats load)
+        setTimeout(() => {
+          const completed = parseInt(document.getElementById('statTotalCompleted')?.textContent || '0');
+          const badge = document.getElementById('memberBadge');
+          if (badge) {
+            if (completed >= 48) {
+              badge.textContent = '🏆 NH48 Finisher';
+              badge.classList.add('badge-accepted');
+            } else if (completed >= 24) {
+              badge.textContent = '⭐ Experienced Hiker';
+            } else if (completed >= 10) {
+              badge.textContent = '🥾 Active Hiker';
+            } else {
+              badge.textContent = '🏔️ Member';
+            }
+          }
+        }, 500);
       }
+    } catch (e) {
+      console.error('Error initializing profile:', e);
     }
-  };
+  }
 </script>
 
 </body>
