@@ -8,529 +8,207 @@
 </head>
 <body>
   <div class="wrap">
-    }
+    <a href="peakbagger-clean.html" class="back">← Back to Peakbagger</a>
     
-    h1{
-      font-size:clamp(22px,4vw,30px);
-      margin:0 0 8px 0;
-      line-height:1.2;
-      font-weight:700;
-    }
+    <h1 id="peakName">Loading…</h1>
     
-    .subtitle{
-      color:var(--ink-weak);
-      font-size:1rem;
-      margin-bottom:16px;
-    }
-    
-    /* Carousel */
-    .carousel-container{
-      position:relative;
-      aspect-ratio:5/3;
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:12px;
-      overflow:hidden;
-      margin-bottom:16px;
-    }
-    
-    .carousel-slide{
-      position:absolute;
-      inset:0;
-      opacity:0;
-      transition:opacity 0.35s ease;
-    }
-    
-    .carousel-slide.active{
-      opacity:1;
-    }
-    
-    .carousel-slide img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-    
-    /* Timer overlay */
-    .timer-overlay{
-      position:absolute;
-      top:12px;
-      right:12px;
-      width:56px;
-      height:56px;
-      z-index:10;
-    }
-    
-    .timer-circle{
-      transform:rotate(-90deg);
-    }
-    
-    .timer-bg{
-      fill:none;
-      stroke:rgba(0,0,0,0.3);
-      stroke-width:3;
-    }
-    
-    .timer-progress{
-      fill:none;
-      stroke:#22c55e;
-      stroke-width:3;
-      stroke-linecap:round;
-      transition:stroke-dashoffset 0.5s linear;
-    }
-    
-    /* Carousel controls */
-    .carousel-prev,
-    .carousel-next{
-      position:absolute;
-      top:50%;
-      transform:translateY(-50%);
-      background:rgba(0,0,0,0.5);
-      border:none;
-      color:#fff;
-      width:40px;
-      height:40px;
-      border-radius:50%;
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:20px;
-      transition:background 0.2s;
-      z-index:5;
-    }
-    
-    .carousel-prev:hover,
-    .carousel-next:hover{
-      background:rgba(0,0,0,0.7);
-    }
-    
-    .carousel-prev{left:12px}
-    .carousel-next{right:12px}
-    
-    .carousel-dots{
-      position:absolute;
-      bottom:12px;
-      left:50%;
-      transform:translateX(-50%);
-      display:flex;
-      gap:8px;
-      z-index:5;
-    }
-    
-    .carousel-dot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:rgba(255,255,255,0.4);
-      border:none;
-      cursor:pointer;
-      padding:0;
-      transition:background 0.2s;
-    }
-    
-    .carousel-dot.active{
-      background:#22c55e;
-    }
-    
-    /* Info grid */
-    .info-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-      margin-bottom:16px;
-    }
-    
-    .panel{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:16px;
-    }
-    
-    .panel h3{
-      margin:0 0 16px 0;
-      font-size:0.9rem;
-      text-transform:uppercase;
-      letter-spacing:1px;
-      font-weight:700;
-      color:#22c55e;
-    }
-    
-    .kv{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:8px 0;
-      border-bottom:1px dotted rgba(255,255,255,0.1);
-    }
-    
-    .kv:last-child{
-      border-bottom:none;
-    }
-    
-    .kv span{
-      color:var(--ink-weak);
-      font-size:0.95rem;
-      font-weight:500;
-    }
-    
-    .kv strong{
-      font-weight:600;
-      text-align:right;
-      color:var(--ink);
-    }
-    
-    .date-input{
-      background:var(--input-bg);
-      border:1px solid var(--border);
-      border-radius:6px;
-      padding:8px 12px;
-      color:var(--ink);
-      font-size:0.95rem;
-      cursor:pointer;
-      transition:border-color 0.2s;
-    }
-    
-    .date-input:hover{
-      border-color:var(--accent);
-    }
-    
-    .btn{
-      background:var(--input-bg);
-      border:1px solid var(--border);
-      border-radius:8px;
-      color:var(--ink);
-      padding:10px 16px;
-      font-size:0.95rem;
-      cursor:pointer;
-      transition:all 0.2s;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      text-decoration:none;
-    }
-    
-    .btn:hover{
-      background:var(--input-bg-hover);
-      border-color:var(--accent);
-    }
-    
-    .btn-row{
-      display:flex;
-      gap:8px;
-      padding-top:12px;
-      margin-top:8px;
-      border-top:2px solid var(--border);
-    }
-    
-    .btn-row .btn{
-      flex:1;
-    }
-    
-    .links-col{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin-top:12px;
-    }
-    
-    .btn-link{
-      display:block;
-      padding:12px 14px;
-      background:var(--input-bg);
-      border:1px solid var(--border);
-      border-radius:8px;
-      color:var(--accent);
-      text-decoration:none;
-      text-align:left;
-      transition:all 0.2s ease;
-      font-weight:500;
-    }
-    
-    .btn-link:hover{
-      background:var(--input-bg-hover);
-      border-color:var(--accent);
-      transform:translateX(4px);
-    }
-    
-    .subtle{
-      color:var(--ink-light);
-      font-size:0.9rem;
-      margin-bottom:12px;
-    }
-    
-    /* Mobile card view */
-    @media (max-width:960px){
-      .info-grid{
-        grid-template-columns:1fr;
-      }
-      
-      .panel{
-        background:var(--card);
-        padding:20px;
-        border-radius:12px;
-      }
-      
-      .panel h3{
-        font-size:1.2rem;
-        margin-bottom:16px;
-      }
-      
-      .kv{
-        padding:10px 0;
-        border-bottom:1px solid var(--border);
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <a href="peakbagger-clean.html" class="back-btn">← Back to Peakbagger</a>
-    
-    <h1 id="peakName">Loading...</h1>
-    <div class="subtitle" id="peakSubtitle">Quick facts, weather & helpful links</div>
-    
-    <!-- Carousel -->
-    <div class="carousel-container" id="carousel">
-      <div class="timer-overlay" id="timer">
-        <svg class="timer-circle" viewBox="0 0 56 56">
-          <circle class="timer-bg" cx="28" cy="28" r="26"></circle>
-          <circle class="timer-progress" cx="28" cy="28" r="26" id="timerProgress"></circle>
-        </svg>
+    <!-- MEDIA / CAROUSEL -->
+    <div class="media" id="media">
+      <div class="carousel" id="carousel"></div>
+      <div class="dots" id="dots"></div>
+      <div class="ctrls">
+        <button id="prevBtn" aria-label="Previous image">‹</button>
+        <button id="nextBtn" aria-label="Next image">›</button>
       </div>
-      <button class="carousel-prev" id="prevBtn">‹</button>
-      <button class="carousel-next" id="nextBtn">›</button>
-      <div class="carousel-dots" id="dots"></div>
+      <div class="timer" id="carouselTimer">
+        <svg viewBox="0 0 40 40">
+          <circle id="timerRing" class="timer-ring" cx="20" cy="20" r="18"></circle>
+        </svg>
+        <span id="timerText" class="timer-text"></span>
+      </div>
     </div>
     
-    <!-- Info panels -->
-    <div class="info-grid">
-      <!-- Fast Facts -->
-      <div class="panel">
-        <h3>Fast Facts</h3>
-        <div class="kv">
-          <span>Elevation</span>
-          <strong id="elevation">—</strong>
+    <!-- METADATA + INFO SIDE BY SIDE -->
+    <div class="meta-info-row">
+      <div id="fastFactsPanel" class="metadata-panel">
+        <div class="metadata-header">
+          <div class="metadata-title">General Peak Info</div>
         </div>
-        <div class="kv">
-          <span>Date completed</span>
-          <input type="date" id="dateInput" class="date-input" />
-        </div>
-        <div class="kv">
-          <span>Location</span>
-          <strong id="location">—</strong>
-        </div>
-        <div class="kv">
-          <span>Prominence</span>
-          <strong id="prominence">—</strong>
-        </div>
-        <div class="kv">
-          <span>Difficulty</span>
-          <strong id="difficulty">—</strong>
+        <div class="metadata-primary">
+          <div class="metadata-row">
+            <div class="metadata-label">Elevation</div>
+            <div class="metadata-value" id="elevation">—</div>
+          </div>
+          <div class="metadata-row">
+            <div class="metadata-label">Prominence</div>
+            <div class="metadata-value" id="prominence">—</div>
+          </div>
+          <div class="metadata-row">
+            <div class="metadata-label">Range</div>
+            <div class="metadata-value" id="location">—</div>
+          </div>
+          <div class="metadata-row">
+            <div class="metadata-label">Trail Type</div>
+            <div class="metadata-value" id="trailType">—</div>
+          </div>
+          <div class="metadata-row">
+            <div class="metadata-label">Difficulty</div>
+            <div class="metadata-value" id="difficulty">—</div>
+          </div>
+          <div class="metadata-row">
+            <div class="metadata-label">Exposure</div>
+            <div class="metadata-value" id="exposure">—</div>
+          </div>
         </div>
         <div class="btn-row">
-          <button class="btn" id="favBtn">
-            <span id="favIcon">⭐</span> <span id="favText">Favorite</span>
-          </button>
-          <button class="btn" id="wishBtn">
-            <span id="wishIcon">❤️</span> <span id="wishText">Wishlist</span>
-          </button>
+          <button class="btn" id="favBtn"><span id="favIcon">☆</span> <span id="favText">Favorite</span></button>
+          <button class="btn" id="wishBtn"><span id="wishIcon">🤍</span> <span id="wishText">Wishlist</span></button>
         </div>
       </div>
       
-      <!-- Weather -->
-      <div class="panel">
-        <h3>Weather</h3>
-        <p class="subtle">Forecast links open in a new tab. NOAA point forecasts work best near the summit.</p>
-        <div class="links-col">
-          <a class="btn-link" id="wxNoaa" href="#" target="_blank" rel="noopener">NOAA Point Forecast</a>
-          <a class="btn-link" id="wxOpenMeteo" href="#" target="_blank" rel="noopener">Open-Meteo (lat/lon)</a>
-          <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
-          <a class="btn-link" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
+      <div id="progressPanel" class="metadata-panel">
+        <div class="metadata-header">
+          <div class="metadata-title">Your Progress</div>
+        </div>
+        <div class="metadata-primary">
+          <div class="metadata-row">
+            <div class="metadata-label">Date Completed</div>
+            <div class="metadata-value"><input type="date" id="dateInput" class="date-input" /></div>
+          </div>
         </div>
       </div>
-      
-      <!-- Learn More -->
-      <div class="panel">
-        <h3>Learn More</h3>
+    </div>
+    
+    <!-- LEARN MORE -->
+    <div class="section-title">Learn More</div>
+    <div class="info-grid">
+      <div class="info-panel">
+        <div class="info-label">External Resources</div>
         <div class="links-col">
-          <a class="btn-link" id="lnkNH48" href="#" target="_blank" rel="noopener" style="display:none">NH48 Peak Details</a>
+          <a class="btn-link primary" id="lnkNH48" href="#" target="_blank" rel="noopener" style="display:none">🏔️ View Full NH48 Peak Details →</a>
           <a class="btn-link" id="lnkWikipedia" href="#" target="_blank" rel="noopener">Wikipedia</a>
-          <a class="btn-link" id="lnkPeakbagger" href="#" target="_blank" rel="noopener">Peakbagger</a>
+          <a class="btn-link" id="lnkPeakbagger" href="#" target="_blank" rel="noopener">Peakbagger.com</a>
           <a class="btn-link" id="lnkAllTrails" href="#" target="_blank" rel="noopener">AllTrails</a>
           <a class="btn-link" id="lnkSummitPost" href="#" target="_blank" rel="noopener">SummitPost</a>
           <a class="btn-link" id="lnkMaps" href="#" target="_blank" rel="noopener">OpenStreetMap</a>
+        </div>
+      </div>
+      <div class="info-panel">
+        <div class="info-label">Weather Forecasts</div>
+        <p class="subtle">Links open in a new tab.</p>
+        <div class="links-col">
+          <a class="btn-link" id="wxNoaa" href="#" target="_blank" rel="noopener">NOAA Point Forecast</a>
+          <a class="btn-link" id="wxOpenMeteo" href="#" target="_blank" rel="noopener">Open-Meteo</a>
+          <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
+          <a class="btn-link" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
         </div>
       </div>
     </div>
   </div>
   
   <script>
-    // Get peak slug from URL (primary identifier)
     const params = new URLSearchParams(window.location.search);
     const peakSlug = params.get('slug');
     
-    // NH48 API endpoints (same as nh48_peak.html uses)
     const API_URLS = [
       'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json',
       'https://raw.githubusercontent.com/natesobol/nh48-api/main/data/nh48.json'
     ];
     
-    let currentSlide = 0;
-    let slides = [];
-    let autoplayTimer = null;
-    let progressTimer = null;
+    const PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="#172032"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="22">No photos available</text></svg>'
+    );
     
-    // Clean JSON helper (same as NH48 API uses)
+    let carouselImgs = [], carouselIdx = 0, carouselTimer = null, timerInterval = null;
+    const BASE_DELAY = 8000;
+    
     function cleanJSON(raw) {
-      let cleaned = raw.replace(/:contentReference\[.*?\]\{index=\d+\}/g, '');
-      cleaned = cleaned.replace(/\/\*\s*Lines?\s+\d+[\d\-,\s]*omitted\s*\*\//g, '');
-      return cleaned;
+      return raw.replace(/:contentReference\[.*?\]\{index=\d+\}/g, '').replace(/\/\*\s*Lines?\s+\d+[\d\-,\s]*omitted\s*\*\//g, '');
     }
     
-    // Fetch from NH48 API
     async function fetchFromNH48API() {
       for (let i = 0; i < API_URLS.length; i++) {
-        const url = API_URLS[i];
         try {
-          console.log(`Attempt ${i + 1}/${API_URLS.length}: fetching ${url}`);
-          const res = await fetch(url, { mode: 'cors' });
-          if (!res.ok) {
-            console.log(`  Status ${res.status} ${res.statusText}`);
-            continue;
-          }
+          const res = await fetch(API_URLS[i], { mode: 'cors' });
+          if (!res.ok) continue;
           const text = await res.text();
-          console.log(`  Received ${text.length} characters`);
-          const cleaned = cleanJSON(text);
-          const data = JSON.parse(cleaned);
-          console.log('  Parsed JSON successfully');
-          return data;
-        } catch (err) {
-          console.log(`  Fetch error: ${err.message || err}`);
-        }
+          return JSON.parse(cleanJSON(text));
+        } catch (err) { console.log('Fetch error:', err); }
       }
       throw new Error('All API endpoints failed');
     }
     
-    // Load peak data
     async function loadPeakData() {
-      console.log('Loading peak data for slug:', peakSlug);
-      
-      if (!peakSlug) {
-        document.getElementById('peakName').textContent = 'Peak not found';
-        console.error('No peak slug provided');
-        return;
-      }
+      if (!peakSlug) { document.getElementById('peakName').textContent = 'Peak not found'; return; }
       
       try {
-        // Try localStorage first for faster loading
         const stored = localStorage.getItem('peakbagger_peaks');
-        console.log('localStorage peaks:', stored ? 'found' : 'not found');
-        
         if (stored) {
           const peaks = JSON.parse(stored);
-          console.log('Found', peaks.length, 'peaks in localStorage');
           const peak = peaks.find(p => p.slug === peakSlug);
-          
-          if (peak) {
-            console.log('Found peak in localStorage:', peak.name);
-            renderPeak(peak);
-            return;
-          } else {
-            console.warn('Peak slug', peakSlug, 'not found in localStorage');
-          }
+          if (peak) { renderPeak(peak); return; }
         }
         
-        // Fallback: load from NH48 API main JSON file (keyed by slug)
-        console.log('Fetching from NH48 API...');
         const data = await fetchFromNH48API();
-        
-        // Look up peak by slug (data is keyed by slug)
         const apiPeak = data[peakSlug];
         
         if (apiPeak) {
-          console.log('Found peak in API:', apiPeak.peakName || apiPeak['Peak Name']);
-          
-          // Convert API data to our format
           const peak = {
             slug: peakSlug,
             name: apiPeak.peakName || apiPeak['Peak Name'] || peakSlug,
             elevation: apiPeak['Elevation (ft)'] || apiPeak.elevation,
-            location: apiPeak['Range / Subrange'] || apiPeak.range || apiPeak.location,
+            location: apiPeak['Range / Subrange'] || apiPeak.range,
             prominence: apiPeak['Prominence (ft)'] || apiPeak.prominence,
             difficulty: apiPeak['Difficulty'] || apiPeak.difficulty,
-            lat: apiPeak.latitude || apiPeak.lat,
-            lon: apiPeak.longitude || apiPeak.lon,
+            trailType: apiPeak['Trail Type'] || '',
+            exposure: apiPeak['Exposure Level'] || apiPeak['Weather Exposure Rating'] || '',
+            lat: apiPeak.latitude, lon: apiPeak.longitude,
             photos: apiPeak.photos || []
           };
-          console.log('Converted peak:', peak);
           renderPeak(peak);
           return;
         }
-        
-        console.error('Peak slug not found in API data:', peakSlug);
         document.getElementById('peakName').textContent = 'Peak not found';
       } catch (err) {
-        console.error('Error loading peak:', err);
+        console.error('Error:', err);
         document.getElementById('peakName').textContent = 'Error loading peak';
       }
     }
     
     function renderPeak(peak) {
-      // Set title and subtitle
       document.getElementById('peakName').textContent = peak.name;
+      document.title = `${peak.name} - Peakbagger's Journal`;
       
-      // Build carousel from API images
       buildCarousel(peak);
       
-      // Set fast facts
-      document.getElementById('elevation').textContent = peak.elevation ? `${peak.elevation} ft` : '—';
+      document.getElementById('elevation').textContent = peak.elevation ? `${peak.elevation}'` : '—';
+      document.getElementById('prominence').textContent = peak.prominence ? `${peak.prominence}'` : '—';
       document.getElementById('location').textContent = peak.location || '—';
-      document.getElementById('prominence').textContent = peak.prominence ? `${peak.prominence} ft` : '—';
+      document.getElementById('trailType').textContent = peak.trailType || '—';
       document.getElementById('difficulty').textContent = peak.difficulty || '—';
+      document.getElementById('exposure').textContent = peak.exposure || '—';
       
-      // Set date if completed
-      const completionDate = localStorage.getItem(`peak_${peak.id}_date`);
-      if (completionDate) {
-        document.getElementById('dateInput').value = completionDate;
-      }
+      const completionDate = localStorage.getItem(`peak_${peak.slug}_date`);
+      if (completionDate) document.getElementById('dateInput').value = completionDate;
       
-      // Handle date changes
       document.getElementById('dateInput').addEventListener('change', (e) => {
-        localStorage.setItem(`peak_${peak.id}_date`, e.target.value);
+        localStorage.setItem(`peak_${peak.slug}_date`, e.target.value);
       });
       
-      // Load favorites/wishlist state
       const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
       const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
-      const isFavorite = favorites.includes(peak.id);
-      const isWishlist = wishlist.includes(peak.id);
+      updateFavBtn(favorites.includes(peak.slug));
+      updateWishBtn(wishlist.includes(peak.slug));
       
-      updateFavBtn(isFavorite);
-      updateWishBtn(isWishlist);
+      document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
+      document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
       
-      // Favorite button
-      document.getElementById('favBtn').addEventListener('click', () => {
-        toggleFavorite(peak.id);
-      });
-      
-      // Wishlist button
-      document.getElementById('wishBtn').addEventListener('click', () => {
-        toggleWishlist(peak.id);
-      });
-      
-      // Weather links
       if (peak.lat && peak.lon) {
         document.getElementById('wxNoaa').href = `https://forecast.weather.gov/MapClick.php?lat=${peak.lat}&lon=${peak.lon}`;
         document.getElementById('wxOpenMeteo').href = `https://open-meteo.com/en/docs#latitude=${peak.lat}&longitude=${peak.lon}`;
       }
       
-      // Learn more links
       const searchName = encodeURIComponent(peak.name);
-      
-      // NH48 link (show only if slug exists)
       if (peak.slug) {
         const nh48Link = document.getElementById('lnkNH48');
         nh48Link.href = `https://natesobol.github.io/nh48-api/nh48_peak.html?slug=${peak.slug}`;
@@ -541,188 +219,122 @@
       document.getElementById('lnkPeakbagger').href = `https://www.peakbagger.com/search.aspx?name=${searchName}`;
       document.getElementById('lnkAllTrails').href = `https://www.alltrails.com/search?q=${searchName}`;
       document.getElementById('lnkSummitPost').href = `https://www.summitpost.org/search?search=${searchName}`;
-      
       if (peak.lat && peak.lon) {
         document.getElementById('lnkMaps').href = `https://www.openstreetmap.org/?mlat=${peak.lat}&mlon=${peak.lon}&zoom=14`;
       }
     }
     
-    async function buildCarousel(peak) {
-      const carousel = document.getElementById('carousel');
-      const dotsContainer = document.getElementById('dots');
+    function buildCarousel(peak) {
+      const carouselEl = document.getElementById('carousel');
+      const dotsEl = document.getElementById('dots');
+      carouselEl.innerHTML = ''; dotsEl.innerHTML = '';
+      carouselImgs = []; carouselIdx = 0;
       
-      // Get images from the peak's photos array (already loaded from main API)
       let images = [];
-      
       if (peak.photos && Array.isArray(peak.photos) && peak.photos.length > 0) {
-        console.log('Using photos from peak object:', peak.photos.length);
-        images = peak.photos.map(p => {
-          if (typeof p === 'string') return p;
-          if (p && p.url) return p.url;
-          return null;
-        }).filter(Boolean);
+        images = peak.photos.map(p => typeof p === 'string' ? p : (p && p.url ? p.url : null)).filter(Boolean);
       }
+      if (images.length === 0) images = [PLACEHOLDER];
+      carouselImgs = images;
       
-      // Fallback placeholder if no images
-      if (images.length === 0) {
-        console.log('No images available, using placeholder');
-        images = ['data:image/svg+xml;utf8,' + encodeURIComponent(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="#172032"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="22">No photos available</text></svg>'
-        )];
-      }
-      
-      console.log('Total images for carousel:', images.length);
-      
-      // Build slides
-      slides = [];
-      dotsContainer.innerHTML = '';
-      
-      images.forEach((url, i) => {
+      images.forEach((src, i) => {
         const slide = document.createElement('div');
-        slide.className = 'carousel-slide';
-        if (i === 0) slide.classList.add('active');
-        
+        slide.className = 'slide' + (i === 0 ? ' active' : '');
         const img = document.createElement('img');
-        img.src = url;
-        img.alt = peak.name;
-        img.loading = i === 0 ? 'eager' : 'lazy';
-        
+        img.alt = `${peak.name} image ${i + 1}`;
+        if (i === 0) { img.src = src; } else { img.loading = 'lazy'; img.dataset.src = src; }
         slide.appendChild(img);
-        carousel.insertBefore(slide, carousel.querySelector('.timer-overlay'));
-        slides.push(slide);
+        carouselEl.appendChild(slide);
         
-        // Add dot
-        const dot = document.createElement('button');
-        dot.className = 'carousel-dot';
-        if (i === 0) dot.classList.add('active');
+        const dot = document.createElement('div');
+        dot.className = 'dot' + (i === 0 ? ' active' : '');
         dot.addEventListener('click', () => goToSlide(i));
-        dotsContainer.appendChild(dot);
+        dotsEl.appendChild(dot);
       });
       
-      // Start autoplay if multiple images
-      if (images.length > 1) {
-        startAutoplay();
-      } else {
-        document.getElementById('timer').style.display = 'none';
-      }
+      if (images.length > 1) { startCarousel(); document.getElementById('carouselTimer').style.display = 'flex'; }
+      else { document.getElementById('carouselTimer').style.display = 'none'; }
     }
     
     function goToSlide(index) {
-      slides[currentSlide].classList.remove('active');
-      document.querySelectorAll('.carousel-dot')[currentSlide].classList.remove('active');
-      
-      currentSlide = index;
-      
-      slides[currentSlide].classList.add('active');
-      document.querySelectorAll('.carousel-dot')[currentSlide].classList.add('active');
-      
-      resetAutoplay();
+      const slides = document.querySelectorAll('.slide');
+      const dots = document.querySelectorAll('.dot');
+      slides[carouselIdx].classList.remove('active');
+      dots[carouselIdx].classList.remove('active');
+      carouselIdx = index;
+      const img = slides[carouselIdx].querySelector('img');
+      if (img.dataset.src && !img.src) img.src = img.dataset.src;
+      slides[carouselIdx].classList.add('active');
+      dots[carouselIdx].classList.add('active');
+      resetCarousel();
     }
     
-    function nextSlide() {
-      goToSlide((currentSlide + 1) % slides.length);
+    function nextSlide() { goToSlide((carouselIdx + 1) % carouselImgs.length); }
+    function prevSlide() { goToSlide((carouselIdx - 1 + carouselImgs.length) % carouselImgs.length); }
+    
+    function startCarousel() {
+      stopCarousel();
+      const delay = BASE_DELAY + Math.random() * 2000;
+      carouselTimer = setTimeout(nextSlide, delay);
+      startTimer(delay);
     }
     
-    function prevSlide() {
-      goToSlide((currentSlide - 1 + slides.length) % slides.length);
+    function stopCarousel() {
+      if (carouselTimer) { clearTimeout(carouselTimer); carouselTimer = null; }
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
     }
     
-    function startAutoplay() {
-      const duration = 8000;
-      
-      autoplayTimer = setTimeout(() => {
-        nextSlide();
-      }, duration);
-      
-      // Animate timer
-      const circle = document.getElementById('timerProgress');
-      const circumference = 2 * Math.PI * 26;
-      circle.style.strokeDasharray = circumference;
-      circle.style.strokeDashoffset = 0;
-      
-      setTimeout(() => {
-        circle.style.strokeDashoffset = circumference;
-      }, 50);
+    function resetCarousel() { startCarousel(); }
+    
+    function startTimer(duration) {
+      const ring = document.getElementById('timerRing');
+      const textEl = document.getElementById('timerText');
+      const circumference = 2 * Math.PI * 18;
+      ring.style.strokeDasharray = circumference;
+      ring.style.strokeDashoffset = 0;
+      const startTime = Date.now();
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const remaining = duration - (Date.now() - startTime);
+        const percent = Math.max(0, remaining / duration);
+        ring.style.strokeDashoffset = circumference * (1 - percent);
+        textEl.textContent = remaining > 0 ? Math.ceil(remaining / 1000) : '';
+        if (remaining <= 0) { clearInterval(timerInterval); timerInterval = null; }
+      }, 100);
+      textEl.textContent = Math.ceil(duration / 1000);
     }
     
-    function resetAutoplay() {
-      clearTimeout(autoplayTimer);
-      const circle = document.getElementById('timerProgress');
-      circle.style.strokeDashoffset = 0;
-      startAutoplay();
-    }
-    
-    function stopAutoplay() {
-      clearTimeout(autoplayTimer);
-    }
-    
-    // Controls
     document.getElementById('prevBtn').addEventListener('click', prevSlide);
     document.getElementById('nextBtn').addEventListener('click', nextSlide);
+    document.getElementById('media').addEventListener('mouseenter', stopCarousel);
+    document.getElementById('media').addEventListener('mouseleave', () => { if (carouselImgs.length > 1) startCarousel(); });
     
-    // Pause on hover
-    document.getElementById('carousel').addEventListener('mouseenter', stopAutoplay);
-    document.getElementById('carousel').addEventListener('mouseleave', () => {
-      if (slides.length > 1) startAutoplay();
-    });
-    
-    // Favorites
-    function toggleFavorite(id) {
+    function toggleFavorite(slug) {
       const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
-      const index = favorites.indexOf(id);
-      
-      if (index > -1) {
-        favorites.splice(index, 1);
-      } else {
-        favorites.push(id);
-      }
-      
+      const idx = favorites.indexOf(slug);
+      if (idx > -1) favorites.splice(idx, 1); else favorites.push(slug);
       localStorage.setItem('peakbagger_favorites', JSON.stringify(favorites));
-      updateFavBtn(favorites.includes(id));
+      updateFavBtn(favorites.includes(slug));
     }
     
     function updateFavBtn(isFavorite) {
-      const icon = document.getElementById('favIcon');
-      const text = document.getElementById('favText');
-      
-      if (isFavorite) {
-        icon.textContent = '⭐';
-        text.textContent = 'Favorited';
-      } else {
-        icon.textContent = '☆';
-        text.textContent = 'Favorite';
-      }
+      document.getElementById('favIcon').textContent = isFavorite ? '⭐' : '☆';
+      document.getElementById('favText').textContent = isFavorite ? 'Favorited' : 'Favorite';
     }
     
-    // Wishlist
-    function toggleWishlist(id) {
+    function toggleWishlist(slug) {
       const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
-      const index = wishlist.indexOf(id);
-      
-      if (index > -1) {
-        wishlist.splice(index, 1);
-      } else {
-        wishlist.push(id);
-      }
-      
+      const idx = wishlist.indexOf(slug);
+      if (idx > -1) wishlist.splice(idx, 1); else wishlist.push(slug);
       localStorage.setItem('peakbagger_wishlist', JSON.stringify(wishlist));
-      updateWishBtn(wishlist.includes(id));
+      updateWishBtn(wishlist.includes(slug));
     }
     
     function updateWishBtn(isWishlist) {
-      const icon = document.getElementById('wishIcon');
-      const text = document.getElementById('wishText');
-      
-      if (isWishlist) {
-        icon.textContent = '❤️';
-        text.textContent = 'Wishlisted';
-      } else {
-        icon.textContent = '🤍';
-        text.textContent = 'Wishlist';
-      }
+      document.getElementById('wishIcon').textContent = isWishlist ? '❤️' : '🤍';
+      document.getElementById('wishText').textContent = isWishlist ? 'Wishlisted' : 'Wishlist';
     }
     
-    // Load peak data on page load
     loadPeakData();
   </script>
 </body>
