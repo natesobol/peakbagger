@@ -502,7 +502,37 @@ function updateLanguageButtons() {
 }
 
 function translatePage() {
-  // This will trigger a re-render of all views
+  // Translate all elements with data-i18n attribute
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const translated = t(key);
+    if (translated) {
+      el.textContent = translated;
+    }
+  });
+  
+  // Translate placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const translated = t(key);
+    if (translated && el.hasAttribute('placeholder')) {
+      el.placeholder = translated;
+    }
+  });
+  
+  // Update sort label
+  if (sortLabel) {
+    const sortKey = sortMode === 'elev' ? 'Elevation' : sortMode === 'status' ? 'Status' : sortMode[0].toUpperCase() + sortMode.slice(1);
+    sortLabel.textContent = t(sortKey);
+  }
+  
+  // Update mode label
+  if (modeLabel) {
+    const modeLabels = { grid: 'Grid', list: 'List', compact: 'Compact' };
+    modeLabel.textContent = t(modeLabels[gridMode]);
+  }
+  
+  // Re-render current view to translate dynamic content
   renderView();
 }
 

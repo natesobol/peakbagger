@@ -61,7 +61,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 .controls{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--ctrl-gap);align-items:center}
 .ctrl,.ctrl-btn{height:var(--ctrl-h);display:flex;align-items:center;gap:10px;background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:0 14px;color:var(--ink)}
 .ctrl input[type="search"]{flex:1;min-width:0;border:none;outline:none;background:transparent;color:inherit;height:calc(var(--ctrl-h) - 2px)}
-.ctrl-btn{cursor:pointer;justify-content:center}
+.ctrl-btn{cursor:pointer;justify-content:center;transition:all 0.2s ease}
+.ctrl-btn:hover{background:var(--input-bg-hover);border-color:var(--accent);transform:translateY(-1px)}
+.ctrl-btn:active{transform:translateY(0);opacity:0.9}
 .ctrl-btn button{all:unset;color:inherit;cursor:pointer}
 .ctrl .ico,.ctrl-btn .ico{font-size:14px;opacity:.9}
 
@@ -368,9 +370,45 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 }
 
 @media (max-width:960px){
-  .ctrl:has(#search) {
-    display:flex !important;
-  }
+  body{font-size:15px}
+  .app{border-width:0;border-radius:0}
+  
+  /* Topbar mobile improvements */
+  .topbar{position:static;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.15);border-bottom:2px solid var(--border)}
+  .topbar .row1{gap:12px}
+  .progress-wrap{order:0;margin-bottom:0}
+  .progress-head{flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:8px}
+  .progress-head #unitToggle{order:3;margin-top:6px;font-size:13px;padding:6px 12px;font-weight:600}
+  .list-title{font-size:22px;text-align:left;order:1;font-weight:800;letter-spacing:0.3px}
+  #progressText{order:2;font-size:14px;font-weight:600}
+  
+  /* Controls - make them look like proper buttons */
+  .controls{grid-template-columns:1fr 1fr;gap:10px}
+  .ctrl,.ctrl-btn{height:44px;padding:0 16px;font-size:15px;border-radius:12px;border-width:2px;font-weight:600;box-shadow:0 2px 6px rgba(0,0,0,0.12)}
+  .ctrl .ico,.ctrl-btn .ico{font-size:18px}
+  .ctrl:has(#search){grid-column:1/-1}
+  
+  /* Select dropdowns styled as buttons */
+  .ctrl:has(select){background:var(--card);border-color:var(--border-strong)}
+  .ctrl select{font-weight:600;font-size:14px;padding:8px 12px}
+  
+  /* Content and sidebar */
+  .content{grid-template-columns:1fr;gap:0;padding:0}
+  .sidebar{border-radius:0;border-left:0;border-right:0;padding:18px;line-height:1.5;border-top:2px solid var(--border)}
+  .brand{margin-bottom:14px}
+  .brand h1{font-size:18px;font-weight:700}
+  
+  /* Collapsible sections - make them pop */
+  .collapsible-section{margin-bottom:12px;border-width:2px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+  .collapsible-section summary{padding:14px 16px;font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:0.8px}
+  .collapsible-section summary::after{font-size:12px;opacity:0.8}
+  .collapsible-section summary:hover{background:var(--input-bg-hover)}
+  
+  /* Peak cards */
+  .peak-card-body{padding:12px}
+  .peak-card-body h3{font-size:1rem}
+  .peak-card-meta-row{font-size:0.8rem}
+  .peak-card-meta-label{font-size:0.72rem}
 }
 
 @media (min-width:961px){
@@ -385,34 +423,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 
 .sidebar #mobileSidebarSearch input {
   width:100%;
-}
-  .sidebar {
-    display:flex;
-    flex-direction:column;
-    height:100%;
-  }
-  
-  .collapsible-section[open] .settings {
-    max-height:calc(100vh - 600px);
-    overflow-y:auto;
-  }
-  
-  .copyright {
-    margin-top:auto;
-    padding-top:12px;
-  }
-  .peak-card-body{
-    padding:12px;
-  }
-  .peak-card-body h3{
-    font-size:1rem;
-  }
-  .peak-card-meta-row{
-    font-size:0.8rem;
-  }
-  .peak-card-meta-label{
-    font-size:0.72rem;
-  }
 }
 
 /* List View */
