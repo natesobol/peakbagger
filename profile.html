@@ -18,7 +18,14 @@
 
   <!-- Dashboard Stats -->
   <div class="profile-card" id="dashboardStats" style="display:none">
-    <h2><span class="card-icon">📊</span> Your Progress</h2>
+    <div class="progress-header">
+      <h2><span class="card-icon">📊</span> Your Progress</h2>
+      <div class="list-selector">
+        <select id="progressListSelect" class="select">
+          <option value="">Loading lists...</option>
+        </select>
+      </div>
+    </div>
     
     <div class="stats-grid">
       <div class="stat-card">
@@ -35,7 +42,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-value blue" id="statPercentComplete">0%</div>
-        <div class="stat-label">Progress</div>
+        <div class="stat-label" id="statListName">Progress</div>
       </div>
     </div>
 
@@ -879,34 +886,93 @@
     if (e.key === 'Enter') searchUsers();
   });
   
-  // Load default list ID
-  async function loadDefaultList() {
+  // All available lists
+  let allLists = [];
+  
+  // Load all lists and populate the dropdown
+  async function loadAllLists() {
     try {
-      const { data, error } = await supabase
+      const { data: lists, error } = await supabase
         .from('lists')
-        .select('id')
-        .eq('slug', 'nh48')
-        .single();
+        .select('id, name, slug')
+        .order('name', { ascending: true });
       
       if (error) {
-        console.warn('loadDefaultList: Could not find nh48 list:', error.message);
-        // Try to get any list as fallback
-        const { data: anyList } = await supabase
-          .from('lists')
-          .select('id')
+        console.error('loadAllLists: Error:', error);
+        return [];
+      }
+      
+      allLists = lists || [];
+      console.log('loadAllLists: Found', allLists.length, 'lists');
+      
+      // Populate dropdown
+      const select = document.getElementById('progressListSelect');
+      if (select && allLists.length > 0) {
+        select.innerHTML = allLists.map(list => 
+          `<option value="${list.id}">${list.name}</option>`
+        ).join('');
+        
+        // Add change event listener
+        select.addEventListener('change', async (e) => {
+          currentListId = e.target.value;
+          await loadDashboardStats();
+        });
+      }
+      
+      return allLists;
+    } catch (e) {
+      console.error('Error loading lists:', e);
+      return [];
+    }
+  }
+  
+  // Load default list ID - find most recent logged list or default to NH48
+  async function loadDefaultList() {
+    try {
+      // First load all lists
+      await loadAllLists();
+      
+      // Try to find the most recent list the user has logged to
+      if (currentUser) {
+        const { data: recentLog, error: recentError } = await supabase
+          .from('user_peak_progress')
+          .select('list_id')
+          .eq('user_id', currentUser.id)
+          .eq('completed', true)
+          .order('first_completed_at', { ascending: false })
           .limit(1)
           .single();
         
-        if (anyList) {
-          currentListId = anyList.id;
-          console.log('loadDefaultList: Using fallback list:', currentListId);
+        if (!recentError && recentLog?.list_id) {
+          currentListId = recentLog.list_id;
+          console.log('loadDefaultList: Using most recent list:', currentListId);
+          
+          // Update dropdown to match
+          const select = document.getElementById('progressListSelect');
+          if (select) select.value = currentListId;
+          return;
         }
+      }
+      
+      // Fallback to NH48
+      const nh48 = allLists.find(l => l.slug === 'nh48');
+      if (nh48) {
+        currentListId = nh48.id;
+        console.log('loadDefaultList: Defaulting to NH48:', currentListId);
+        
+        // Update dropdown to match
+        const select = document.getElementById('progressListSelect');
+        if (select) select.value = currentListId;
         return;
       }
       
-      if (data) {
-        currentListId = data.id;
-        console.log('loadDefaultList: Set to nh48 list:', currentListId);
+      // Last resort - use first available list
+      if (allLists.length > 0) {
+        currentListId = allLists[0].id;
+        console.log('loadDefaultList: Using first available list:', currentListId);
+        
+        const select = document.getElementById('progressListSelect');
+        if (select) select.value = currentListId;
       }
     } catch (e) {
       console.error('Error loading default list:', e);
@@ -1392,11 +1458,16 @@
       
       console.log('loadDashboardStats: Stats -', { completed, totalPeaks, favoritesCount, wishlistCount, percentage });
       
+      // Get the current list name for the label
+      const currentList = allLists.find(l => l.id === currentListId);
+      const listName = currentList ? currentList.name : 'All Lists';
+      
       // Update UI
-      document.getElementById('statTotalCompleted').textContent = completed;
+      document.getElementById('statTotalCompleted').textContent = `${completed}/${totalPeaks}`;
       document.getElementById('statFavorites').textContent = favoritesCount;
       document.getElementById('statWishlist').textContent = wishlistCount;
       document.getElementById('statPercentComplete').textContent = percentage + '%';
+      document.getElementById('statListName').textContent = listName;
       document.getElementById('dashboardStats').style.display = 'block';
       
       // Load activity graph

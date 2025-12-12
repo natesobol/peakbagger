@@ -161,6 +161,50 @@
   text-overflow: ellipsis;
 }
 
+/* Progress Header with List Selector */
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-header h2 {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.list-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.list-selector .select {
+  min-width: 150px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.list-selector .select:hover {
+  border-color: var(--accent);
+}
+
+.list-selector .select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;
@@ -434,68 +478,73 @@
   border-left: 3px solid #f59e0b;
 }
 
-/* Hike Logs Table */
+/* Hike Logs Table - Clean Layout */
 .hike-logs-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 16px;
   table-layout: fixed;
+  margin-top: 8px;
 }
 
-.hike-logs-table th {
+.hike-logs-table thead th {
   text-align: left;
-  padding: 12px 16px;
-  background: var(--bg);
-  color: var(--ink-weak);
+  padding: 10px 12px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid var(--border);
-}
-
-.hike-logs-table th:nth-child(1) { width: 110px; }
-.hike-logs-table th:nth-child(2) { width: auto; }
-.hike-logs-table th:nth-child(3) { width: 80px; text-align: right; }
-
-.hike-logs-table td {
-  padding: 16px;
+  color: var(--ink-weak);
   border-bottom: 1px solid var(--border);
-  color: var(--ink);
-  font-size: 14px;
-  vertical-align: middle;
 }
 
-.hike-logs-table td:first-child {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-weak);
-  font-size: 13px;
-  font-weight: 500;
-}
+/* Column widths - with table-layout: fixed, these are enforced */
+.hike-logs-table thead th:nth-child(1) { width: 120px; }
+.hike-logs-table thead th:nth-child(2) { width: auto; }
+.hike-logs-table thead th:nth-child(3) { width: 100px; text-align: right; }
 
-.hike-logs-table td:nth-child(2) {
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.hike-logs-table td:nth-child(3) {
-  font-size: 12px;
-  color: var(--ink-weak);
-  text-align: right;
-}
-
-.hike-logs-table tr {
-  transition: background 0.15s, transform 0.1s;
+.hike-logs-table tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
 .hike-logs-table tbody tr:hover {
   background: var(--input-bg);
 }
 
-.hike-logs-table .peak-name {
-  color: var(--accent);
+.hike-logs-table tbody td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hike-logs-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Date column */
+.hike-logs-table tbody td:nth-child(1) {
+  font-size: 13px;
   font-weight: 500;
+  color: var(--ink-weak);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Peak name column */
+.hike-logs-table tbody td:nth-child(2) {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* List column */
+.hike-logs-table tbody td:nth-child(3) {
+  font-size: 12px;
+  color: var(--ink-weak);
+  text-align: right;
+  white-space: nowrap;
 }
 
 .no-logs-message {
