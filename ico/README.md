@@ -38,34 +38,102 @@ Place 512x512 PNG badge images in this folder. Name files exactly as shown below
 - **Format**: PNG with transparency
 - **Style**: Consistent badge/medal design recommended
 
+## File Naming Convention
+
+All icon files must use **snake_case** naming exactly matching the `achievement_type` field in the database.
+
+Example: The "First Summit" achievement has type `first_ascent`, so the icon file must be named `first_ascent.png`.
+
+## Usage in Code
+
+Icons are loaded dynamically in the profile page:
+
+```javascript
+// Icon URL pattern
+const iconUrl = `/ico/${achievement.achievement_type}.png`;
+
+// With fallback to emoji
+<img src="${iconUrl}" onerror="this.style.display='none'; this.nextSibling.style.display='block';" />
+<span class="achievement-emoji" style="display:none">${achievement.icon}</span>
+```
+
 ## Fallback Emojis
 
 If PNG not found, the app displays these emoji fallbacks:
 
-| Icon | Emoji |
-|------|-------|
-| first_ascent | 🏔️ |
-| rookie_hiker | 🥾 |
-| mountaineer | ⛰️ |
-| peakbagger_club | 🏆 |
-| century_unique | 💯 |
-| world_explorer | 🌍 |
-| state_high_points | 🗺️ |
-| range_completer | 🏔️ |
-| list_master | 📋 |
-| altitude_seeker | 🎯 |
-| fourteeners | 🔝 |
-| trip_reporter | 📝 |
-| photographer | 📷 |
-| trailblazer | 🔥 |
-| custom_completist | ✨ |
-| seasonal_hiker | 🍂 |
-| week_streak | 🔥 |
-| partner_climber | 👥 |
-| elevation_gain | 📈 |
-| year_marathon | 🗓️ |
-| globetrotter | ✈️ |
-| night_hiker | 🌙 |
-| winter_warrior | ❄️ |
-| repeat_offender | 🔄 |
-| personal_best | 👑 |
+| Achievement Type | Emoji | Achievement Name |
+|------------------|-------|------------------|
+| `first_ascent` | 🏔️ | First Summit |
+| `rookie_hiker` | 🥾 | Rookie Hiker |
+| `mountaineer` | ⛰️ | Mountaineer |
+| `peakbagger_club` | 🏆 | Peakbagger Club |
+| `century_unique` | 💯 | Century of Peaks |
+| `world_explorer` | 🌍 | World Explorer |
+| `state_high_points` | 🗺️ | State High Points |
+| `range_completer` | 🏔️ | Range Completer |
+| `list_master` | 📋 | List Master |
+| `altitude_seeker` | 🎯 | Altitude Seeker |
+| `fourteeners` | 🔝 | Fourteen Fourteeners |
+| `trip_reporter` | 📝 | Trip Reporter |
+| `photographer` | 📷 | Trail Photographer |
+| `trailblazer` | 🔥 | Trailblazer |
+| `custom_completist` | ✨ | Custom Completist |
+| `seasonal_hiker` | 🍂 | Seasonal Hiker |
+| `week_streak` | 🔥 | Week-long Streak |
+| `partner_climber` | 👥 | Partner Climber |
+| `elevation_gain` | 📈 | Elevation Gain |
+| `year_marathon` | 🗓️ | Yearly Marathon |
+| `globetrotter` | ✈️ | Globetrotter |
+| `night_hiker` | 🌙 | Night Hiker |
+| `winter_warrior` | ❄️ | Winter Warrior |
+| `repeat_offender` | 🔄 | Repeat Offender |
+| `personal_best` | 👑 | Personal Best |
+
+## Database Schema Reference
+
+Achievements are stored in `user_achievements` table:
+
+```sql
+CREATE TABLE user_achievements (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  achievement_type TEXT NOT NULL,      -- e.g., 'first_ascent'
+  achievement_name TEXT NOT NULL,      -- e.g., 'First Summit'
+  description TEXT,
+  icon TEXT,                           -- Emoji fallback
+  icon_url TEXT,                       -- Path: /ico/{achievement_type}.png
+  earned_at TIMESTAMPTZ DEFAULT NOW(),
+  metadata JSONB DEFAULT '{}',
+  UNIQUE(user_id, achievement_type)
+);
+```
+
+## Quick Checklist
+
+Use this to track which icons have been created:
+
+- [ ] `first_ascent.png`
+- [ ] `rookie_hiker.png`
+- [ ] `mountaineer.png`
+- [ ] `peakbagger_club.png`
+- [ ] `century_unique.png`
+- [ ] `world_explorer.png`
+- [ ] `state_high_points.png`
+- [ ] `range_completer.png`
+- [ ] `list_master.png`
+- [ ] `altitude_seeker.png`
+- [ ] `fourteeners.png`
+- [ ] `trip_reporter.png`
+- [ ] `photographer.png`
+- [ ] `trailblazer.png`
+- [ ] `custom_completist.png`
+- [ ] `seasonal_hiker.png`
+- [ ] `week_streak.png`
+- [ ] `partner_climber.png`
+- [ ] `elevation_gain.png`
+- [ ] `year_marathon.png`
+- [ ] `globetrotter.png`
+- [ ] `night_hiker.png`
+- [ ] `winter_warrior.png`
+- [ ] `repeat_offender.png`
+- [ ] `personal_best.png`

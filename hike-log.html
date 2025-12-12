@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log Your Hike - Peakbagger's Journal</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="profile.css">
+  <link rel="stylesheet" href="hike-log.css">
+</head>
+<body>
+
+<div class="profile-page">
+  <div class="profile-header">
+    <a href="peakbagger-clean.html" class="back-link">← Back to Peakbagger</a>
+    <h1 id="pageTitle">Log Your Hike</h1>
+    <p class="subtitle" id="pageSubtitle">Record the details of your summit experience</p>
+  </div>
+
+  <!-- Peak Selection (if not pre-selected) -->
+  <div class="profile-card" id="peakSelectionCard">
+    <h2><span class="card-icon">🏔️</span> Select Peak</h2>
+    <div class="form-group">
+      <label for="peakSelect">Which peak did you hike?</label>
+      <select id="peakSelect" class="select">
+        <option value="">-- Select a peak --</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Basic Info -->
+  <div class="profile-card">
+    <h2><span class="card-icon">📅</span> Basic Info</h2>
+    
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="hikeDate">Date of Hike *</label>
+        <input type="date" id="hikeDate" class="input" required>
+      </div>
+      <div class="form-group">
+        <label for="durationMinutes">Duration (minutes)</label>
+        <input type="number" id="durationMinutes" class="input" step="1" min="0" placeholder="e.g., 240">
+      </div>
+    </div>
+
+    <div class="form-grid cols-3">
+      <div class="form-group">
+        <label for="trailName">Trail Name</label>
+        <input type="text" id="trailName" class="input" placeholder="e.g., Falling Waters Trail">
+      </div>
+      <div class="form-group">
+        <label for="miles">Distance (miles)</label>
+        <input type="number" id="miles" class="input" step="0.01" min="0" placeholder="e.g., 8.5">
+      </div>
+      <div class="form-group">
+        <label for="elevationGainFt">Elevation Gain (ft)</label>
+        <input type="number" id="elevationGainFt" class="input" step="1" min="0" placeholder="e.g., 3200">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="routeNotes">Route Notes</label>
+      <textarea id="routeNotes" class="input textarea" rows="2" placeholder="Describe your route, any detours, scrambles, or unique route choices..."></textarea>
+    </div>
+  </div>
+
+  <!-- Conditions & Ratings -->
+  <div class="profile-card">
+    <h2><span class="card-icon">⭐</span> Conditions & Experience</h2>
+    
+    <div class="form-grid cols-3">
+      <div class="form-group">
+        <label for="effort">Effort Level</label>
+        <select id="effort" class="select">
+          <option value="">-- Select --</option>
+          <option value="Very Easy">Very Easy</option>
+          <option value="Easy">Easy</option>
+          <option value="Moderate">Moderate</option>
+          <option value="Hard">Hard</option>
+          <option value="Very Hard">Very Hard</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="trailCondition">Trail Condition</label>
+        <select id="trailCondition" class="select">
+          <option value="">-- Select --</option>
+          <option value="Excellent">Excellent</option>
+          <option value="Good">Good</option>
+          <option value="Fair">Fair</option>
+          <option value="Poor">Poor</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="views">Views</label>
+        <select id="views" class="select">
+          <option value="">-- Select --</option>
+          <option value="Excellent">Excellent</option>
+          <option value="Good">Good</option>
+          <option value="Average">Average</option>
+          <option value="Poor">Poor</option>
+          <option value="None">None (socked in)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="crowds">Crowds</label>
+        <select id="crowds" class="select">
+          <option value="">-- Select --</option>
+          <option value="No one">No one</option>
+          <option value="Few">Few people</option>
+          <option value="Moderate">Moderate</option>
+          <option value="Crowded">Crowded</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="bugs">Bugs</label>
+        <select id="bugs" class="select">
+          <option value="">-- Select --</option>
+          <option value="None">None</option>
+          <option value="Few">Few</option>
+          <option value="Moderate">Moderate</option>
+          <option value="Many">Many</option>
+          <option value="Swarmed">Swarmed</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weather -->
+  <div class="profile-card">
+    <h2><span class="card-icon">🌤️</span> Weather Conditions</h2>
+    
+    <div class="form-grid cols-3">
+      <div class="form-group">
+        <label for="temperature">Temperature</label>
+        <select id="temperature" class="select">
+          <option value="">-- Select --</option>
+          <option value="Very Cold">Very Cold (&lt;20°F)</option>
+          <option value="Cold">Cold (20-35°F)</option>
+          <option value="Cool">Cool (35-50°F)</option>
+          <option value="Mild">Mild (50-65°F)</option>
+          <option value="Warm">Warm (65-80°F)</option>
+          <option value="Hot">Hot (80-90°F)</option>
+          <option value="Very Hot">Very Hot (&gt;90°F)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="precipitation">Precipitation</label>
+        <select id="precipitation" class="select">
+          <option value="">-- Select --</option>
+          <option value="None">None</option>
+          <option value="Drizzle">Drizzle</option>
+          <option value="Light Rain">Light Rain</option>
+          <option value="Heavy Rain">Heavy Rain</option>
+          <option value="Snow">Snow</option>
+          <option value="Thunderstorm">Thunderstorm</option>
+          <option value="Hail">Hail</option>
+          <option value="Sleet">Sleet</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="wind">Wind</label>
+        <select id="wind" class="select">
+          <option value="">-- Select --</option>
+          <option value="Calm">Calm</option>
+          <option value="Light Breeze">Light Breeze</option>
+          <option value="Breezy">Breezy</option>
+          <option value="Windy">Windy</option>
+          <option value="Very Windy">Very Windy</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Weather Summary Preview -->
+    <div class="weather-preview" id="weatherPreview" style="display:none">
+      <span class="weather-preview-icon">🌡️</span>
+      <span class="weather-preview-label">Weather Summary:</span>
+      <span class="weather-preview-value" id="weatherPreviewValue">—</span>
+    </div>
+  </div>
+
+  <!-- Trip Report / Notes -->
+  <div class="profile-card">
+    <h2><span class="card-icon">📝</span> Trip Report</h2>
+    
+    <div class="form-group">
+      <label for="notes">Notes & Observations</label>
+      <textarea id="notes" class="input textarea" rows="6" placeholder="Describe your hike experience, trail conditions, wildlife sightings, memorable moments..."></textarea>
+      <p class="form-hint">Your notes help you remember the experience and can help other hikers.</p>
+    </div>
+  </div>
+
+  <!-- Tags -->
+  <div class="profile-card">
+    <h2><span class="card-icon">🏷️</span> Tags</h2>
+    
+    <div class="form-group">
+      <label for="tags">Add Tags</label>
+      <input type="text" id="tags" class="input" placeholder="e.g., sunrise, solo, waterfall, wildlife">
+      <p class="form-hint">Separate tags with commas. Tags help you filter and find hikes later.</p>
+    </div>
+    
+    <div class="quick-tags">
+      <span class="quick-tags-label">Quick add:</span>
+      <button type="button" class="tag-btn" data-tag="sunrise">🌅 Sunrise</button>
+      <button type="button" class="tag-btn" data-tag="sunset">🌆 Sunset</button>
+      <button type="button" class="tag-btn" data-tag="solo">🚶 Solo</button>
+      <button type="button" class="tag-btn" data-tag="group">👥 Group</button>
+      <button type="button" class="tag-btn" data-tag="wildlife">🦌 Wildlife</button>
+      <button type="button" class="tag-btn" data-tag="winter">❄️ Winter</button>
+      <button type="button" class="tag-btn" data-tag="fall foliage">🍂 Fall</button>
+      <button type="button" class="tag-btn" data-tag="waterfall">💧 Waterfall</button>
+    </div>
+  </div>
+
+  <!-- Visibility -->
+  <div class="profile-card">
+    <h2><span class="card-icon">👁️</span> Visibility</h2>
+    
+    <div class="form-group">
+      <label for="visibility">Who can see this log?</label>
+      <select id="visibility" class="select">
+        <option value="private">🔒 Private - Only you</option>
+        <option value="friends">👥 Friends - Your friends can see</option>
+        <option value="public">🌍 Public - Everyone can see</option>
+      </select>
+      <p class="form-hint">Control who can view your hike log and trip report.</p>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="form-actions">
+    <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
+    <button type="button" class="btn btn-primary" id="saveLogBtn">
+      <span id="saveIcon">💾</span> Save Hike Log
+    </button>
+  </div>
+
+  <!-- Status Message -->
+  <div class="status-message" id="statusMessage" style="display:none"></div>
+</div>
+
+<!-- Supabase client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script type="module">
+  // =====================================================
+  // Supabase Setup
+  // =====================================================
+  const supabaseUrl = 'https://uobvavnsstrgyezcklib.supabase.co';
+  const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvYnZhdm5zc3RyZ3llemNrbGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODEzNTksImV4cCI6MjA4MTA1NzM1OX0.KL32AFytJcOC5RPEPlWlCzBDiA8N_Su9qb0yXT2n2ZI';
+  
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: window.localStorage
+    }
+  });
+
+  let currentUser = null;
+  let currentPeakId = null;
+  let currentPeakSlug = null;
+  let currentListId = null;
+  let editingLogId = null;
+
+  // =====================================================
+  // DOM Elements
+  // =====================================================
+  const peakSelectionCard = document.getElementById('peakSelectionCard');
+  const peakSelect = document.getElementById('peakSelect');
+  const pageTitle = document.getElementById('pageTitle');
+  const pageSubtitle = document.getElementById('pageSubtitle');
+  const statusMessage = document.getElementById('statusMessage');
+  
+  // Form fields (matching DB schema exactly)
+  const hikeDate = document.getElementById('hikeDate');
+  const trailName = document.getElementById('trailName');
+  const routeNotes = document.getElementById('routeNotes');
+  const miles = document.getElementById('miles');
+  const elevationGainFt = document.getElementById('elevationGainFt');
+  const durationMinutes = document.getElementById('durationMinutes');
+  const notes = document.getElementById('notes');
+  const tags = document.getElementById('tags');
+  const visibility = document.getElementById('visibility');
+  
+  // Categorical dropdown fields
+  const effort = document.getElementById('effort');
+  const trailCondition = document.getElementById('trailCondition');
+  const views = document.getElementById('views');
+  const temperature = document.getElementById('temperature');
+  const precipitation = document.getElementById('precipitation');
+  const wind = document.getElementById('wind');
+  const crowds = document.getElementById('crowds');
+  const bugs = document.getElementById('bugs');
+  
+  // Buttons
+  const saveLogBtn = document.getElementById('saveLogBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+
+  // =====================================================
+  // Initialization
+  // =====================================================
+  async function initialize() {
+    console.log('Initializing hike log page...');
+    
+    // Check authentication
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+      console.warn('Not authenticated, redirecting...');
+      window.location.href = 'peakbagger-clean.html';
+      return;
+    }
+    
+    currentUser = user;
+    console.log('User authenticated:', user.id);
+    
+    // Parse URL params
+    const params = new URLSearchParams(window.location.search);
+    currentPeakSlug = params.get('peak');
+    editingLogId = params.get('edit');
+    
+    // Set default date to today
+    hikeDate.value = new Date().toISOString().split('T')[0];
+    
+    // Load peaks for dropdown
+    await loadPeakOptions();
+    
+    // If editing an existing log, load it
+    if (editingLogId) {
+      pageTitle.textContent = 'Edit Hike Log';
+      pageSubtitle.textContent = 'Update your summit experience';
+      await loadExistingLog(editingLogId);
+    } else if (currentPeakSlug) {
+      // Pre-select peak if provided in URL
+      await preselectPeak(currentPeakSlug);
+    }
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    console.log('Hike log page initialized');
+  }
+
+  // =====================================================
+  // Load Peak Options
+  // =====================================================
+  async function loadPeakOptions() {
+    try {
+      console.log('Loading peak options...');
+      
+      // Get peaks from Supabase
+      const { data: peaks, error } = await supabase
+        .from('peaks')
+        .select('id, name, slug, elevation')
+        .order('name', { ascending: true });
+      
+      if (error) {
+        console.error('Error loading peaks:', error);
+        showMessage('Error loading peaks: ' + error.message, true);
+        return;
+      }
+      
+      console.log(`Loaded ${peaks?.length || 0} peaks`);
+      
+      // Populate dropdown
+      peaks?.forEach(peak => {
+        const option = document.createElement('option');
+        option.value = peak.id;
+        option.dataset.slug = peak.slug;
+        option.textContent = `${peak.name}${peak.elevation ? ` (${peak.elevation}')` : ''}`;
+        peakSelect.appendChild(option);
+      });
+      
+      // Also load default list (nh48)
+      const { data: list } = await supabase
+        .from('lists')
+        .select('id')
+        .eq('slug', 'nh48')
+        .single();
+      
+      if (list) {
+        currentListId = list.id;
+        console.log('Default list ID:', currentListId);
+      }
+      
+    } catch (e) {
+      console.error('Error loading peak options:', e);
+    }
+  }
+
+  // =====================================================
+  // Preselect Peak
+  // =====================================================
+  async function preselectPeak(slug) {
+    try {
+      console.log('Preselecting peak:', slug);
+      
+      const { data: peak, error } = await supabase
+        .from('peaks')
+        .select('id, name')
+        .eq('slug', slug)
+        .single();
+      
+      if (error || !peak) {
+        console.warn('Peak not found:', slug);
+        return;
+      }
+      
+      currentPeakId = peak.id;
+      peakSelect.value = peak.id;
+      
+      pageTitle.textContent = `Log Hike: ${peak.name}`;
+      peakSelectionCard.style.display = 'none';
+      
+      console.log('Peak preselected:', peak.name);
+      
+    } catch (e) {
+      console.error('Error preselecting peak:', e);
+    }
+  }
+
+  // =====================================================
+  // Load Existing Log (for editing)
+  // =====================================================
+  async function loadExistingLog(logId) {
+    try {
+      console.log('Loading existing log:', logId);
+      
+      const { data: log, error } = await supabase
+        .from('user_hike_logs')
+        .select('*, peaks(name, slug)')
+        .eq('id', logId)
+        .eq('user_id', currentUser.id)
+        .single();
+      
+      if (error || !log) {
+        console.error('Error loading log:', error);
+        showMessage('Hike log not found', true);
+        return;
+      }
+      
+      console.log('Loaded log:', log);
+      
+      // Populate form from DB columns
+      currentPeakId = log.peak_id;
+      if (log.peak_id) {
+        peakSelect.value = log.peak_id;
+      }
+      if (log.peaks) {
+        pageTitle.textContent = `Edit Hike: ${log.peaks.name}`;
+        peakSelectionCard.style.display = 'none';
+      }
+      
+      // Basic info
+      hikeDate.value = log.hike_date || '';
+      trailName.value = log.trail_name || '';
+      routeNotes.value = log.route_notes || '';
+      miles.value = log.miles || '';
+      elevationGainFt.value = log.elevation_gain_ft || '';
+      durationMinutes.value = log.duration_minutes || '';
+      notes.value = log.notes || '';
+      
+      // Tags (stored as array)
+      if (log.tags && Array.isArray(log.tags)) {
+        tags.value = log.tags.join(', ');
+      }
+      
+      // Visibility
+      visibility.value = log.visibility || 'private';
+      
+      // Categorical dropdown fields
+      effort.value = log.effort || '';
+      trailCondition.value = log.trail_condition || '';
+      views.value = log.views || '';
+      crowds.value = log.crowds || '';
+      bugs.value = log.bugs || '';
+      temperature.value = log.temperature || '';
+      precipitation.value = log.precipitation || '';
+      wind.value = log.wind || '';
+      
+      // Update weather preview
+      updateWeatherPreview();
+      
+    } catch (e) {
+      console.error('Error loading existing log:', e);
+      showMessage('Error loading hike log', true);
+    }
+  }
+
+  // =====================================================
+  // Event Listeners Setup
+  // =====================================================
+  function setupEventListeners() {
+    // Weather preview updates
+    [temperature, precipitation, wind].forEach(el => {
+      el.addEventListener('change', updateWeatherPreview);
+    });
+    
+    // Quick tag buttons
+    document.querySelectorAll('.tag-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tag = btn.dataset.tag;
+        const currentTags = tags.value.split(',').map(t => t.trim()).filter(t => t);
+        if (!currentTags.includes(tag)) {
+          currentTags.push(tag);
+          tags.value = currentTags.join(', ');
+          btn.classList.add('active');
+        }
+      });
+    });
+    
+    // Peak selection change
+    peakSelect.addEventListener('change', (e) => {
+      currentPeakId = e.target.value;
+      const selectedOption = e.target.selectedOptions[0];
+      if (selectedOption && selectedOption.textContent) {
+        pageTitle.textContent = `Log Hike: ${selectedOption.textContent.split(' (')[0]}`;
+      }
+    });
+    
+    // Save button
+    saveLogBtn.addEventListener('click', () => saveHikeLog());
+    
+    // Cancel button
+    cancelBtn.addEventListener('click', () => {
+      if (currentPeakSlug) {
+        window.location.href = `peak-detail.html?slug=${currentPeakSlug}`;
+      } else {
+        window.location.href = 'peakbagger-clean.html';
+      }
+    });
+  }
+
+  // =====================================================
+  // Weather Preview
+  // =====================================================
+  function updateWeatherPreview() {
+    const preview = document.getElementById('weatherPreview');
+    const previewValue = document.getElementById('weatherPreviewValue');
+    
+    const parts = [];
+    if (temperature.value) parts.push(temperature.value);
+    if (precipitation.value && precipitation.value !== 'None') parts.push(precipitation.value);
+    if (wind.value && wind.value !== 'Calm') parts.push(wind.value);
+    
+    if (parts.length > 0) {
+      previewValue.textContent = parts.join(' / ');
+      preview.style.display = 'flex';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+
+  // =====================================================
+  // Save Hike Log
+  // =====================================================
+  async function saveHikeLog() {
+    console.log('Saving hike log...');
+    
+    // Validation
+    const selectedPeakId = peakSelect.value || currentPeakId;
+    
+    if (!selectedPeakId) {
+      showMessage('Please select a peak', true);
+      return;
+    }
+    
+    if (!hikeDate.value) {
+      showMessage('Please enter the hike date', true);
+      return;
+    }
+    
+    // Parse tags from comma-separated input
+    const parsedTags = tags.value
+      .split(',')
+      .map(t => t.trim().toLowerCase())
+      .filter(t => t.length > 0);
+    
+    // Build log data matching DB schema exactly
+    const logData = {
+      user_id: currentUser.id,
+      peak_id: selectedPeakId,
+      list_id: currentListId,
+      hike_date: hikeDate.value,
+      trail_name: trailName.value || null,
+      route_notes: routeNotes.value || null,
+      miles: miles.value ? parseFloat(miles.value) : null,
+      elevation_gain_ft: elevationGainFt.value ? parseInt(elevationGainFt.value) : null,
+      duration_minutes: durationMinutes.value ? parseInt(durationMinutes.value) : null,
+      notes: notes.value || null,
+      tags: parsedTags.length > 0 ? parsedTags : null,
+      visibility: visibility.value || 'private',
+      // Categorical dropdown fields
+      effort: effort.value || null,
+      trail_condition: trailCondition.value || null,
+      views: views.value || null,
+      temperature: temperature.value || null,
+      precipitation: precipitation.value || null,
+      wind: wind.value || null,
+      crowds: crowds.value || null,
+      bugs: bugs.value || null,
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('Log data to save:', logData);
+    
+    try {
+      saveLogBtn.disabled = true;
+      document.getElementById('saveIcon').textContent = '⏳';
+      
+      let result;
+      
+      if (editingLogId) {
+        // Update existing log
+        console.log('Updating existing log:', editingLogId);
+        result = await supabase
+          .from('user_hike_logs')
+          .update(logData)
+          .eq('id', editingLogId)
+          .eq('user_id', currentUser.id)
+          .select()
+          .single();
+      } else {
+        // Insert new log
+        console.log('Creating new log');
+        logData.created_at = new Date().toISOString();
+        result = await supabase
+          .from('user_hike_logs')
+          .insert(logData)
+          .select()
+          .single();
+      }
+      
+      if (result.error) {
+        console.error('Error saving hike log:', result.error);
+        showMessage(`Error saving: ${result.error.message}`, true);
+        return;
+      }
+      
+      console.log('Log saved successfully:', result.data);
+      
+      // Also update user_peak_progress to mark as completed
+      await updatePeakProgress(selectedPeakId, hikeDate.value);
+      
+      showMessage('Hike log saved successfully!', false);
+      
+      // Redirect after a short delay
+      setTimeout(() => {
+        const selectedOption = peakSelect.selectedOptions[0];
+        const slug = selectedOption?.dataset.slug || currentPeakSlug;
+        if (slug) {
+          window.location.href = `peak-detail.html?slug=${slug}`;
+        } else {
+          window.location.href = 'profile.html';
+        }
+      }, 1500);
+      
+    } catch (e) {
+      console.error('Error saving hike log:', e);
+      showMessage('Error saving hike log: ' + e.message, true);
+    } finally {
+      saveLogBtn.disabled = false;
+      document.getElementById('saveIcon').textContent = '💾';
+    }
+  }
+
+  // =====================================================
+  // Update Peak Progress
+  // =====================================================
+  async function updatePeakProgress(peakId, date) {
+    try {
+      console.log('Updating peak progress:', peakId, date);
+      
+      // Check if already marked complete
+      const { data: existing } = await supabase
+        .from('user_peak_progress')
+        .select('id, completed, first_completed_at')
+        .eq('user_id', currentUser.id)
+        .eq('peak_id', peakId)
+        .eq('list_id', currentListId)
+        .single();
+      
+      if (existing && existing.completed) {
+        // Already completed - update last_completed_at if this is a later date
+        console.log('Peak already completed, updating last_completed_at');
+        await supabase
+          .from('user_peak_progress')
+          .update({
+            last_completed_at: date,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+      } else {
+        // Mark as completed
+        console.log('Marking peak as completed');
+        await supabase
+          .from('user_peak_progress')
+          .upsert({
+            user_id: currentUser.id,
+            peak_id: peakId,
+            list_id: currentListId,
+            completed: true,
+            first_completed_at: date,
+            last_completed_at: date,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,list_id,peak_id' });
+      }
+      
+      console.log('Peak progress updated');
+    } catch (e) {
+      console.error('Error updating peak progress:', e);
+    }
+  }
+
+  // =====================================================
+  // Show Message
+  // =====================================================
+  function showMessage(text, isError = false) {
+    statusMessage.textContent = text;
+    statusMessage.className = 'status-message ' + (isError ? 'error' : 'success');
+    statusMessage.style.display = 'block';
+    
+    // Scroll to message
+    statusMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    if (!isError) {
+      setTimeout(() => {
+        statusMessage.style.display = 'none';
+      }, 5000);
+    }
+  }
+
+  // Initialize on load
+  initialize();
+</script>
+
+</body>
+</html>

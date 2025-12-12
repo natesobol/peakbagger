@@ -76,6 +76,9 @@
             <div class="metadata-value"><input type="date" id="dateInput" class="date-input" /></div>
           </div>
         </div>
+        <div class="btn-row">
+          <a href="#" class="btn" id="logHikeBtn">📝 Log Hike Details</a>
+        </div>
       </div>
     </div>
     
@@ -199,6 +202,9 @@
       const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
       updateFavBtn(favorites.includes(peak.slug));
       updateWishBtn(wishlist.includes(peak.slug));
+      
+      // Set up Log Hike button link
+      document.getElementById('logHikeBtn').href = `hike-log.html?peak=${peak.slug}`;
       
       document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
       document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
