@@ -204,6 +204,238 @@
     width: 100%;
   }
 }
+
+/* Hike Logs Styles */
+.hike-logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.hike-logs-table th {
+  text-align: left;
+  padding: 12px;
+  background: var(--bg);
+  color: var(--ink-weak);
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+}
+
+.hike-logs-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.hike-logs-table tr:hover {
+  background: var(--bg);
+}
+
+.no-logs-message {
+  text-align: center;
+  padding: 32px;
+  color: var(--ink-weak);
+  font-size: 14px;
+}
+
+/* Social Styles */
+.social-container {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 24px;
+}
+
+.social-section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.social-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.search-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.search-box button {
+  padding: 10px 20px;
+}
+
+.user-list, .friend-list, .request-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.user-item, .friend-item, .request-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+
+.user-item:hover, .friend-item:hover, .request-item:hover {
+  background: var(--bg);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.user-avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #6b8cff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: white;
+  font-weight: 600;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-details .name {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.user-details .email {
+  font-size: 12px;
+  color: var(--ink-weak);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-icon {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 24px;
+  color: var(--ink-weak);
+  font-size: 14px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+}
+
+.badge-accepted {
+  background: rgba(61, 220, 132, 0.15);
+  color: var(--good);
+}
+
+/* Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border);
+  transition: 0.3s;
+  border-radius: 26px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent);
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+@media (max-width: 960px) {
+  .social-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .hike-logs-table {
+    font-size: 12px;
+  }
+  
+  .hike-logs-table th,
+  .hike-logs-table td {
+    padding: 8px;
+  }
+}
 </style>
 </head>
 <body>
@@ -243,6 +475,62 @@
       <div class="info-item">
         <label>User ID</label>
         <span class="value subtle" id="userId" style="font-family: monospace; font-size: 12px;">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Card -->
+  <div class="profile-card">
+    <h2>Preferences</h2>
+    
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Grid Mode Enabled</label>
+        <label class="switch">
+          <input type="checkbox" id="gridModeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Hikes Card -->
+  <div class="profile-card">
+    <h2>Recent Hikes</h2>
+    <div id="hikesContainer">
+      <div class="no-logs-message">Loading hikes...</div>
+    </div>
+  </div>
+
+  <!-- Social Features -->
+  <div class="profile-card">
+    <h2>Social</h2>
+    
+    <div class="social-container">
+      <!-- User Search -->
+      <div class="social-section">
+        <h3>🔍 Find Friends</h3>
+        <div class="search-box">
+          <input type="text" id="userSearchInput" placeholder="Search by name or email...">
+          <button class="btn btn-primary btn-small" id="searchUsersBtn">Search</button>
+        </div>
+        <ul id="searchResults" class="user-list"></ul>
+      </div>
+
+      <!-- Friend Requests -->
+      <div class="social-section">
+        <h3>📬 Friend Requests</h3>
+        <ul id="friendRequests" class="request-list">
+          <li class="empty-state">No pending requests</li>
+        </ul>
+      </div>
+
+      <!-- Friends List -->
+      <div class="social-section" style="grid-column: 1 / -1;">
+        <h3>👥 My Friends</h3>
+        <ul id="friendsList" class="friend-list">
+          <li class="empty-state">No friends yet</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -307,6 +595,7 @@
   });
 
   let currentUser = null;
+  let currentListId = null;
 
   // DOM elements
   const profileName = document.getElementById('profileName');
@@ -318,6 +607,13 @@
   const changePasswordForm = document.getElementById('changePasswordForm');
   const passwordMessage = document.getElementById('passwordMessage');
   const signOutBtn = document.getElementById('signOutBtn');
+  const gridModeToggle = document.getElementById('gridModeToggle');
+  const hikesContainer = document.getElementById('hikesContainer');
+  const userSearchInput = document.getElementById('userSearchInput');
+  const searchUsersBtn = document.getElementById('searchUsersBtn');
+  const searchResults = document.getElementById('searchResults');
+  const friendRequests = document.getElementById('friendRequests');
+  const friendsList = document.getElementById('friendsList');
 
   // Load user data
   async function loadUserProfile() {
@@ -437,6 +733,433 @@
 
   // Load profile on page load
   loadUserProfile();
+  
+  // =====================================================
+  // Grid Mode Settings
+  // =====================================================
+  async function loadGridSettings() {
+    if (!currentUser || !currentListId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_grid_settings')
+        .select('grid_enabled')
+        .eq('user_id', currentUser.id)
+        .eq('list_id', currentListId)
+        .single();
+      
+      if (!error && data) {
+        gridModeToggle.checked = data.grid_enabled;
+      }
+    } catch (e) {
+      console.error('Error loading grid settings:', e);
+    }
+  }
+  
+  async function saveGridSettings(enabled) {
+    if (!currentUser || !currentListId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('user_grid_settings')
+        .upsert({
+          user_id: currentUser.id,
+          list_id: currentListId,
+          grid_enabled: enabled,
+          last_updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,list_id'
+        });
+      
+      if (error) throw error;
+    } catch (e) {
+      console.error('Error saving grid settings:', e);
+    }
+  }
+  
+  gridModeToggle.addEventListener('change', async (e) => {
+    await saveGridSettings(e.target.checked);
+  });
+  
+  // =====================================================
+  // Hike Logs
+  // =====================================================
+  async function loadRecentHikes() {
+    if (!currentUser) return;
+    
+    try {
+      const { data: hikes, error } = await supabase
+        .from('user_hike_logs')
+        .select(`
+          *,
+          peaks(name, slug),
+          lists(name)
+        `)
+        .eq('user_id', currentUser.id)
+        .order('hike_date', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      
+      if (!hikes || hikes.length === 0) {
+        hikesContainer.innerHTML = '<div class="no-logs-message">No hikes logged yet</div>';
+        return;
+      }
+      
+      const tableHtml = `
+        <table class="hike-logs-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Peak</th>
+              <th>List</th>
+              <th>Trail</th>
+              <th>Miles</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${hikes.map(hike => `
+              <tr>
+                <td>${new Date(hike.hike_date).toLocaleDateString()}</td>
+                <td>${hike.peaks?.name || '—'}</td>
+                <td>${hike.lists?.name || '—'}</td>
+                <td>${hike.trail_name || '—'}</td>
+                <td>${hike.miles ? parseFloat(hike.miles).toFixed(1) : '—'}</td>
+                <td>${hike.duration_minutes ? Math.floor(hike.duration_minutes / 60) + 'h ' + (hike.duration_minutes % 60) + 'm' : '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      hikesContainer.innerHTML = tableHtml;
+    } catch (e) {
+      console.error('Error loading hikes:', e);
+      hikesContainer.innerHTML = '<div class="no-logs-message">Error loading hikes</div>';
+    }
+  }
+  
+  // =====================================================
+  // Social Features - User Search
+  // =====================================================
+  async function searchUsers() {
+    const query = userSearchInput.value.trim().toLowerCase();
+    if (!query || query.length < 2) {
+      searchResults.innerHTML = '<li class="empty-state">Enter at least 2 characters</li>';
+      return;
+    }
+    
+    try {
+      const { data: users, error } = await supabase
+        .from('profiles')
+        .select('id, email, display_name')
+        .or(`display_name.ilike.%${query}%,email.ilike.%${query}%`)
+        .neq('id', currentUser.id)
+        .limit(10);
+      
+      if (error) throw error;
+      
+      if (!users || users.length === 0) {
+        searchResults.innerHTML = '<li class="empty-state">No users found</li>';
+        return;
+      }
+      
+      // Check which users are already friends or have pending requests
+      const { data: existingFriendships } = await supabase
+        .from('friendships')
+        .select('friend_user_id')
+        .eq('user_id', currentUser.id);
+      
+      const { data: sentRequests } = await supabase
+        .from('friend_requests')
+        .select('to_user_id')
+        .eq('from_user_id', currentUser.id)
+        .eq('status', 'pending');
+      
+      const friendIds = new Set(existingFriendships?.map(f => f.friend_user_id) || []);
+      const requestIds = new Set(sentRequests?.map(r => r.to_user_id) || []);
+      
+      searchResults.innerHTML = users.map(user => {
+        const initials = getInitials(user.display_name || user.email);
+        const isFriend = friendIds.has(user.id);
+        const hasPendingRequest = requestIds.has(user.id);
+        
+        let actionButton = '';
+        if (isFriend) {
+          actionButton = '<span class="badge badge-accepted">Friends</span>';
+        } else if (hasPendingRequest) {
+          actionButton = '<span class="badge badge-pending">Pending</span>';
+        } else {
+          actionButton = `<button class="btn btn-primary btn-icon" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
+        }
+        
+        return `
+          <li class="user-item">
+            <div class="user-info">
+              <div class="user-avatar-small">${initials}</div>
+              <div class="user-details">
+                <div class="name">${user.display_name || 'User'}</div>
+                <div class="email">${user.email}</div>
+              </div>
+            </div>
+            <div class="action-buttons">
+              ${actionButton}
+            </div>
+          </li>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('Error searching users:', e);
+      searchResults.innerHTML = '<li class="empty-state">Error searching users</li>';
+    }
+  }
+  
+  function getInitials(name) {
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return parts[0][0].toUpperCase() + parts[1][0].toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+  
+  // Make sendFriendRequest globally accessible
+  window.sendFriendRequest = async function(toUserId) {
+    try {
+      const { error } = await supabase
+        .from('friend_requests')
+        .insert({
+          from_user_id: currentUser.id,
+          to_user_id: toUserId,
+          status: 'pending'
+        });
+      
+      if (error) throw error;
+      
+      // Refresh search results
+      await searchUsers();
+      showMessage('Friend request sent!');
+    } catch (e) {
+      console.error('Error sending friend request:', e);
+      showMessage('Error sending friend request', true);
+    }
+  };
+  
+  // =====================================================
+  // Social Features - Friend Requests
+  // =====================================================
+  async function loadFriendRequests() {
+    if (!currentUser) return;
+    
+    try {
+      const { data: requests, error } = await supabase
+        .from('friend_requests')
+        .select(`
+          *,
+          from_user:profiles!friend_requests_from_user_id_fkey(id, email, display_name)
+        `)
+        .eq('to_user_id', currentUser.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (!requests || requests.length === 0) {
+        friendRequests.innerHTML = '<li class="empty-state">No pending requests</li>';
+        return;
+      }
+      
+      friendRequests.innerHTML = requests.map(req => {
+        const user = req.from_user;
+        const initials = getInitials(user.display_name || user.email);
+        
+        return `
+          <li class="request-item">
+            <div class="user-info">
+              <div class="user-avatar-small">${initials}</div>
+              <div class="user-details">
+                <div class="name">${user.display_name || 'User'}</div>
+                <div class="email">${user.email}</div>
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-primary btn-icon" onclick="acceptFriendRequest('${req.id}', '${req.from_user_id}')">Accept</button>
+              <button class="btn btn-ghost btn-icon" onclick="rejectFriendRequest('${req.id}')">Decline</button>
+            </div>
+          </li>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('Error loading friend requests:', e);
+    }
+  }
+  
+  window.acceptFriendRequest = async function(requestId, friendUserId) {
+    try {
+      // Update request status
+      const { error: updateError } = await supabase
+        .from('friend_requests')
+        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .eq('id', requestId);
+      
+      if (updateError) throw updateError;
+      
+      // Create bidirectional friendships
+      const { error: friendship1Error } = await supabase
+        .from('friendships')
+        .insert({
+          user_id: currentUser.id,
+          friend_user_id: friendUserId
+        });
+      
+      const { error: friendship2Error } = await supabase
+        .from('friendships')
+        .insert({
+          user_id: friendUserId,
+          friend_user_id: currentUser.id
+        });
+      
+      if (friendship1Error || friendship2Error) throw friendship1Error || friendship2Error;
+      
+      // Refresh lists
+      await loadFriendRequests();
+      await loadFriends();
+      showMessage('Friend request accepted!');
+    } catch (e) {
+      console.error('Error accepting friend request:', e);
+      showMessage('Error accepting request', true);
+    }
+  };
+  
+  window.rejectFriendRequest = async function(requestId) {
+    try {
+      const { error } = await supabase
+        .from('friend_requests')
+        .update({ status: 'rejected', updated_at: new Date().toISOString() })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
+      await loadFriendRequests();
+      showMessage('Friend request declined');
+    } catch (e) {
+      console.error('Error rejecting friend request:', e);
+      showMessage('Error declining request', true);
+    }
+  };
+  
+  // =====================================================
+  // Social Features - Friends List
+  // =====================================================
+  async function loadFriends() {
+    if (!currentUser) return;
+    
+    try {
+      const { data: friendships, error } = await supabase
+        .from('friendships')
+        .select(`
+          *,
+          friend:profiles!friendships_friend_user_id_fkey(id, email, display_name)
+        `)
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (!friendships || friendships.length === 0) {
+        friendsList.innerHTML = '<li class="empty-state">No friends yet</li>';
+        return;
+      }
+      
+      friendsList.innerHTML = friendships.map(friendship => {
+        const friend = friendship.friend;
+        const initials = getInitials(friend.display_name || friend.email);
+        
+        return `
+          <li class="friend-item">
+            <div class="user-info">
+              <div class="user-avatar-small">${initials}</div>
+              <div class="user-details">
+                <div class="name">${friend.display_name || 'User'}</div>
+                <div class="email">${friend.email}</div>
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-ghost btn-icon" onclick="removeFriend('${friendship.id}', '${friend.id}')">Remove</button>
+            </div>
+          </li>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('Error loading friends:', e);
+    }
+  }
+  
+  window.removeFriend = async function(friendshipId, friendUserId) {
+    if (!confirm('Are you sure you want to remove this friend?')) return;
+    
+    try {
+      // Remove both directions of friendship
+      await supabase
+        .from('friendships')
+        .delete()
+        .eq('id', friendshipId);
+      
+      await supabase
+        .from('friendships')
+        .delete()
+        .eq('user_id', friendUserId)
+        .eq('friend_user_id', currentUser.id);
+      
+      await loadFriends();
+      showMessage('Friend removed');
+    } catch (e) {
+      console.error('Error removing friend:', e);
+      showMessage('Error removing friend', true);
+    }
+  };
+  
+  // Event listeners
+  searchUsersBtn.addEventListener('click', searchUsers);
+  userSearchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') searchUsers();
+  });
+  
+  // Load default list ID
+  async function loadDefaultList() {
+    try {
+      const { data } = await supabase
+        .from('lists')
+        .select('id')
+        .eq('slug', 'nh48')
+        .single();
+      
+      if (data) {
+        currentListId = data.id;
+        await loadGridSettings();
+      }
+    } catch (e) {
+      console.error('Error loading default list:', e);
+    }
+  }
+  
+  // Initialize social features after user loads
+  async function initializeSocialFeatures() {
+    await loadDefaultList();
+    await loadRecentHikes();
+    await loadFriendRequests();
+    await loadFriends();
+  }
+  
+  // Update loadUserProfile to call social features
+  const originalLoadUserProfile = loadUserProfile;
+  loadUserProfile = async function() {
+    await originalLoadUserProfile();
+    if (currentUser) {
+      await initializeSocialFeatures();
+    }
+  };
 </script>
 
 </body>

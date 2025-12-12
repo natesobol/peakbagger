@@ -623,6 +623,42 @@ async function saveGridToSupabase(peakName, month, date) {
   }
 }
 
+// Load grid mode settings from Supabase
+async function loadGridModeSettings() {
+  if (!currentUser || !currentList) return;
+  
+  try {
+    const { data: lists } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('slug', slugify(currentList))
+      .single();
+    
+    if (!lists) return;
+    
+    const { data: settings } = await supabase
+      .from('user_grid_settings')
+      .select('grid_enabled')
+      .eq('user_id', currentUser.id)
+      .eq('list_id', lists.id)
+      .single();
+    
+    if (settings && typeof settings.grid_enabled === 'boolean') {
+      // If grid is enabled in settings, set to grid mode, otherwise use list mode
+      gridMode = settings.grid_enabled ? 'grid' : 'list';
+      
+      // Update mode label if it exists
+      const modeLabel = document.getElementById('modeLabel');
+      if (modeLabel) {
+        const modeLabels = { grid: 'Grid', list: 'List', compact: 'Compact' };
+        modeLabel.textContent = modeLabels[gridMode];
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load grid mode settings:', e);
+  }
+}
+
 // Backward compatibility - keep localStorage functions for fallback
 function loadState() {
   try {
@@ -808,6 +844,7 @@ async function reflectAuthUI() {
   // Load data from Supabase instead of localStorage
   await loadStateFromSupabase();
   await loadGridFromSupabase();
+  await loadGridModeSettings();
   renderView();
 }
 
@@ -1855,6 +1892,7 @@ async function changeList(name) {
   if (currentUser) {
     await loadStateFromSupabase();
     await loadGridFromSupabase();
+    await loadGridModeSettings();
   }
 }
 
@@ -1915,7 +1953,7 @@ tosAgree.addEventListener('change', () => { doSignupBtn.disabled = !tosAgree.che
 const modeBtn = document.getElementById('modeBtn');
 const modeLabel = document.getElementById('modeLabel');
 if (modeLabel) modeLabel.textContent = 'Grid';  // Initialize to Grid
-modeBtn.onclick = () => {
+modeBtn.onclick = async () => {
   const isMobile = window.innerWidth < 960;
   const modes = isMobile ? ['grid'] : ['grid', 'list', 'compact'];
   const currentIdx = modes.indexOf(gridMode);
@@ -1924,6 +1962,33 @@ modeBtn.onclick = () => {
   
   const modeLabels = { grid: 'Grid', list: 'List', compact: 'Compact' };
   modeLabel.textContent = modeLabels[gridMode];
+  
+  // Save grid mode setting to database
+  if (currentUser && currentList) {
+    try {
+      const { data: lists } = await supabase
+        .from('lists')
+        .select('id')
+        .eq('slug', slugify(currentList))
+        .single();
+      
+      if (lists) {
+        await supabase
+          .from('user_grid_settings')
+          .upsert({
+            user_id: currentUser.id,
+            list_id: lists.id,
+            grid_enabled: (gridMode === 'grid'),
+            last_updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,list_id'
+          });
+      }
+    } catch (e) {
+      console.error('Failed to save grid mode setting:', e);
+    }
+  }
+  
   PAGE = 1;
   renderView();
 };
