@@ -20,6 +20,493 @@ const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
 let currentUser = null;
 
 // =====================================================
+// Translation System
+// =====================================================
+let currentLanguage = 'en';
+
+const translations = {
+  en: {
+    // Progress & stats
+    'peaks completed': 'peaks completed',
+    'Showing': 'Showing',
+    'of': 'of',
+    'No results': 'No results',
+    
+    // Filters & controls
+    'Search peaks...': 'Search peaks...',
+    'Sort': 'Sort',
+    'Mode': 'Mode',
+    'Export XLSX': 'Export XLSX',
+    'All Peaks': 'All Peaks',
+    'Hide completed': 'Hide completed',
+    'Advanced Filters': 'Advanced Filters',
+    
+    // Sort options
+    'Rank': 'Rank',
+    'Name': 'Name',
+    'Elevation': 'Elevation',
+    'Status': 'Status',
+    
+    // View modes
+    'Grid': 'Grid',
+    'List': 'List',
+    'Compact': 'Compact',
+    
+    // Status filters
+    'All': 'All',
+    'Completed': 'Completed',
+    'Favorites': 'Favorites',
+    'Wishlist': 'Wishlist',
+    'Incomplete': 'Incomplete',
+    
+    // Table headers
+    'Name': 'Name',
+    'Date': 'Date',
+    'Done': 'Done',
+    'Range': 'Range',
+    
+    // Peak detail
+    'Prominence': 'Prominence',
+    'Trail Type': 'Trail Type',
+    'Difficulty': 'Difficulty',
+    'Exposure': 'Exposure',
+    'Coordinates': 'Coordinates',
+    'Add to Favorites': 'Add to Favorites',
+    'Remove from Favorites': 'Remove from Favorites',
+    'Add to Wishlist': 'Add to Wishlist',
+    'Remove from Wishlist': 'Remove from Wishlist',
+    
+    // Settings
+    'Settings': 'Settings',
+    'Units: Meters': 'Units: Meters',
+    'Row density': 'Row density',
+    'Comfortable': 'Comfortable',
+    'Compact': 'Compact',
+    'Sticky header': 'Sticky header',
+    'Grid tracking (12 months/peak)': 'Grid tracking (12 months/peak)',
+    'Card Color Legend': 'Card Color Legend',
+    'Language': 'Language',
+    
+    // Themes
+    'Themes': 'Themes',
+    'Choose theme': 'Choose theme',
+    'Dark (default)': 'Dark (default)',
+    'Light (white & black)': 'Light (white & black)',
+    'Forest Green': 'Forest Green',
+    'Sky Blue': 'Sky Blue',
+    
+    // Auth
+    'You\'re not signed in': 'You\'re not signed in',
+    'Sign in to save your progress': 'Sign in to save your progress',
+    'Log in': 'Log in',
+    'Log out': 'Log out',
+    'Signed in as': 'Signed in as',
+    
+    // Errors
+    'Error loading peak details': 'Error loading peak details. Please try again.',
+    'Error loading list': 'Error loading list',
+    'Error loading table': 'Error loading table',
+    'Couldn\'t load data': 'Couldn\'t load data. Please check your connection.',
+    
+    // Export
+    'peakbagger-export': 'peakbagger-export'
+  },
+  es: {
+    'peaks completed': 'picos completados',
+    'Showing': 'Mostrando',
+    'of': 'de',
+    'No results': 'Sin resultados',
+    
+    'Search peaks...': 'Buscar picos...',
+    'Sort': 'Ordenar',
+    'Mode': 'Modo',
+    'Export XLSX': 'Exportar XLSX',
+    'All Peaks': 'Todos los Picos',
+    'Hide completed': 'Ocultar completados',
+    'Advanced Filters': 'Filtros Avanzados',
+    
+    'Rank': 'Rango',
+    'Name': 'Nombre',
+    'Elevation': 'Elevación',
+    'Status': 'Estado',
+    
+    'Grid': 'Cuadrícula',
+    'List': 'Lista',
+    'Compact': 'Compacto',
+    
+    'All': 'Todos',
+    'Completed': 'Completado',
+    'Favorites': 'Favoritos',
+    'Wishlist': 'Lista de Deseos',
+    'Incomplete': 'Incompleto',
+    
+    'Date': 'Fecha',
+    'Done': 'Hecho',
+    'Range': 'Cordillera',
+    
+    'Prominence': 'Prominencia',
+    'Trail Type': 'Tipo de Sendero',
+    'Difficulty': 'Dificultad',
+    'Exposure': 'Exposición',
+    'Coordinates': 'Coordenadas',
+    'Add to Favorites': 'Añadir a Favoritos',
+    'Remove from Favorites': 'Quitar de Favoritos',
+    'Add to Wishlist': 'Añadir a Lista de Deseos',
+    'Remove from Wishlist': 'Quitar de Lista de Deseos',
+    
+    'Settings': 'Configuración',
+    'Units: Meters': 'Unidades: Metros',
+    'Row density': 'Densidad de filas',
+    'Comfortable': 'Cómodo',
+    'Sticky header': 'Encabezado fijo',
+    'Grid tracking (12 months/peak)': 'Seguimiento de cuadrícula (12 meses/pico)',
+    'Card Color Legend': 'Leyenda de Colores',
+    'Language': 'Idioma',
+    
+    'Themes': 'Temas',
+    'Choose theme': 'Elegir tema',
+    'Dark (default)': 'Oscuro (predeterminado)',
+    'Light (white & black)': 'Claro (blanco y negro)',
+    'Forest Green': 'Verde Bosque',
+    'Sky Blue': 'Azul Cielo',
+    
+    'You\'re not signed in': 'No has iniciado sesión',
+    'Sign in to save your progress': 'Inicia sesión para guardar tu progreso',
+    'Log in': 'Iniciar sesión',
+    'Log out': 'Cerrar sesión',
+    'Signed in as': 'Conectado como',
+    
+    'Error loading peak details': 'Error al cargar detalles del pico. Por favor, inténtalo de nuevo.',
+    'Error loading list': 'Error al cargar lista',
+    'Error loading table': 'Error al cargar tabla',
+    'Couldn\'t load data': 'No se pudieron cargar los datos. Por favor, verifica tu conexión.',
+    
+    'peakbagger-export': 'peakbagger-exportar'
+  },
+  fr: {
+    'peaks completed': 'sommets complétés',
+    'Showing': 'Affichage',
+    'of': 'de',
+    'No results': 'Aucun résultat',
+    
+    'Search peaks...': 'Rechercher des sommets...',
+    'Sort': 'Trier',
+    'Mode': 'Mode',
+    'Export XLSX': 'Exporter XLSX',
+    'All Peaks': 'Tous les Sommets',
+    'Hide completed': 'Masquer complétés',
+    'Advanced Filters': 'Filtres Avancés',
+    
+    'Rank': 'Rang',
+    'Name': 'Nom',
+    'Elevation': 'Élévation',
+    'Status': 'Statut',
+    
+    'Grid': 'Grille',
+    'List': 'Liste',
+    'Compact': 'Compact',
+    
+    'All': 'Tous',
+    'Completed': 'Complété',
+    'Favorites': 'Favoris',
+    'Wishlist': 'Liste de Souhaits',
+    'Incomplete': 'Incomplet',
+    
+    'Date': 'Date',
+    'Done': 'Fait',
+    'Range': 'Chaîne',
+    
+    'Prominence': 'Prominence',
+    'Trail Type': 'Type de Sentier',
+    'Difficulty': 'Difficulté',
+    'Exposure': 'Exposition',
+    'Coordinates': 'Coordonnées',
+    'Add to Favorites': 'Ajouter aux Favoris',
+    'Remove from Favorites': 'Retirer des Favoris',
+    'Add to Wishlist': 'Ajouter à la Liste de Souhaits',
+    'Remove from Wishlist': 'Retirer de la Liste de Souhaits',
+    
+    'Settings': 'Paramètres',
+    'Units: Meters': 'Unités: Mètres',
+    'Row density': 'Densité des rangées',
+    'Comfortable': 'Confortable',
+    'Sticky header': 'En-tête fixe',
+    'Grid tracking (12 months/peak)': 'Suivi de grille (12 mois/sommet)',
+    'Card Color Legend': 'Légende des Couleurs',
+    'Language': 'Langue',
+    
+    'Themes': 'Thèmes',
+    'Choose theme': 'Choisir un thème',
+    'Dark (default)': 'Sombre (par défaut)',
+    'Light (white & black)': 'Clair (blanc et noir)',
+    'Forest Green': 'Vert Forêt',
+    'Sky Blue': 'Bleu Ciel',
+    
+    'You\'re not signed in': 'Vous n\'êtes pas connecté',
+    'Sign in to save your progress': 'Connectez-vous pour sauvegarder votre progression',
+    'Log in': 'Se connecter',
+    'Log out': 'Se déconnecter',
+    'Signed in as': 'Connecté en tant que',
+    
+    'Error loading peak details': 'Erreur lors du chargement des détails du sommet. Veuillez réessayer.',
+    'Error loading list': 'Erreur lors du chargement de la liste',
+    'Error loading table': 'Erreur lors du chargement du tableau',
+    'Couldn\'t load data': 'Impossible de charger les données. Veuillez vérifier votre connexion.',
+    
+    'peakbagger-export': 'peakbagger-exporter'
+  },
+  de: {
+    'peaks completed': 'Gipfel abgeschlossen',
+    'Showing': 'Zeige',
+    'of': 'von',
+    'No results': 'Keine Ergebnisse',
+    
+    'Search peaks...': 'Gipfel suchen...',
+    'Sort': 'Sortieren',
+    'Mode': 'Modus',
+    'Export XLSX': 'XLSX Exportieren',
+    'All Peaks': 'Alle Gipfel',
+    'Hide completed': 'Abgeschlossene ausblenden',
+    'Advanced Filters': 'Erweiterte Filter',
+    
+    'Rank': 'Rang',
+    'Name': 'Name',
+    'Elevation': 'Höhe',
+    'Status': 'Status',
+    
+    'Grid': 'Raster',
+    'List': 'Liste',
+    'Compact': 'Kompakt',
+    
+    'All': 'Alle',
+    'Completed': 'Abgeschlossen',
+    'Favorites': 'Favoriten',
+    'Wishlist': 'Wunschliste',
+    'Incomplete': 'Unvollständig',
+    
+    'Date': 'Datum',
+    'Done': 'Erledigt',
+    'Range': 'Gebirge',
+    
+    'Prominence': 'Schartenhöhe',
+    'Trail Type': 'Wegtyp',
+    'Difficulty': 'Schwierigkeit',
+    'Exposure': 'Exposition',
+    'Coordinates': 'Koordinaten',
+    'Add to Favorites': 'Zu Favoriten hinzufügen',
+    'Remove from Favorites': 'Aus Favoriten entfernen',
+    'Add to Wishlist': 'Zur Wunschliste hinzufügen',
+    'Remove from Wishlist': 'Von Wunschliste entfernen',
+    
+    'Settings': 'Einstellungen',
+    'Units: Meters': 'Einheiten: Meter',
+    'Row density': 'Zeilendichte',
+    'Comfortable': 'Komfortabel',
+    'Sticky header': 'Fixierte Kopfzeile',
+    'Grid tracking (12 months/peak)': 'Raster-Tracking (12 Monate/Gipfel)',
+    'Card Color Legend': 'Kartenfarben-Legende',
+    'Language': 'Sprache',
+    
+    'Themes': 'Themen',
+    'Choose theme': 'Thema wählen',
+    'Dark (default)': 'Dunkel (Standard)',
+    'Light (white & black)': 'Hell (weiß und schwarz)',
+    'Forest Green': 'Waldgrün',
+    'Sky Blue': 'Himmelblau',
+    
+    'You\'re not signed in': 'Sie sind nicht angemeldet',
+    'Sign in to save your progress': 'Melden Sie sich an, um Ihren Fortschritt zu speichern',
+    'Log in': 'Anmelden',
+    'Log out': 'Abmelden',
+    'Signed in as': 'Angemeldet als',
+    
+    'Error loading peak details': 'Fehler beim Laden der Gipfeldetails. Bitte versuchen Sie es erneut.',
+    'Error loading list': 'Fehler beim Laden der Liste',
+    'Error loading table': 'Fehler beim Laden der Tabelle',
+    'Couldn\'t load data': 'Daten konnten nicht geladen werden. Bitte überprüfen Sie Ihre Verbindung.',
+    
+    'peakbagger-export': 'peakbagger-export'
+  },
+  zh: {
+    'peaks completed': '完成的山峰',
+    'Showing': '显示',
+    'of': '的',
+    'No results': '无结果',
+    
+    'Search peaks...': '搜索山峰...',
+    'Sort': '排序',
+    'Mode': '模式',
+    'Export XLSX': '导出 XLSX',
+    'All Peaks': '所有山峰',
+    'Hide completed': '隐藏已完成',
+    'Advanced Filters': '高级筛选',
+    
+    'Rank': '排名',
+    'Name': '名称',
+    'Elevation': '海拔',
+    'Status': '状态',
+    
+    'Grid': '网格',
+    'List': '列表',
+    'Compact': '紧凑',
+    
+    'All': '全部',
+    'Completed': '已完成',
+    'Favorites': '收藏',
+    'Wishlist': '愿望清单',
+    'Incomplete': '未完成',
+    
+    'Date': '日期',
+    'Done': '完成',
+    'Range': '山脉',
+    
+    'Prominence': '突起度',
+    'Trail Type': '小径类型',
+    'Difficulty': '难度',
+    'Exposure': '暴露度',
+    'Coordinates': '坐标',
+    'Add to Favorites': '添加到收藏',
+    'Remove from Favorites': '从收藏中移除',
+    'Add to Wishlist': '添加到愿望清单',
+    'Remove from Wishlist': '从愿望清单中移除',
+    
+    'Settings': '设置',
+    'Units: Meters': '单位：米',
+    'Row density': '行密度',
+    'Comfortable': '舒适',
+    'Sticky header': '固定标题',
+    'Grid tracking (12 months/peak)': '网格追踪（12个月/山峰）',
+    'Card Color Legend': '卡片颜色图例',
+    'Language': '语言',
+    
+    'Themes': '主题',
+    'Choose theme': '选择主题',
+    'Dark (default)': '深色（默认）',
+    'Light (white & black)': '浅色（黑白）',
+    'Forest Green': '森林绿',
+    'Sky Blue': '天空蓝',
+    
+    'You\'re not signed in': '您未登录',
+    'Sign in to save your progress': '登录以保存您的进度',
+    'Log in': '登录',
+    'Log out': '登出',
+    'Signed in as': '登录为',
+    
+    'Error loading peak details': '加载山峰详情时出错。请重试。',
+    'Error loading list': '加载列表时出错',
+    'Error loading table': '加载表格时出错',
+    'Couldn\'t load data': '无法加载数据。请检查您的连接。',
+    
+    'peakbagger-export': 'peakbagger-导出'
+  },
+  ja: {
+    'peaks completed': '完了した山',
+    'Showing': '表示',
+    'of': 'の',
+    'No results': '結果なし',
+    
+    'Search peaks...': '山を検索...',
+    'Sort': '並び替え',
+    'Mode': 'モード',
+    'Export XLSX': 'XLSX エクスポート',
+    'All Peaks': 'すべての山',
+    'Hide completed': '完了を非表示',
+    'Advanced Filters': '高度なフィルター',
+    
+    'Rank': 'ランク',
+    'Name': '名前',
+    'Elevation': '標高',
+    'Status': 'ステータス',
+    
+    'Grid': 'グリッド',
+    'List': 'リスト',
+    'Compact': 'コンパクト',
+    
+    'All': 'すべて',
+    'Completed': '完了',
+    'Favorites': 'お気に入り',
+    'Wishlist': '欲しいものリスト',
+    'Incomplete': '未完了',
+    
+    'Date': '日付',
+    'Done': '完了',
+    'Range': '山脈',
+    
+    'Prominence': '卓立度',
+    'Trail Type': 'トレイルタイプ',
+    'Difficulty': '難易度',
+    'Exposure': '露出度',
+    'Coordinates': '座標',
+    'Add to Favorites': 'お気に入りに追加',
+    'Remove from Favorites': 'お気に入りから削除',
+    'Add to Wishlist': '欲しいものリストに追加',
+    'Remove from Wishlist': '欲しいものリストから削除',
+    
+    'Settings': '設定',
+    'Units: Meters': '単位：メートル',
+    'Row density': '行密度',
+    'Comfortable': '快適',
+    'Sticky header': '固定ヘッダー',
+    'Grid tracking (12 months/peak)': 'グリッド追跡（12ヶ月/山）',
+    'Card Color Legend': 'カード色の凡例',
+    'Language': '言語',
+    
+    'Themes': 'テーマ',
+    'Choose theme': 'テーマを選択',
+    'Dark (default)': 'ダーク（デフォルト）',
+    'Light (white & black)': 'ライト（白と黒）',
+    'Forest Green': 'フォレストグリーン',
+    'Sky Blue': 'スカイブルー',
+    
+    'You\'re not signed in': 'サインインしていません',
+    'Sign in to save your progress': '進行状況を保存するためにサインイン',
+    'Log in': 'ログイン',
+    'Log out': 'ログアウト',
+    'Signed in as': 'サインイン中',
+    
+    'Error loading peak details': '山の詳細の読み込みエラー。もう一度お試しください。',
+    'Error loading list': 'リストの読み込みエラー',
+    'Error loading table': 'テーブルの読み込みエラー',
+    'Couldn\'t load data': 'データを読み込めませんでした。接続を確認してください。',
+    
+    'peakbagger-export': 'peakbagger-エクスポート'
+  }
+};
+
+function t(key) {
+  return translations[currentLanguage]?.[key] || translations.en[key] || key;
+}
+
+function setLanguage(lang) {
+  if (!translations[lang]) {
+    console.warn('Unknown language:', lang);
+    return;
+  }
+  
+  currentLanguage = lang;
+  
+  // Save to preferences
+  const prefs = readPrefs();
+  prefs.language = lang;
+  writePrefs(prefs);
+  
+  // Update UI
+  updateLanguageButtons();
+  translatePage();
+}
+
+function updateLanguageButtons() {
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === currentLanguage);
+  });
+}
+
+function translatePage() {
+  // This will trigger a re-render of all views
+  renderView();
+}
+
+// =====================================================
 // NH48 API Integration Constants & Helpers
 // =====================================================
 const NH48_API_URL = 'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json';
@@ -178,21 +665,26 @@ async function fetchAllLists() {
 }
 
 async function fetchListItems(name) {
+  console.log('🔍 fetchListItems called for:', name);
   try {
     // First, try to get peaks from Supabase
-    const { data: lists } = await supabase
+    const { data: lists, error: listError } = await supabase
       .from('lists')
       .select('id, slug')
       .eq('name', name)
       .single();
     
-    if (lists) {
+    console.log('📊 Supabase lists query result:', lists, 'error:', listError);
+    
+    if (lists && !listError) {
       // Get peaks for this list via list_peaks join
       const { data: listPeaks, error } = await supabase
         .from('list_peaks')
         .select('rank, peak_id, peaks!inner(*)')
         .eq('list_id', lists.id)
         .order('rank');
+      
+      console.log('📊 Supabase list_peaks query result:', listPeaks?.length || 0, 'peaks, error:', error);
       
       if (error) throw error;
       
@@ -236,16 +728,20 @@ async function fetchListItems(name) {
       }
     }
   } catch (e) {
-    console.warn('Failed to load from Supabase, falling back to static JSON:', e);
+    console.warn('⚠️ Failed to load from Supabase, falling back to static JSON:', e);
   }
   
   // Fallback to the original static JSON approach
+  console.log('📁 Using JSON fallback for:', name);
   const jsonFileName = LIST_TO_JSON_MAP[name];
-  if (!jsonFileName) throw new Error('Unknown list: ' + name);
+  if (!jsonFileName) {
+    console.error('❌ Unknown list:', name, 'Available lists:', Object.keys(LIST_TO_JSON_MAP));
+    throw new Error('Unknown list: ' + name);
+  }
   
   try {
     const url = `${NH48_API_REPO_URL}/${jsonFileName}?t=` + Date.now();
-    console.log('Fetching from:', url);
+    console.log('🌐 Fetching from:', url);
     const r = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
     console.log('Fetch response status:', r.status, r.statusText);
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
@@ -2574,6 +3070,13 @@ if (signupPassConfirm) {
   });
 }
 
+// Language selector event listeners
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    setLanguage(btn.dataset.lang);
+  });
+});
+
 // =====================================================
 // Boot Sequence
 // =====================================================
@@ -2585,6 +3088,12 @@ if (signupPassConfirm) {
     applyDensity(!!prefs.compact);
     applyStickyHeader(!!prefs.sticky);
     applyGridTracking(!!prefs.gridTracking);  // Default to false
+    
+    // Set language
+    if (prefs.language) {
+      currentLanguage = prefs.language;
+      updateLanguageButtons();
+    }
 
     if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
 

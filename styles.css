@@ -1152,3 +1152,46 @@ a:hover {
     min-width: 260px;
   }
 }
+
+/* Language Selector */
+.language-selector {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.lang-btn {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 4px;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+}
+
+.lang-btn:hover {
+  background: var(--input-bg-hover);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.lang-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(156, 200, 255, 0.4);
+}
+
+.lang-btn:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 480px) {
+  .language-selector {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
