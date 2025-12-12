@@ -1,0 +1,469 @@
+/* Peak Detail Page Styles - Based on NH48 peak.html design */
+:root {
+  --bg: #0a0a0a;
+  --panel: #12121a;
+  --card: #171a22;
+  --ink: #ffffff;
+  --muted: #a5b4c3;
+  --stroke: rgba(255, 255, 255, 0.2);
+  --accent: #22c55e;
+  --input-bg: #1a1a24;
+  --input-bg-hover: #22222e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    padding: 12px;
+  }
+}
+
+/* Back Link */
+a.back {
+  color: var(--accent);
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  transition: opacity 0.2s;
+}
+
+a.back:hover {
+  opacity: 0.7;
+}
+
+/* Page Title */
+h1 {
+  margin: 0 0 16px;
+  font-size: clamp(22px, 4vw, 30px);
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  h1 {
+    margin: 0 0 12px;
+    font-size: clamp(18px, 5vw, 24px);
+  }
+}
+
+/* ============================================
+   MEDIA / CAROUSEL
+   ============================================ */
+.media {
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  position: relative;
+  aspect-ratio: 5/3;
+}
+
+.carousel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.slide.active {
+  opacity: 1;
+}
+
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Carousel Dots */
+.dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+
+.dot.active {
+  background: #ffffff;
+}
+
+.dot:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Carousel Controls */
+.ctrls {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.ctrls button {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 0 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  font-size: 18px;
+  transition: background 0.2s;
+}
+
+.ctrls button:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+/* Countdown Timer */
+.timer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+
+.timer svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.timer-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.1s linear;
+}
+
+.timer-text {
+  position: absolute;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ============================================
+   METADATA + GENERAL INFO ROW
+   ============================================ */
+.meta-info-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .meta-info-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Metadata Panel */
+.metadata-panel {
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .metadata-panel {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+}
+
+.metadata-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.metadata-title {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metadata-toggle {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.metadata-toggle:hover {
+  color: var(--ink);
+}
+
+.metadata-primary,
+.metadata-extra {
+  width: 100%;
+}
+
+.metadata-extra {
+  display: none;
+  margin-top: 4px;
+}
+
+.metadata-extra.open {
+  display: block;
+}
+
+.metadata-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--stroke);
+}
+
+.metadata-row:last-child {
+  border-bottom: none;
+}
+
+.metadata-label {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  max-width: 45%;
+}
+
+.metadata-value {
+  color: var(--ink);
+  font-size: 0.9rem;
+  text-align: right;
+  flex: 1 1 auto;
+  word-break: break-word;
+}
+
+/* ============================================
+   SECTION TITLES & INFO GRIDS
+   ============================================ */
+.section-title {
+  margin: 20px 0 12px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 640px) {
+  .section-title {
+    margin: 16px 0 10px 0;
+    font-size: 0.85rem;
+  }
+}
+
+.info-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+  margin-bottom: 16px;
+}
+
+.info-panel {
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .info-panel {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 640px) {
+  .info-label {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+  }
+}
+
+.info-value {
+  color: var(--ink);
+  font-size: 0.9rem;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+/* ============================================
+   BUTTONS & LINKS
+   ============================================ */
+.btn-row {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 1px dotted var(--stroke);
+}
+
+.btn {
+  background: var(--input-bg);
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  color: var(--ink);
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  flex: 1;
+}
+
+.btn:hover {
+  background: var(--input-bg-hover);
+  border-color: var(--accent);
+}
+
+.links-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-link {
+  display: block;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  color: var(--accent);
+  text-decoration: none;
+  text-align: left;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.btn-link:hover {
+  background: var(--input-bg-hover);
+  border-color: var(--accent);
+  transform: translateX(4px);
+}
+
+.btn-link.primary {
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.btn-link.primary:hover {
+  background: #1da54e;
+  transform: translateX(4px);
+}
+
+/* ============================================
+   DATE INPUT
+   ============================================ */
+.date-input {
+  background: var(--input-bg);
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.date-input:hover,
+.date-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* ============================================
+   UTILITY
+   ============================================ */
+.subtle {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.hidden {
+  display: none !important;
+}
