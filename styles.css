@@ -589,7 +589,7 @@ input:checked + .slider{background:#4caf50}
 input:checked + .slider:before{transform:translateX(20px)}
 
 /* ---------- Modal (auth) ---------- */
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:99999}
+.modal{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;padding-top:10vh;background:rgba(0,0,0,.6);z-index:99999}
 .modal.open{display:flex}
 .sheet{width:min(520px,92vw);background:var(--panel);border:1px solid var(--border-strong);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
 .sheet h2{margin:0 0 6px 0}

@@ -1391,23 +1391,26 @@ function setGridDate(list, peak, month, dateStr) {
   const rec = ensureGridRecord(list, peak);
   rec[String(month)] = dateStr || "";
   
-  // Save to Supabase
+  // Save to Supabase immediately
   saveGridToSupabase(peak, month, dateStr);
   
   saveGrid();
-  // Sync classic mode
+  // Sync classic mode - grid determines list completion
   const months = Object.values(rec).filter(Boolean);
   const any = months.length > 0;
   completions[list] ??= {};
   completions[list][peak] ??= { done: false, date: '' };
   completions[list][peak].done = any;
+  // Use most recent date from any month as the "list" completion date
   completions[list][peak].date = any ? months.sort().slice(-1)[0] : '';
   
-  // Also save classic mode to Supabase
+  // Also save classic mode to Supabase immediately
   saveStateToSupabase(peak, any, completions[list][peak].date);
   
   saveState();
   queueRemoteSave();
+  playPingSound();
+  renderView(); // Update UI to reflect changes in both views
 }
 
 function monthHasDate(list, peak, month) {
@@ -2308,40 +2311,57 @@ function setDateFor(peakName, dateStr) {
   // When date is cleared, always mark as not completed
   if (dateStr) {
     completions[currentList][peakName].done = true;
+    
+    // SYNC TO GRID: Also set the corresponding month in grid mode
+    const month = new Date(dateStr).getMonth() + 1;
+    const gridRec = ensureGridRecord(currentList, peakName);
+    gridRec[String(month)] = dateStr;
+    saveGridToSupabase(peakName, month, dateStr);
   } else {
     completions[currentList][peakName].done = false;
+    // Note: We don't clear grid months when clearing list date
+    // User may want to keep monthly tracking independent
   }
   
-  // Save to Supabase with synced values
+  // Save to Supabase with synced values immediately
   saveStateToSupabase(peakName, !!dateStr, dateStr);
   
   saveState();
   queueRemoteSave();
-  renderView();  // Full re-render to update checkbox UI
+  playPingSound();
+  renderView();  // Full re-render to update both list and grid UI
 }
 
 function toggleComplete(peakName) {
   completions[currentList] ??= {};
   const rec = completions[currentList][peakName] ??= { done: false, date: '' };
   rec.done = !rec.done;
+  
   if (!rec.done) {
     rec.date = '';
+    // Note: Don't clear grid months when unchecking - user may want to keep monthly data
   } else {
     // When marking as complete, auto-set today's date if no date exists
     if (!rec.date) {
       const today = new Date();
       rec.date = today.toISOString().split('T')[0];
     }
+    
+    // SYNC TO GRID: Also set the corresponding month in grid mode
+    const month = new Date(rec.date).getMonth() + 1;
+    const gridRec = ensureGridRecord(currentList, peakName);
+    gridRec[String(month)] = rec.date;
+    saveGridToSupabase(peakName, month, rec.date);
   }
   completions[currentList][peakName] = rec;
   
-  // Save to Supabase
+  // Save to Supabase immediately
   saveStateToSupabase(peakName, rec.done, rec.date);
   
   saveState();
   queueRemoteSave();
   playPingSound();
-  renderView();
+  renderView(); // Update both list and grid UI
 }
 
 function playPingSound() {
@@ -2900,12 +2920,12 @@ async function renderTable() {
       tr.querySelector('.grid-save')?.addEventListener('click', e => {
         e.stopPropagation();
         setGridDate(currentList, it.name, activeMonth, dateEl.value);
-        renderView();
+        // renderView is called by setGridDate
       });
       tr.querySelector('.grid-clear')?.addEventListener('click', e => {
         e.stopPropagation();
         setGridDate(currentList, it.name, activeMonth, '');
-        renderView();
+        // renderView is called by setGridDate
       });
     }
 

@@ -303,13 +303,18 @@
 
   // =====================================================
   // Initialization
+  // DB Load: auth.getUser
   // =====================================================
   async function initialize() {
     console.log('Initializing hike log page...');
     
-    // Check authentication
+    // Scroll to top on page load
+    window.scrollTo(0, 0);
+    
+    // DB Load: Check authentication via Supabase Auth
     const { data: { user }, error } = await supabase.auth.getUser();
     
+    // Error handling: Redirect if not logged in
     if (error || !user) {
       console.warn('Not authenticated, redirecting...');
       window.location.href = 'peakbagger-clean.html';
@@ -327,16 +332,16 @@
     // Set default date to today
     hikeDate.value = new Date().toISOString().split('T')[0];
     
-    // Load peaks for dropdown
+    // DB Load: Load peaks for dropdown
     await loadPeakOptions();
     
-    // If editing an existing log, load it
+    // If editing an existing log, DB Load it
     if (editingLogId) {
       pageTitle.textContent = 'Edit Hike Log';
       pageSubtitle.textContent = 'Update your summit experience';
       await loadExistingLog(editingLogId);
     } else if (currentPeakSlug) {
-      // Pre-select peak if provided in URL
+      // DB Load: Pre-select peak if provided in URL
       await preselectPeak(currentPeakSlug);
     }
     
@@ -348,27 +353,34 @@
 
   // =====================================================
   // Load Peak Options
+  // DB Load: peaks, lists
   // =====================================================
   async function loadPeakOptions() {
     try {
-      console.log('Loading peak options...');
+      console.log('loadPeakOptions: DB Load starting...');
       
-      // Get peaks from Supabase
+      // DB Load: Get peaks from peaks table
       const { data: peaks, error } = await supabase
         .from('peaks')
         .select('id, name, slug, elevation')
         .order('name', { ascending: true });
       
       if (error) {
-        console.error('Error loading peaks:', error);
+        console.error('loadPeakOptions: DB Load Error:', error);
         showMessage('Error loading peaks: ' + error.message, true);
         return;
       }
       
-      console.log(`Loaded ${peaks?.length || 0} peaks`);
+      console.log(`loadPeakOptions: DB Load successful, found ${peaks?.length || 0} peaks`);
+      
+      // Handle no data case
+      if (!peaks || peaks.length === 0) {
+        peakSelect.innerHTML = '<option value="">No peaks available</option>';
+        return;
+      }
       
       // Populate dropdown
-      peaks?.forEach(peak => {
+      peaks.forEach(peak => {
         const option = document.createElement('option');
         option.value = peak.id;
         option.dataset.slug = peak.slug;
@@ -376,38 +388,52 @@
         peakSelect.appendChild(option);
       });
       
-      // Also load default list (nh48)
-      const { data: list } = await supabase
+      // DB Load: Get default list (nh48) from lists table
+      const { data: list, error: listError } = await supabase
         .from('lists')
         .select('id')
         .eq('slug', 'nh48')
         .single();
       
+      if (listError) {
+        console.warn('loadPeakOptions: DB Load list warning:', listError);
+      }
+      
       if (list) {
         currentListId = list.id;
-        console.log('Default list ID:', currentListId);
+        console.log('loadPeakOptions: Default list ID:', currentListId);
       }
       
     } catch (e) {
-      console.error('Error loading peak options:', e);
+      console.error('loadPeakOptions: Error:', e);
+      showMessage('Error loading peaks', true);
     }
   }
 
   // =====================================================
   // Preselect Peak
+  // DB Load: peaks
   // =====================================================
   async function preselectPeak(slug) {
     try {
-      console.log('Preselecting peak:', slug);
+      console.log('preselectPeak: DB Load starting for slug:', slug);
       
+      // DB Load: Get peak from peaks table by slug
       const { data: peak, error } = await supabase
         .from('peaks')
         .select('id, name')
         .eq('slug', slug)
         .single();
       
-      if (error || !peak) {
-        console.warn('Peak not found:', slug);
+      if (error) {
+        console.warn('preselectPeak: DB Load Error:', error);
+        showMessage('Peak not found', true);
+        return;
+      }
+      
+      // Handle no data case
+      if (!peak) {
+        console.warn('preselectPeak: Peak not found for slug:', slug);
         return;
       }
       
@@ -417,20 +443,29 @@
       pageTitle.textContent = `Log Hike: ${peak.name}`;
       peakSelectionCard.style.display = 'none';
       
-      console.log('Peak preselected:', peak.name);
+      console.log('preselectPeak: DB Load successful, peak:', peak.name);
       
     } catch (e) {
-      console.error('Error preselecting peak:', e);
+      console.error('preselectPeak: Error:', e);
     }
   }
 
   // =====================================================
   // Load Existing Log (for editing)
+  // DB Load: user_hike_logs, peaks
   // =====================================================
   async function loadExistingLog(logId) {
     try {
-      console.log('Loading existing log:', logId);
+      console.log('loadExistingLog: DB Load starting for ID:', logId);
       
+      // Error handling: Check user authentication
+      if (!currentUser) {
+        console.error('loadExistingLog: No user, cannot load log');
+        showMessage('Please log in to edit hike logs', true);
+        return;
+      }
+      
+      // DB Load: Get hike log from user_hike_logs table
       const { data: log, error } = await supabase
         .from('user_hike_logs')
         .select('*, peaks(name, slug)')
@@ -438,13 +473,20 @@
         .eq('user_id', currentUser.id)
         .single();
       
-      if (error || !log) {
-        console.error('Error loading log:', error);
+      if (error) {
+        console.error('loadExistingLog: DB Load Error:', error);
+        showMessage('Hike log not found or you do not have permission to edit it', true);
+        return;
+      }
+      
+      // Handle no data case
+      if (!log) {
+        console.error('loadExistingLog: No log found for ID:', logId);
         showMessage('Hike log not found', true);
         return;
       }
       
-      console.log('Loaded log:', log);
+      console.log('loadExistingLog: DB Load successful, log:', log);
       
       // Populate form from DB columns
       currentPeakId = log.peak_id;
@@ -456,7 +498,7 @@
         peakSelectionCard.style.display = 'none';
       }
       
-      // Basic info
+      // Basic info - load from DB
       hikeDate.value = log.hike_date || '';
       trailName.value = log.trail_name || '';
       routeNotes.value = log.route_notes || '';
@@ -465,15 +507,15 @@
       durationMinutes.value = log.duration_minutes || '';
       notes.value = log.notes || '';
       
-      // Tags (stored as array)
+      // Tags (stored as array in DB)
       if (log.tags && Array.isArray(log.tags)) {
         tags.value = log.tags.join(', ');
       }
       
-      // Visibility
+      // Visibility - load from DB
       visibility.value = log.visibility || 'private';
       
-      // Categorical dropdown fields
+      // Categorical dropdown fields - load from DB
       effort.value = log.effort || '';
       trailCondition.value = log.trail_condition || '';
       views.value = log.views || '';
@@ -487,7 +529,7 @@
       updateWeatherPreview();
       
     } catch (e) {
-      console.error('Error loading existing log:', e);
+      console.error('loadExistingLog: Error:', e);
       showMessage('Error loading hike log', true);
     }
   }
@@ -558,9 +600,16 @@
 
   // =====================================================
   // Save Hike Log
+  // DB Save: user_hike_logs (insert/update), user_peak_progress (upsert)
   // =====================================================
   async function saveHikeLog() {
-    console.log('Saving hike log...');
+    console.log('saveHikeLog: Starting...');
+    
+    // Error handling: Check user authentication
+    if (!currentUser) {
+      showMessage('Please log in to save hike logs', true);
+      return;
+    }
     
     // Validation
     const selectedPeakId = peakSelect.value || currentPeakId;
@@ -616,8 +665,11 @@
       let result;
       
       if (editingLogId) {
-        // Update existing log
-        console.log('Updating existing log:', editingLogId);
+        // =====================================================
+        // DB Save: user_hike_logs - Update existing log
+        // Updates the hike log entry with new data
+        // =====================================================
+        console.log('DB Save: user_hike_logs - Updating existing log:', editingLogId);
         result = await supabase
           .from('user_hike_logs')
           .update(logData)
@@ -626,8 +678,11 @@
           .select()
           .single();
       } else {
-        // Insert new log
-        console.log('Creating new log');
+        // =====================================================
+        // DB Save: user_hike_logs - Insert new log
+        // Creates a new hike log entry for this peak
+        // =====================================================
+        console.log('DB Save: user_hike_logs - Creating new log');
         logData.created_at = new Date().toISOString();
         result = await supabase
           .from('user_hike_logs')
@@ -636,13 +691,14 @@
           .single();
       }
       
+      // Error handling: Check for DB save errors
       if (result.error) {
-        console.error('Error saving hike log:', result.error);
+        console.error('DB Save Error: user_hike_logs -', result.error);
         showMessage(`Error saving: ${result.error.message}`, true);
         return;
       }
       
-      console.log('Log saved successfully:', result.data);
+      console.log('DB Save Success: user_hike_logs -', result.data);
       
       // Also update user_peak_progress to mark as completed
       await updatePeakProgress(selectedPeakId, hikeDate.value);
@@ -671,13 +727,24 @@
 
   // =====================================================
   // Update Peak Progress
+  // DB Save: user_peak_progress (select then update/upsert)
+  // Marks the peak as completed and updates completion dates
   // =====================================================
   async function updatePeakProgress(peakId, date) {
+    // Error handling: Check user authentication
+    if (!currentUser) {
+      console.error('updatePeakProgress: User not authenticated');
+      return;
+    }
+    
     try {
-      console.log('Updating peak progress:', peakId, date);
+      console.log('updatePeakProgress: Starting for peak', peakId, 'date', date);
       
-      // Check if already marked complete
-      const { data: existing } = await supabase
+      // =====================================================
+      // DB Load: user_peak_progress - Check existing completion status
+      // =====================================================
+      console.log('DB Load: user_peak_progress - Checking existing completion');
+      const { data: existing, error: selectError } = await supabase
         .from('user_peak_progress')
         .select('id, completed, first_completed_at')
         .eq('user_id', currentUser.id)
@@ -685,20 +752,37 @@
         .eq('list_id', currentListId)
         .single();
       
+      if (selectError && selectError.code !== 'PGRST116') {
+        // PGRST116 = no rows found, which is OK
+        console.error('DB Load Error: user_peak_progress -', selectError);
+      }
+      
       if (existing && existing.completed) {
-        // Already completed - update last_completed_at if this is a later date
-        console.log('Peak already completed, updating last_completed_at');
-        await supabase
+        // =====================================================
+        // DB Save: user_peak_progress - Update last_completed_at
+        // Peak already completed, just update the last completion date
+        // =====================================================
+        console.log('DB Save: user_peak_progress - Updating last_completed_at');
+        const { error: updateError } = await supabase
           .from('user_peak_progress')
           .update({
             last_completed_at: date,
             updated_at: new Date().toISOString()
           })
           .eq('id', existing.id);
+        
+        if (updateError) {
+          console.error('DB Save Error: user_peak_progress -', updateError);
+        } else {
+          console.log('DB Save Success: user_peak_progress - Updated last_completed_at');
+        }
       } else {
-        // Mark as completed
-        console.log('Marking peak as completed');
-        await supabase
+        // =====================================================
+        // DB Save: user_peak_progress - Upsert new completion
+        // Mark peak as completed with first and last completion dates
+        // =====================================================
+        console.log('DB Save: user_peak_progress - Upserting completion');
+        const { error: upsertError } = await supabase
           .from('user_peak_progress')
           .upsert({
             user_id: currentUser.id,
@@ -709,11 +793,15 @@
             last_completed_at: date,
             updated_at: new Date().toISOString()
           }, { onConflict: 'user_id,list_id,peak_id' });
+        
+        if (upsertError) {
+          console.error('DB Save Error: user_peak_progress -', upsertError);
+        } else {
+          console.log('DB Save Success: user_peak_progress - Marked as completed');
+        }
       }
-      
-      console.log('Peak progress updated');
     } catch (e) {
-      console.error('Error updating peak progress:', e);
+      console.error('updatePeakProgress Error:', e);
     }
   }
 
