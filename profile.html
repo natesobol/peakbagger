@@ -513,7 +513,7 @@
         <table class="hike-logs-table">
           <thead>
             <tr>
-              <th>Date Completed</th>
+              <th>Date</th>
               <th>Peak</th>
               <th>List</th>
             </tr>
@@ -522,13 +522,13 @@
             ${enrichedCompletions.map(item => {
               const date = item.first_completed_at || item.last_completed_at;
               const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
-                year: 'numeric', month: 'short', day: 'numeric' 
+                month: 'short', day: 'numeric', year: 'numeric' 
               }) : '—';
               const rowClick = item.peakSlug ? `onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'"` : '';
               return `
                 <tr style="cursor:${item.peakSlug ? 'pointer' : 'default'}" ${rowClick}>
                   <td>${formattedDate}</td>
-                  <td style="color:var(--accent)">${item.peakName}</td>
+                  <td>${item.peakName}</td>
                   <td>${item.listName}</td>
                 </tr>
               `;

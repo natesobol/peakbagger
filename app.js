@@ -2964,17 +2964,19 @@ async function changeList(name) {
   PAGE = 1;
   if (listTitle) listTitle.textContent = currentList || '—';
   console.log('📌 changeList() called with:', name);
+  
+  // Load data from Supabase BEFORE rendering so completions are available
+  if (currentUser) {
+    await loadStateFromSupabase();
+    await loadGridFromSupabase();
+    await loadGridTrackingSettings();
+  }
+  
   try {
     await renderView();
     console.log('✅ List rendered successfully');
   } catch (e) {
     console.error('❌ Error rendering list:', e);
-  }
-  // Load data from Supabase for the new list
-  if (currentUser) {
-    await loadStateFromSupabase();
-    await loadGridFromSupabase();
-    await loadGridTrackingSettings();
   }
 }
 
