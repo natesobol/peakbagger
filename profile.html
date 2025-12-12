@@ -479,21 +479,6 @@ input:checked + .slider:before {
     </div>
   </div>
 
-  <!-- Settings Card -->
-  <div class="profile-card">
-    <h2>Preferences</h2>
-    
-    <div class="info-grid">
-      <div class="info-item">
-        <label>Grid Mode Enabled</label>
-        <label class="switch">
-          <input type="checkbox" id="gridModeToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-  </div>
-
   <!-- Recent Hikes Card -->
   <div class="profile-card">
     <h2>Recent Hikes</h2>
@@ -607,8 +592,6 @@ input:checked + .slider:before {
   const changePasswordForm = document.getElementById('changePasswordForm');
   const passwordMessage = document.getElementById('passwordMessage');
   const signOutBtn = document.getElementById('signOutBtn');
-  const gridModeToggle = document.getElementById('gridModeToggle');
-  const hikesContainer = document.getElementById('hikesContainer');
   const userSearchInput = document.getElementById('userSearchInput');
   const searchUsersBtn = document.getElementById('searchUsersBtn');
   const searchResults = document.getElementById('searchResults');
@@ -733,53 +716,6 @@ input:checked + .slider:before {
 
   // Load profile on page load
   loadUserProfile();
-  
-  // =====================================================
-  // Grid Mode Settings
-  // =====================================================
-  async function loadGridSettings() {
-    if (!currentUser || !currentListId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('user_grid_settings')
-        .select('grid_enabled')
-        .eq('user_id', currentUser.id)
-        .eq('list_id', currentListId)
-        .single();
-      
-      if (!error && data) {
-        gridModeToggle.checked = data.grid_enabled;
-      }
-    } catch (e) {
-      console.error('Error loading grid settings:', e);
-    }
-  }
-  
-  async function saveGridSettings(enabled) {
-    if (!currentUser || !currentListId) return;
-    
-    try {
-      const { error } = await supabase
-        .from('user_grid_settings')
-        .upsert({
-          user_id: currentUser.id,
-          list_id: currentListId,
-          grid_enabled: enabled,
-          last_updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,list_id'
-        });
-      
-      if (error) throw error;
-    } catch (e) {
-      console.error('Error saving grid settings:', e);
-    }
-  }
-  
-  gridModeToggle.addEventListener('change', async (e) => {
-    await saveGridSettings(e.target.checked);
-  });
   
   // =====================================================
   // Hike Logs
@@ -1137,7 +1073,6 @@ input:checked + .slider:before {
       
       if (data) {
         currentListId = data.id;
-        await loadGridSettings();
       }
     } catch (e) {
       console.error('Error loading default list:', e);

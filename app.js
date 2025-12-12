@@ -352,6 +352,7 @@ const dDiff = document.getElementById('detailDiff');
 const listTitle = document.getElementById('listTitle');
 const densityToggle = document.getElementById('densityToggle');
 const stickyToggle = document.getElementById('stickyToggle');
+const gridTrackingToggle = document.getElementById('gridTrackingToggle');
 const densityLabel = document.getElementById('densityLabel');
 const copyrightYear = document.getElementById('copyrightYear');
 const tosToggle = document.getElementById('tosToggle');
@@ -623,9 +624,15 @@ async function saveGridToSupabase(peakName, month, date) {
   }
 }
 
-// Load grid mode settings from Supabase
-async function loadGridModeSettings() {
-  if (!currentUser || !currentList) return;
+// Load grid tracking settings from Supabase
+async function loadGridTrackingSettings() {
+  if (!currentUser || !currentList) {
+    // Load from local preferences if not logged in
+    const prefs = readPrefs();
+    gridTrackingEnabled = prefs.gridTracking || false;
+    if (gridTrackingToggle) gridTrackingToggle.checked = gridTrackingEnabled;
+    return;
+  }
   
   try {
     const { data: lists } = await supabase
@@ -644,18 +651,18 @@ async function loadGridModeSettings() {
       .single();
     
     if (settings && typeof settings.grid_enabled === 'boolean') {
-      // If grid is enabled in settings, set to grid mode, otherwise use list mode
-      gridMode = settings.grid_enabled ? 'grid' : 'list';
-      
-      // Update mode label if it exists
-      const modeLabel = document.getElementById('modeLabel');
-      if (modeLabel) {
-        const modeLabels = { grid: 'Grid', list: 'List', compact: 'Compact' };
-        modeLabel.textContent = modeLabels[gridMode];
-      }
+      gridTrackingEnabled = settings.grid_enabled;
+      if (gridTrackingToggle) gridTrackingToggle.checked = gridTrackingEnabled;
+    } else {
+      // Default to false if no setting exists
+      gridTrackingEnabled = false;
+      if (gridTrackingToggle) gridTrackingToggle.checked = false;
     }
   } catch (e) {
-    console.error('Failed to load grid mode settings:', e);
+    console.error('Failed to load grid tracking settings:', e);
+    // Default to false on error
+    gridTrackingEnabled = false;
+    if (gridTrackingToggle) gridTrackingToggle.checked = false;
   }
 }
 
@@ -844,7 +851,7 @@ async function reflectAuthUI() {
   // Load data from Supabase instead of localStorage
   await loadStateFromSupabase();
   await loadGridFromSupabase();
-  await loadGridModeSettings();
+  await loadGridTrackingSettings();
   renderView();
 }
 
@@ -977,10 +984,10 @@ async function openPeakDetail(it) {
     if (val) setDateFor(it.name, val);
   };
 
-  // Populate month grid
+  // Populate month grid if grid tracking is enabled
   const monthGridContainer = document.getElementById('peakDetailMonthGrid');
   const monthGridEl = monthGridContainer?.querySelector('.detail-month-grid');
-  if (monthGridEl) {
+  if (monthGridEl && gridTrackingEnabled) {
     monthGridEl.innerHTML = '';
     const gridData = completionsGrid[currentList]?.[it.name] || {};
     ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach((month, idx) => {
@@ -1004,10 +1011,13 @@ async function openPeakDetail(it) {
       monthGridEl.appendChild(cell);
     });
     
-    // Show month grid in grid mode
+    // Show month grid
     if (monthGridContainer) {
       monthGridContainer.style.display = 'block';
     }
+  } else if (monthGridContainer) {
+    // Hide month grid if tracking is disabled
+    monthGridContainer.style.display = 'none';
   }
 
   // Load and display photos
@@ -1175,6 +1185,45 @@ function applyStickyHeader(sticky) {
   const p = readPrefs();
   p.sticky = !!sticky;
   writePrefs(p);
+}
+
+async function applyGridTracking(enabled) {
+  gridTrackingEnabled = !!enabled;
+  if (gridTrackingToggle) gridTrackingToggle.checked = !!enabled;
+  
+  // Save to local preferences
+  const p = readPrefs();
+  p.gridTracking = !!enabled;
+  writePrefs(p);
+  
+  // Save to Supabase if user is logged in
+  if (currentUser && currentList) {
+    try {
+      const { data: lists } = await supabase
+        .from('lists')
+        .select('id')
+        .eq('slug', slugify(currentList))
+        .single();
+      
+      if (lists) {
+        await supabase
+          .from('user_grid_settings')
+          .upsert({
+            user_id: currentUser.id,
+            list_id: lists.id,
+            grid_enabled: !!enabled,
+            last_updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,list_id'
+          });
+      }
+    } catch (e) {
+      console.error('Failed to save grid tracking setting:', e);
+    }
+  }
+  
+  // Re-render to show/hide month grid
+  renderView();
 }
 
 // =====================================================
@@ -1605,6 +1654,7 @@ async function renderGrid() {
             <span class="peak-card-meta-label">Range</span>
             <span class="peak-card-meta-value">${rangeStr}</span>
           </div>
+          ${gridTrackingEnabled ? `
           <div class="peak-card-month-grid-container">
             <div class="peak-card-month-grid-label">Monthly Completions</div>
             <div class="peak-card-month-grid">
@@ -1621,6 +1671,12 @@ async function renderGrid() {
               }).join('')}
             </div>
           </div>
+          ` : `
+          <div class="peak-card-meta-row">
+            <span class="peak-card-meta-label">Date</span>
+            <span class="peak-card-meta-value"><input type="date" class="card-date-input" value="${it.date || ''}" data-name="${it.name}" placeholder="mm/dd/yyyy" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--ink);font-size:0.85rem;width:100%;min-width:120px;box-sizing:border-box;"></span>
+          </div>
+          `}
           <div class="peak-card-meta-row">
             <span class="peak-card-meta-label">Completed</span>
             <span class="peak-card-meta-value"><img class="check card-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" loading="lazy" style="width:20px;height:20px;cursor:pointer;"></span>
@@ -1632,17 +1688,26 @@ async function renderGrid() {
     // Event handlers
     card.addEventListener('click', () => openPeakDetail(it));
     
-    // Wire up all month date inputs
-    const monthInputs = card.querySelectorAll('.month-date-input');
-    monthInputs.forEach(input => {
-      input.addEventListener('click', e => e.stopPropagation());
-      input.addEventListener('change', async () => {
-        const monthNum = parseInt(input.dataset.month, 10);
-        const peakName = input.dataset.name;
-        const dateValue = input.value;
-        await setGridDate(currentList, peakName, monthNum, dateValue);
+    if (gridTrackingEnabled) {
+      // Wire up all month date inputs
+      const monthInputs = card.querySelectorAll('.month-date-input');
+      monthInputs.forEach(input => {
+        input.addEventListener('click', e => e.stopPropagation());
+        input.addEventListener('change', async () => {
+          const monthNum = parseInt(input.dataset.month, 10);
+          const peakName = input.dataset.name;
+          const dateValue = input.value;
+          await setGridDate(currentList, peakName, monthNum, dateValue);
+        });
       });
-    });
+    } else {
+      // Wire up single date input
+      const dateInput = card.querySelector('.card-date-input');
+      dateInput?.addEventListener('click', e => e.stopPropagation());
+      dateInput?.addEventListener('change', () => {
+        if (dateInput.value) setDateFor(it.name, dateInput.value);
+      });
+    }
     
     card.querySelector('.card-check')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1892,7 +1957,7 @@ async function changeList(name) {
   if (currentUser) {
     await loadStateFromSupabase();
     await loadGridFromSupabase();
-    await loadGridModeSettings();
+    await loadGridTrackingSettings();
   }
 }
 
@@ -1942,6 +2007,7 @@ if (themeSelect) themeSelect.onchange = () => applyTheme(themeSelect.value);
 
 densityToggle.onchange = () => applyDensity(densityToggle.checked);
 stickyToggle.onchange = () => applyStickyHeader(stickyToggle.checked);
+gridTrackingToggle.onchange = () => applyGridTracking(gridTrackingToggle.checked);
 
 tosTextEl.innerHTML = TERMS_TEXT;
 tosToggle.onclick = () => {
@@ -1953,7 +2019,7 @@ tosAgree.addEventListener('change', () => { doSignupBtn.disabled = !tosAgree.che
 const modeBtn = document.getElementById('modeBtn');
 const modeLabel = document.getElementById('modeLabel');
 if (modeLabel) modeLabel.textContent = 'Grid';  // Initialize to Grid
-modeBtn.onclick = async () => {
+modeBtn.onclick = () => {
   const isMobile = window.innerWidth < 960;
   const modes = isMobile ? ['grid'] : ['grid', 'list', 'compact'];
   const currentIdx = modes.indexOf(gridMode);
@@ -1962,32 +2028,6 @@ modeBtn.onclick = async () => {
   
   const modeLabels = { grid: 'Grid', list: 'List', compact: 'Compact' };
   modeLabel.textContent = modeLabels[gridMode];
-  
-  // Save grid mode setting to database
-  if (currentUser && currentList) {
-    try {
-      const { data: lists } = await supabase
-        .from('lists')
-        .select('id')
-        .eq('slug', slugify(currentList))
-        .single();
-      
-      if (lists) {
-        await supabase
-          .from('user_grid_settings')
-          .upsert({
-            user_id: currentUser.id,
-            list_id: lists.id,
-            grid_enabled: (gridMode === 'grid'),
-            last_updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id,list_id'
-          });
-      }
-    } catch (e) {
-      console.error('Failed to save grid mode setting:', e);
-    }
-  }
   
   PAGE = 1;
   renderView();
@@ -2130,6 +2170,7 @@ if (signupPassConfirm) {
     applyUnitsFlag(!!prefs.meters);
     applyDensity(!!prefs.compact);
     applyStickyHeader(!!prefs.sticky);
+    applyGridTracking(!!prefs.gridTracking);  // Default to false
 
     if (copyrightYear) copyrightYear.textContent = new Date().getFullYear();
 
