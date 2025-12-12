@@ -1638,8 +1638,12 @@ async function openPeakDetail(it) {
       localStorage.setItem('peakbagger_peaks', JSON.stringify(allPeaks));
     }
     
-    // Navigate to the standalone detail page
-    window.location.href = `peak-detail.html?id=${it.id}`;
+    // Navigate to the standalone detail page with api_slug if available
+    let url = `peak-detail.html?id=${it.id}`;
+    if (it.api_slug) {
+      url += `&slug=${it.api_slug}`;
+    }
+    window.location.href = url;
   } catch (err) {
     console.error('Error opening peak detail:', err);
   }
