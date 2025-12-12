@@ -1631,18 +1631,20 @@ async function openPeakDetail(it) {
   }
   
   try {
-    // Store peaks data in localStorage for the detail page to access
-    const stored = localStorage.getItem('peakbagger_peaks');
-    if (!stored) {
-      const allPeaks = window._filteredPeaks || window._allPeaks || [];
-      localStorage.setItem('peakbagger_peaks', JSON.stringify(allPeaks));
-    }
+    console.log('Opening peak detail for:', it.name, 'ID:', it.id);
+    
+    // Always store all peaks data in localStorage for the detail page to access
+    const allPeaks = window._filteredPeaks || window._allPeaks || [];
+    console.log('Storing', allPeaks.length, 'peaks in localStorage');
+    localStorage.setItem('peakbagger_peaks', JSON.stringify(allPeaks));
     
     // Navigate to the standalone detail page with api_slug if available
     let url = `peak-detail.html?id=${it.id}`;
     if (it.api_slug) {
+      console.log('Using api_slug:', it.api_slug);
       url += `&slug=${it.api_slug}`;
     }
+    console.log('Navigating to:', url);
     window.location.href = url;
   } catch (err) {
     console.error('Error opening peak detail:', err);
