@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Peak Details - Peakbagger's Journal</title>
   <link rel="stylesheet" href="peak-detail.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="wrap">
@@ -78,7 +79,16 @@
         </div>
         <div class="btn-row">
           <a href="#" class="btn" id="logHikeBtn">📝 Log Hike Details</a>
+          <a href="#" class="btn btn-secondary" id="socialCardBtn">📸 Social Card</a>
         </div>
+      </div>
+    </div>
+    
+    <!-- LOGGED PROGRESS HISTORY -->
+    <div id="loggedProgressSection" class="logged-progress-section" style="display:none;">
+      <div class="section-title">Hike History</div>
+      <div id="loggedProgressContainer" class="logged-progress-container">
+        <div class="loading-message">Loading hike history...</div>
       </div>
     </div>
     
@@ -110,6 +120,17 @@
   </div>
   
   <script>
+    // =====================================================
+    // Supabase Configuration
+    // =====================================================
+    const SUPABASE_URL = 'https://jyvlwkxcrqprjdlnhqms.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmx3a3hjcnFwcmpkbG5ocW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MDEzODksImV4cCI6MjA2MTE3NzM4OX0.DK0FPbAGdXBsmdy6VzoGLO2sXL0bxMh0VHnJ9xI5lfo';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let currentUser = null;
+    let currentPeakId = null;
+    let currentPeakSlug = null;
+    
     const params = new URLSearchParams(window.location.search);
     const peakSlug = params.get('slug');
     
@@ -205,6 +226,9 @@
       
       // Set up Log Hike button link
       document.getElementById('logHikeBtn').href = `hike-log.html?peak=${peak.slug}`;
+      
+      // Set up Social Card button link
+      document.getElementById('socialCardBtn').href = `social-card.html?peak=${peak.slug}`;
       
       document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
       document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
@@ -341,10 +365,303 @@
       document.getElementById('wishText').textContent = isWishlist ? 'Wishlisted' : 'Wishlist';
     }
     
+    // =====================================================
+    // Initialize User Session
+    // DB Load: Check auth state
+    // =====================================================
+    async function initUserSession() {
+      console.log('initUserSession: Checking auth state...');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        currentUser = session.user;
+        console.log('initUserSession: User logged in:', currentUser.email);
+      } else {
+        console.log('initUserSession: No user logged in');
+      }
+    }
+    
+    // =====================================================
+    // Load Hike History for this Peak
+    // DB Load: user_hike_logs filtered by peak_id
+    // =====================================================
+    async function loadHikeHistory() {
+      const section = document.getElementById('loggedProgressSection');
+      const container = document.getElementById('loggedProgressContainer');
+      
+      // Error handling: Check user authentication
+      if (!currentUser) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      // Error handling: Check peak ID
+      if (!currentPeakId) {
+        console.log('loadHikeHistory: No peak ID yet, will retry after peak loads');
+        return;
+      }
+      
+      console.log('loadHikeHistory: Loading for peak', currentPeakId);
+      section.style.display = 'block';
+      container.innerHTML = '<div class="loading-message">Loading hike history...</div>';
+      
+      try {
+        // =====================================================
+        // DB Load: user_hike_logs - Get all logs for this peak
+        // =====================================================
+        console.log('DB Load: user_hike_logs - Fetching logs for peak', currentPeakId);
+        const { data: logs, error } = await supabase
+          .from('user_hike_logs')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('peak_id', currentPeakId)
+          .order('hike_date', { ascending: false });
+        
+        if (error) {
+          console.error('DB Load Error: user_hike_logs -', error);
+          throw error;
+        }
+        
+        console.log('DB Load Success: user_hike_logs -', logs?.length || 0, 'logs found');
+        
+        if (!logs || logs.length === 0) {
+          container.innerHTML = `
+            <div class="no-logs-message">
+              <div class="empty-icon">📝</div>
+              <div>No hike logs yet</div>
+              <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Log Hike Details" above to add your first entry</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Render table with logs
+        const tableHtml = `
+          <table class="hike-logs-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${logs.map(log => {
+                const dateValue = log.hike_date || '';
+                const notes = log.notes || log.trail_name || '—';
+                return `
+                  <tr data-log-id="${log.id}">
+                    <td>
+                      <input type="date" 
+                             class="log-date-input" 
+                             value="${dateValue}"
+                             onchange="updateLogDate('${log.id}', this.value)" />
+                    </td>
+                    <td>
+                      <span class="log-notes" title="${notes}">${notes}</span>
+                    </td>
+                    <td>
+                      <div class="log-actions">
+                        <button class="log-action-btn" onclick="editLog('${log.id}')" title="Edit">✏️</button>
+                        <button class="log-action-btn" onclick="generateSocialCard('${log.id}')" title="Social Card">📸</button>
+                        <button class="log-action-btn delete" onclick="deleteLog('${log.id}')" title="Delete">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+        
+        container.innerHTML = tableHtml;
+        
+      } catch (e) {
+        console.error('loadHikeHistory Error:', e);
+        container.innerHTML = `
+          <div class="no-logs-message">
+            <div class="empty-icon">⚠️</div>
+            <div>Error loading hike history</div>
+            <p style="margin-top:8px;font-size:12px;color:var(--muted)">${e.message || 'Unknown error'}</p>
+            <button onclick="loadHikeHistory()" class="log-action-btn" style="margin-top:12px">Try Again</button>
+          </div>
+        `;
+      }
+    }
+    
+    // =====================================================
+    // Update Log Date
+    // DB Save: user_hike_logs - Update hike_date
+    // =====================================================
+    async function updateLogDate(logId, newDate) {
+      console.log('updateLogDate: Updating log', logId, 'to date', newDate);
+      
+      // Error handling: Check user authentication
+      if (!currentUser) {
+        alert('Please log in to update hike logs');
+        return;
+      }
+      
+      // Find the input and show saving state
+      const row = document.querySelector(`tr[data-log-id="${logId}"]`);
+      const input = row?.querySelector('.log-date-input');
+      if (input) {
+        input.classList.add('saving');
+      }
+      
+      try {
+        // =====================================================
+        // DB Save: user_hike_logs - Update date
+        // =====================================================
+        console.log('DB Save: user_hike_logs - Updating date for log', logId);
+        const { error } = await supabase
+          .from('user_hike_logs')
+          .update({ 
+            hike_date: newDate,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', logId)
+          .eq('user_id', currentUser.id);
+        
+        if (error) {
+          console.error('DB Save Error: user_hike_logs -', error);
+          throw error;
+        }
+        
+        console.log('DB Save Success: user_hike_logs - Date updated');
+        
+        // Brief visual feedback
+        if (input) {
+          input.style.borderColor = 'var(--accent)';
+          setTimeout(() => {
+            input.style.borderColor = '';
+            input.classList.remove('saving');
+          }, 500);
+        }
+        
+      } catch (e) {
+        console.error('updateLogDate Error:', e);
+        alert('Error updating date: ' + e.message);
+        if (input) {
+          input.classList.remove('saving');
+        }
+        // Reload to restore original value
+        loadHikeHistory();
+      }
+    }
+    
+    // =====================================================
+    // Edit Log - Navigate to hike-log page
+    // =====================================================
+    function editLog(logId) {
+      if (currentPeakSlug) {
+        window.location.href = `hike-log.html?peak=${currentPeakSlug}&edit=${logId}`;
+      }
+    }
+    
+    // =====================================================
+    // Generate Social Card - Navigate to social card page
+    // =====================================================
+    function generateSocialCard(logId) {
+      if (currentPeakSlug) {
+        window.location.href = `social-card.html?peak=${currentPeakSlug}&log=${logId}`;
+      }
+    }
+    
+    // =====================================================
+    // Delete Log
+    // DB Save: user_hike_logs - Delete entry
+    // =====================================================
+    async function deleteLog(logId) {
+      // Error handling: Check user authentication
+      if (!currentUser) {
+        alert('Please log in to delete hike logs');
+        return;
+      }
+      
+      if (!confirm('Are you sure you want to delete this hike log?')) {
+        return;
+      }
+      
+      console.log('deleteLog: Deleting log', logId);
+      
+      try {
+        // =====================================================
+        // DB Save: user_hike_logs - Delete entry
+        // =====================================================
+        console.log('DB Save: user_hike_logs - Deleting log', logId);
+        const { error } = await supabase
+          .from('user_hike_logs')
+          .delete()
+          .eq('id', logId)
+          .eq('user_id', currentUser.id);
+        
+        if (error) {
+          console.error('DB Save Error: user_hike_logs -', error);
+          throw error;
+        }
+        
+        console.log('DB Save Success: user_hike_logs - Log deleted');
+        
+        // Reload the table
+        loadHikeHistory();
+        
+      } catch (e) {
+        console.error('deleteLog Error:', e);
+        alert('Error deleting log: ' + e.message);
+      }
+    }
+    
+    // =====================================================
+    // Get Peak ID from Supabase by slug
+    // DB Load: peaks - Get peak UUID
+    // =====================================================
+    async function getPeakIdBySlug(slug) {
+      console.log('getPeakIdBySlug: Looking up peak', slug);
+      
+      try {
+        // =====================================================
+        // DB Load: peaks - Get peak by slug
+        // =====================================================
+        console.log('DB Load: peaks - Fetching peak by slug');
+        const { data: peak, error } = await supabase
+          .from('peaks')
+          .select('id')
+          .eq('slug', slug)
+          .single();
+        
+        if (error) {
+          console.error('DB Load Error: peaks -', error);
+          return null;
+        }
+        
+        console.log('DB Load Success: peaks - Found peak ID:', peak?.id);
+        return peak?.id || null;
+        
+      } catch (e) {
+        console.error('getPeakIdBySlug Error:', e);
+        return null;
+      }
+    }
+    
     // Scroll to top when page loads
     window.scrollTo(0, 0);
     
-    loadPeakData();
+    // Initialize
+    async function init() {
+      await initUserSession();
+      await loadPeakData();
+      
+      // Get peak ID and load hike history
+      if (peakSlug) {
+        currentPeakSlug = peakSlug;
+        currentPeakId = await getPeakIdBySlug(peakSlug);
+        if (currentPeakId) {
+          await loadHikeHistory();
+        }
+      }
+    }
+    
+    init();
   </script>
 </body>
 </html>

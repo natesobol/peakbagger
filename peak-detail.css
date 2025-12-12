@@ -218,7 +218,7 @@ h1 {
 .metadata-panel {
   background: var(--panel);
   border: 1px solid var(--stroke);
-  border-radius: 10px;
+  border-radius: 16px;
   padding: 12px;
   font-size: 0.9rem;
 }
@@ -399,6 +399,18 @@ h1 {
   border-color: var(--accent);
 }
 
+.btn.btn-secondary {
+  background: transparent;
+  border-color: var(--stroke);
+  color: var(--muted);
+}
+
+.btn.btn-secondary:hover {
+  background: var(--input-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .links-col {
   display: flex;
   flex-direction: column;
@@ -454,6 +466,169 @@ h1 {
 .date-input:focus {
   border-color: var(--accent);
   outline: none;
+}
+
+/* ============================================
+   LOGGED PROGRESS HISTORY
+   ============================================ */
+.logged-progress-section {
+  margin-bottom: 16px;
+}
+
+.logged-progress-container {
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: 10px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.no-logs-message {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--muted);
+}
+
+.no-logs-message .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+/* Hike Logs Table */
+.hike-logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.hike-logs-table thead {
+  display: table-header-group;
+}
+
+.hike-logs-table thead tr {
+  display: table-row;
+}
+
+.hike-logs-table thead th {
+  display: table-cell;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.hike-logs-table thead th:first-child {
+  width: 120px;
+}
+
+.hike-logs-table thead th:last-child {
+  width: 70px;
+  text-align: center;
+}
+
+.hike-logs-table tbody {
+  display: table-row-group;
+}
+
+.hike-logs-table tbody tr {
+  display: table-row;
+  transition: background 0.15s;
+}
+
+.hike-logs-table tbody tr:hover {
+  background: var(--card);
+}
+
+.hike-logs-table tbody td {
+  display: table-cell;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: var(--ink);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  vertical-align: middle;
+}
+
+.hike-logs-table tbody td:first-child {
+  width: 120px;
+  white-space: nowrap;
+}
+
+.hike-logs-table tbody td:last-child {
+  width: 70px;
+  text-align: center;
+}
+
+/* Editable date input in table */
+.hike-logs-table .log-date-input {
+  background: var(--input-bg);
+  border: 1px solid var(--stroke);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--ink);
+  font-size: 0.85rem;
+  width: 100%;
+  max-width: 130px;
+}
+
+.hike-logs-table .log-date-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* Notes in table */
+.hike-logs-table .log-notes {
+  color: var(--muted);
+  font-size: 0.8rem;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Action buttons */
+.log-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.log-action-btn {
+  background: transparent;
+  border: 1px solid var(--stroke);
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.log-action-btn:hover {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.log-action-btn.delete:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.log-action-btn.saving {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* ============================================

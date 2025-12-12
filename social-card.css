@@ -1,0 +1,528 @@
+/* =====================================================
+   Social Card Generator Stylesheet
+   Peakbagger's Journal
+   ===================================================== */
+
+:root {
+  --bg: #0a0a0a;
+  --panel: #12121a;
+  --card: #171a22;
+  --ink: #ffffff;
+  --ink-weak: #a5b4c3;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #22c55e;
+  --input-bg: #1a1a24;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Page Layout */
+.social-card-page {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+
+/* Header */
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  margin: 0 0 8px 0;
+  color: var(--ink);
+  font-size: clamp(24px, 5vw, 32px);
+}
+
+.page-header .subtitle {
+  color: var(--ink-weak);
+  font-size: 14px;
+  margin: 0;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-weak);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.back-link:hover {
+  color: var(--accent);
+  background: var(--input-bg);
+}
+
+/* Preview Section */
+.preview-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.preview-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.preview-container {
+  display: flex;
+  justify-content: center;
+  background: repeating-conic-gradient(#1a1a24 0% 25%, #12121a 0% 50%) 50% / 20px 20px;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* =====================================================
+   SOCIAL CARD - The actual card that gets exported
+   ===================================================== */
+.social-card {
+  width: 600px;
+  height: 400px;
+  background: #0a0a0a;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Card Image */
+.card-image {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1) 0%,
+    rgba(0, 0, 0, 0.2) 40%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+/* Card Info Panel */
+.card-info-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  padding: 24px;
+  background: linear-gradient(
+    to top,
+    rgba(10, 10, 10, 0.95) 0%,
+    rgba(10, 10, 10, 0.8) 60%,
+    transparent 100%
+  );
+}
+
+/* Badge */
+.card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 20px;
+  padding: 4px 12px;
+  margin-bottom: 12px;
+}
+
+.badge-icon {
+  font-size: 14px;
+}
+
+.badge-text {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #22c55e;
+}
+
+/* Peak Name */
+.card-peak-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 12px 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Stats */
+.card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.card-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-icon {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.stat-value {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+/* Secondary Stats */
+.card-secondary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.secondary-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.secondary-stat span:first-child {
+  font-size: 12px;
+}
+
+/* Footer */
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-brand {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-url {
+  font-size: 11px;
+  color: #22c55e;
+  font-weight: 500;
+}
+
+/* Card Style Variants */
+.social-card.style-dark {
+  background: #0a0a0a;
+}
+
+.social-card.style-dark .card-info-panel {
+  background: linear-gradient(
+    to top,
+    rgba(10, 10, 10, 0.95) 0%,
+    rgba(10, 10, 10, 0.8) 60%,
+    transparent 100%
+  );
+}
+
+.social-card.style-light {
+  background: #f0f4f8;
+}
+
+.social-card.style-light .card-info-panel {
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(255, 255, 255, 0.9) 60%,
+    transparent 100%
+  );
+}
+
+.social-card.style-light .card-peak-name {
+  color: #1a1a2e;
+  text-shadow: none;
+}
+
+.social-card.style-light .stat-value {
+  color: #333;
+}
+
+.social-card.style-light .secondary-stat {
+  color: #555;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.social-card.style-light .footer-brand {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.social-card.style-light .card-footer {
+  border-top-color: rgba(0, 0, 0, 0.1);
+}
+
+.social-card.style-gradient {
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+}
+
+.social-card.style-gradient .card-info-panel {
+  background: linear-gradient(
+    to top,
+    rgba(15, 52, 96, 0.95) 0%,
+    rgba(26, 26, 46, 0.8) 60%,
+    transparent 100%
+  );
+}
+
+/* =====================================================
+   Controls Section
+   ===================================================== */
+.controls-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: grid;
+  gap: 20px;
+}
+
+.control-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+/* Style Options */
+.style-options {
+  display: flex;
+  gap: 8px;
+}
+
+.style-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--ink-weak);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.style-btn:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.style-btn.active {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Toggle Options */
+.toggle-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.toggle-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.toggle-option:hover {
+  border-color: var(--accent);
+}
+
+.toggle-option input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+.toggle-option span {
+  font-size: 13px;
+  color: var(--ink-weak);
+}
+
+.toggle-option:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.toggle-option:has(input:checked) span {
+  color: var(--ink);
+}
+
+/* =====================================================
+   Action Buttons
+   ===================================================== */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #0a0a0a;
+}
+
+.btn-primary:hover {
+  background: #1da54e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.btn-secondary {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--ink);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  background: var(--card);
+}
+
+/* Status Message */
+.status-message {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.status-message.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-message.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* =====================================================
+   Responsive
+   ===================================================== */
+@media (max-width: 700px) {
+  .preview-container {
+    overflow-x: auto;
+    padding: 16px;
+  }
+  
+  .social-card {
+    width: 500px;
+    height: 333px;
+    transform-origin: top left;
+  }
+  
+  .card-peak-name {
+    font-size: 22px;
+  }
+  
+  .card-info-panel {
+    padding: 16px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 550px) {
+  .social-card {
+    width: 400px;
+    height: 267px;
+  }
+  
+  .card-peak-name {
+    font-size: 18px;
+  }
+  
+  .card-stats {
+    gap: 10px;
+  }
+  
+  .stat-value {
+    font-size: 12px;
+  }
+}

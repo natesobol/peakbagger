@@ -531,6 +531,7 @@
               <th>Date</th>
               <th>Peak</th>
               <th>List</th>
+              <th style="width:50px;text-align:center;">Share</th>
             </tr>
           </thead>
           <tbody>
@@ -539,12 +540,16 @@
               const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
                 month: 'short', day: 'numeric', year: 'numeric' 
               }) : '—';
-              const rowClick = item.peakSlug ? `onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'"` : '';
               return `
-                <tr style="cursor:${item.peakSlug ? 'pointer' : 'default'}" ${rowClick}>
-                  <td>${formattedDate}</td>
-                  <td>${item.peakName}</td>
-                  <td>${item.listName}</td>
+                <tr>
+                  <td style="cursor:pointer" onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'">${formattedDate}</td>
+                  <td style="cursor:pointer" onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'">${item.peakName}</td>
+                  <td style="cursor:pointer" onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'">${item.listName}</td>
+                  <td style="text-align:center">
+                    <button class="social-card-btn" onclick="event.stopPropagation(); window.location.href='social-card.html?peak=${item.peakSlug}&progress=${item.id}'" title="Generate Social Card">
+                      📸
+                    </button>
+                  </td>
                 </tr>
               `;
             }).join('')}
@@ -1092,6 +1097,32 @@
   }
   
   // =====================================================
+  // Achievement Progress Calculator
+  // Returns { current, target, percent } for ascent-based achievements
+  // =====================================================
+  function getAchievementProgress(type, ascentsCount) {
+    const thresholds = {
+      'first_ascent': 1,
+      'rookie_hiker': 5,
+      'mountaineer': 25,
+      'peakbagger_club': 100,
+      'century_unique': 100,
+      'year_marathon': 50,
+      'fourteeners': 14,
+      'trip_reporter': 10,
+      'photographer': 20
+    };
+    
+    const target = thresholds[type];
+    if (!target) return null; // Non-ascent based achievement
+    
+    const current = Math.min(ascentsCount, target);
+    const percent = Math.round((current / target) * 100);
+    
+    return { current, target, percent };
+  }
+  
+  // =====================================================
   // Achievements (25 total)
   // =====================================================
   // Icon files go in /ico folder as 512x512 PNG
@@ -1182,7 +1213,20 @@
       
       const earnedMap = new Map(earned?.map(a => [a.achievement_type, a]) || []);
       
-      // Render all achievements (earned + locked)
+      // Get user progress count for calculating achievement progress
+      let userProgressCount = 0;
+      try {
+        const { count } = await supabase
+          .from('user_peak_progress')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', currentUser.id)
+          .eq('completed', true);
+        userProgressCount = count || 0;
+      } catch (e) {
+        console.log('Could not get progress count for achievements');
+      }
+      
+      // Render all achievements (earned + locked with progress bars)
       let html = '';
       
       ALL_ACHIEVEMENTS.forEach(ach => {
@@ -1191,6 +1235,9 @@
         const earnedDate = earnedAch ? new Date(earnedAch.earned_at).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric'
         }) : null;
+        
+        // Calculate progress for ascent-based achievements
+        const progressInfo = getAchievementProgress(ach.type, userProgressCount);
         
         html += `
           <div class="achievement-card ${isEarned ? '' : 'locked'}" title="${ach.desc}" data-category="${ach.category}">
@@ -1201,6 +1248,14 @@
             <div class="achievement-name">${earnedAch?.achievement_name || ach.name}</div>
             <div class="achievement-desc">${ach.desc}</div>
             <span class="achievement-date">${isEarned ? earnedDate : 'Not earned'}</span>
+            ${!isEarned && progressInfo ? `
+              <div class="achievement-progress">
+                <div class="achievement-progress-bar">
+                  <div class="achievement-progress-fill" style="width: ${progressInfo.percent}%"></div>
+                </div>
+                <div class="achievement-progress-text">${progressInfo.current}/${progressInfo.target}</div>
+              </div>
+            ` : ''}
           </div>
         `;
       });
