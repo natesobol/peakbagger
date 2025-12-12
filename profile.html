@@ -449,6 +449,36 @@ input:checked + .slider:before {
     <p class="subtitle">Manage your account information and security settings</p>
   </div>
 
+  <!-- Dashboard Stats -->
+  <div class="profile-card" id="dashboardStats" style="display:none">
+    <h2>📊 Your Progress</h2>
+    
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:24px">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:var(--accent)" id="statTotalCompleted">0</div>
+        <div style="font-size:13px;color:var(--ink-weak);margin-top:4px">Completed</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#d4af37" id="statFavorites">0</div>
+        <div style="font-size:13px;color:var(--ink-weak);margin-top:4px">Favorites</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#800000" id="statWishlist">0</div>
+        <div style="font-size:13px;color:var(--ink-weak);margin-top:4px">Wishlist</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:32px;font-weight:700;color:#3ddc84" id="statPercentComplete">0%</div>
+        <div style="font-size:13px;color:var(--ink-weak);margin-top:4px">Progress</div>
+      </div>
+    </div>
+
+    <!-- Activity Graph -->
+    <div style="margin-top:24px">
+      <h3 style="margin:0 0 16px 0;font-size:16px;color:var(--ink)">Recent Activity</h3>
+      <canvas id="activityGraph" style="width:100%;height:200px;background:var(--bg);border:1px solid var(--border);border-radius:8px"></canvas>
+    </div>
+  </div>
+
   <!-- User Information Card -->
   <div class="profile-card">
     <h2>User Information</h2>
@@ -1085,6 +1115,156 @@ input:checked + .slider:before {
     await loadRecentHikes();
     await loadFriendRequests();
     await loadFriends();
+    await loadDashboardStats();
+  }
+  
+  // Load dashboard stats
+  async function loadDashboardStats() {
+    if (!currentUser || !currentListId) return;
+    
+    try {
+      // Get all peaks in the current list
+      const { data: listPeaks } = await supabase
+        .from('list_peaks')
+        .select('peak_id')
+        .eq('list_id', currentListId);
+      
+      const totalPeaks = listPeaks?.length || 0;
+      
+      // Get completed peaks
+      const { data: completedPeaks } = await supabase
+        .from('user_peak_progress')
+        .select('peak_id')
+        .eq('user_id', currentUser.id)
+        .eq('list_id', currentListId)
+        .eq('completed', true);
+      
+      const completed = completedPeaks?.length || 0;
+      
+      // Get favorites
+      const { data: favoritePeaks } = await supabase
+        .from('user_favorite_peaks')
+        .select('peak_id')
+        .eq('user_id', currentUser.id)
+        .eq('favorite_type', 'favorite');
+      
+      const favoritesCount = favoritePeaks?.length || 0;
+      
+      // Get wishlist
+      const { data: wishlistPeaks } = await supabase
+        .from('user_favorite_peaks')
+        .select('peak_id')
+        .eq('user_id', currentUser.id)
+        .eq('favorite_type', 'wishlist');
+      
+      const wishlistCount = wishlistPeaks?.length || 0;
+      
+      // Calculate percentage
+      const percentage = totalPeaks > 0 ? Math.round((completed / totalPeaks) * 100) : 0;
+      
+      // Update UI
+      document.getElementById('statTotalCompleted').textContent = completed;
+      document.getElementById('statFavorites').textContent = favoritesCount;
+      document.getElementById('statWishlist').textContent = wishlistCount;
+      document.getElementById('statPercentComplete').textContent = percentage + '%';
+      document.getElementById('dashboardStats').style.display = 'block';
+      
+      // Load activity graph
+      await loadActivityGraph();
+    } catch (e) {
+      console.error('Error loading dashboard stats:', e);
+    }
+  }
+  
+  // Load activity graph data and render
+  async function loadActivityGraph() {
+    if (!currentUser || !currentListId) return;
+    
+    try {
+      // Get hike logs from the past 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data: logs } = await supabase
+        .from('user_hike_logs')
+        .select('hike_date')
+        .eq('user_id', currentUser.id)
+        .eq('list_id', currentListId)
+        .gte('hike_date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('hike_date', { ascending: true });
+      
+      // Create activity map by day
+      const activityMap = {};
+      if (logs) {
+        logs.forEach(log => {
+          const date = log.hike_date;
+          activityMap[date] = (activityMap[date] || 0) + 1;
+        });
+      }
+      
+      // Render simple bar graph using canvas
+      const canvas = document.getElementById('activityGraph');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      const width = canvas.offsetWidth;
+      const height = canvas.offsetHeight;
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Clear canvas
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+      ctx.fillRect(0, 0, width, height);
+      
+      if (Object.keys(activityMap).length === 0) {
+        // No data message
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink-weak').trim();
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No activity in the past 30 days', width / 2, height / 2);
+        return;
+      }
+      
+      // Get all dates in range
+      const dates = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+      }
+      
+      // Find max value for scaling
+      const maxValue = Math.max(...Object.values(activityMap), 1);
+      
+      // Draw bars
+      const barWidth = (width - 40) / dates.length;
+      const maxBarHeight = height - 40;
+      
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+      
+      dates.forEach((date, i) => {
+        const value = activityMap[date] || 0;
+        const barHeight = (value / maxValue) * maxBarHeight;
+        const x = 20 + (i * barWidth);
+        const y = height - 20 - barHeight;
+        
+        ctx.fillRect(x, y, Math.max(barWidth - 2, 1), barHeight);
+      });
+      
+      // Draw axis labels
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink-weak').trim();
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      
+      // Show first, middle, and last date
+      if (dates.length > 0) {
+        ctx.fillText(new Date(dates[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), 20, height - 5);
+        ctx.fillText(new Date(dates[Math.floor(dates.length / 2)]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), width / 2, height - 5);
+        ctx.fillText(new Date(dates[dates.length - 1]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), width - 20, height - 5);
+      }
+    } catch (e) {
+      console.error('Error loading activity graph:', e);
+    }
   }
   
   // Update loadUserProfile to call social features

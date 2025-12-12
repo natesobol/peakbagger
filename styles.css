@@ -168,6 +168,23 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   border-color:var(--accent);
 }
 
+/* Card color states for favorites/wishlist */
+.peak-card.card-complete{
+  border-left:4px solid #3ddc84;
+}
+
+.peak-card.card-favorite{
+  border-left:4px solid #d4af37;
+}
+
+.peak-card.card-wishlist{
+  border-left:4px solid #800000;
+}
+
+.peak-card.card-incomplete{
+  border-left:4px solid #646464;
+}
+
 .peak-card-thumb{
   width:100%;
   aspect-ratio:5/3;

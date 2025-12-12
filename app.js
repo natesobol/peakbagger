@@ -201,6 +201,7 @@ async function fetchListItems(name) {
         const items = listPeaks.map(lp => {
           const peak = lp.peaks;
           return {
+            peak_id: peak.id,  // Add peak ID for favorites
             rank: lp.rank,
             slug: peak.slug,
             name: peak.name,
@@ -384,6 +385,9 @@ let lastTotalItems = 0;  // Track total items for pagination
 let gridMode = 'grid';  // 'grid', 'list', 'compact'
 let completionsGrid = {};
 let completions = {};
+let favorites = new Set();  // Peak IDs that are favorited
+let wishlist = new Set();   // Peak IDs on wishlist
+let statusFilter = 'all';  // Filter: 'all', 'completed', 'favorites', 'wishlist', 'incomplete'
 
 // Local storage keys and utilities (still used for preferences)
 const PREF_KEY = 'pb_prefs_v1';
@@ -624,6 +628,92 @@ async function saveGridToSupabase(peakName, month, date) {
   }
 }
 
+// Load favorites from Supabase
+async function loadFavorites() {
+  if (!currentUser) {
+    favorites.clear();
+    wishlist.clear();
+    return;
+  }
+  
+  try {
+    const { data: favData } = await supabase
+      .from('user_favorite_peaks')
+      .select('peak_id, favorite_type')
+      .eq('user_id', currentUser.id);
+    
+    favorites.clear();
+    wishlist.clear();
+    
+    if (favData) {
+      favData.forEach(fav => {
+        if (fav.favorite_type === 'favorite') {
+          favorites.add(fav.peak_id);
+        } else if (fav.favorite_type === 'wishlist') {
+          wishlist.add(fav.peak_id);
+        }
+      });
+    }
+    
+    console.log(`Loaded ${favorites.size} favorites and ${wishlist.size} wishlist items`);
+  } catch (e) {
+    console.error('Failed to load favorites from Supabase:', e);
+    favorites.clear();
+    wishlist.clear();
+  }
+}
+
+// Toggle favorite or wishlist for a peak
+async function toggleFavorite(peakId, favoriteType) {
+  if (!currentUser || !peakId) return;
+  
+  try {
+    const targetSet = favoriteType === 'favorite' ? favorites : wishlist;
+    const otherSet = favoriteType === 'favorite' ? wishlist : favorites;
+    const otherType = favoriteType === 'favorite' ? 'wishlist' : 'favorite';
+    
+    if (targetSet.has(peakId)) {
+      // Remove from favorites
+      await supabase
+        .from('user_favorite_peaks')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('peak_id', peakId)
+        .eq('favorite_type', favoriteType);
+      
+      targetSet.delete(peakId);
+      console.log(`Removed ${favoriteType} for peak ${peakId}`);
+    } else {
+      // Add to favorites (and remove from other type if present)
+      if (otherSet.has(peakId)) {
+        await supabase
+          .from('user_favorite_peaks')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('peak_id', peakId)
+          .eq('favorite_type', otherType);
+        otherSet.delete(peakId);
+      }
+      
+      await supabase
+        .from('user_favorite_peaks')
+        .insert({
+          user_id: currentUser.id,
+          peak_id: peakId,
+          favorite_type: favoriteType
+        });
+      
+      targetSet.add(peakId);
+      console.log(`Added ${favoriteType} for peak ${peakId}`);
+    }
+    
+    // Re-render to update card colors
+    renderView();
+  } catch (e) {
+    console.error(`Failed to toggle ${favoriteType}:`, e);
+  }
+}
+
 // Load grid tracking settings from Supabase
 async function loadGridTrackingSettings() {
   if (!currentUser || !currentList) {
@@ -852,6 +942,7 @@ async function reflectAuthUI() {
   await loadStateFromSupabase();
   await loadGridFromSupabase();
   await loadGridTrackingSettings();
+  await loadFavorites();
   renderView();
 }
 
@@ -865,6 +956,8 @@ supabase.auth.onAuthStateChange((event, session) => {
     currentUser = null;
     completions = {};
     completionsGrid = {};
+    favorites.clear();
+    wishlist.clear();
     reflectAuthUI();
   }
 });
@@ -956,9 +1049,21 @@ async function openPeakDetail(it) {
   window._currentPeakDetail = it;
   
   // Show peak detail page, hide main content
-  document.getElementById('peakDetailPage').style.display = 'block';
-  document.querySelector('.content').style.display = 'none';
+  const mainPanel = document.querySelector('main.panel');
+  const sidebar = document.querySelector('.sidebar');
+  const gridView = document.getElementById('grid-view');
+  const listView = document.getElementById('list-view');
+  const pagerWraps = document.querySelectorAll('.pager-wrap');
+  
+  // Hide everything except peakDetailPage
+  if (gridView) gridView.style.display = 'none';
+  if (listView) listView.style.display = 'none';
+  pagerWraps.forEach(p => p.style.display = 'none');
+  if (sidebar) sidebar.style.display = 'none';
   document.querySelector('.topbar').style.display = 'none';
+  
+  // Show peakDetailPage
+  document.getElementById('peakDetailPage').style.display = 'block';
 
   // Set title and subtitle
   document.getElementById('peakDetailTitle').textContent = it.name;
@@ -983,6 +1088,65 @@ async function openPeakDetail(it) {
     const val = document.getElementById('peakDetailDateInput').value;
     if (val) setDateFor(it.name, val);
   };
+  
+  // Setup favorite/wishlist buttons
+  const favBtn = document.getElementById('peakDetailFavBtn');
+  const wishBtn = document.getElementById('peakDetailWishBtn');
+  const favIcon = document.getElementById('peakDetailFavIcon');
+  const wishIcon = document.getElementById('peakDetailWishIcon');
+  const favText = document.getElementById('peakDetailFavText');
+  const wishText = document.getElementById('peakDetailWishText');
+  
+  if (favBtn && wishBtn && it.peak_id) {
+    // Update button states
+    const isFavorite = favorites.has(it.peak_id);
+    const isWishlist = wishlist.has(it.peak_id);
+    
+    if (isFavorite) {
+      favIcon.textContent = '⭐';
+      favText.textContent = 'Unfavorite';
+      favBtn.style.backgroundColor = 'rgba(212, 175, 55, 0.2)';
+      favBtn.style.borderColor = '#d4af37';
+    } else {
+      favIcon.textContent = '☆';
+      favText.textContent = 'Favorite';
+      favBtn.style.backgroundColor = '';
+      favBtn.style.borderColor = '';
+    }
+    
+    if (isWishlist) {
+      wishIcon.textContent = '❤️';
+      wishText.textContent = 'Remove from Wishlist';
+      wishBtn.style.backgroundColor = 'rgba(128, 0, 0, 0.2)';
+      wishBtn.style.borderColor = '#800000';
+    } else {
+      wishIcon.textContent = '🤍';
+      wishText.textContent = 'Add to Wishlist';
+      wishBtn.style.backgroundColor = '';
+      wishBtn.style.borderColor = '';
+    }
+    
+    // Wire up click handlers
+    favBtn.onclick = async () => {
+      if (!currentUser) {
+        alert('Please sign in to use favorites');
+        return;
+      }
+      await toggleFavorite(it.peak_id, 'favorite');
+      // Re-open detail to refresh button states
+      openPeakDetail(it);
+    };
+    
+    wishBtn.onclick = async () => {
+      if (!currentUser) {
+        alert('Please sign in to use wishlist');
+        return;
+      }
+      await toggleFavorite(it.peak_id, 'wishlist');
+      // Re-open detail to refresh button states
+      openPeakDetail(it);
+    };
+  }
 
   // Populate month grid if grid tracking is enabled
   const monthGridContainer = document.getElementById('peakDetailMonthGrid');
@@ -1130,9 +1294,29 @@ async function openPeakDetail(it) {
 }
 
 function closePeakDetail() {
+  const gridView = document.getElementById('grid-view');
+  const listView = document.getElementById('list-view');
+  const pagerWraps = document.querySelectorAll('.pager-wrap');
+  const sidebar = document.querySelector('.sidebar');
+  
+  // Hide detail page
   document.getElementById('peakDetailPage').style.display = 'none';
-  document.querySelector('.content').style.display = 'flex';
+  
+  // Show main content
+  if (sidebar) sidebar.style.display = 'block';
   document.querySelector('.topbar').style.display = 'block';
+  
+  // Show the appropriate view (grid or list)
+  if (gridMode) {
+    if (gridView) gridView.style.display = 'grid';
+    if (listView) listView.style.display = 'none';
+  } else {
+    if (gridView) gridView.style.display = 'none';
+    if (listView) listView.style.display = 'block';
+  }
+  
+  // Show pagination
+  pagerWraps.forEach(p => p.style.display = 'flex');
 }
 
 // =====================================================
@@ -1499,6 +1683,10 @@ async function renderList() {
 
   // Filter
   let filteredItems = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  
+  // Apply status filter
+  filteredItems = applyStatusFilter(filteredItems);
+  
   if (hideCompleted) filteredItems = filteredItems.filter(it => !it.completed);
 
   // Progress
@@ -1560,6 +1748,16 @@ async function renderList() {
 }
 
 /* ======= Render Grid (Cards View) ======= */
+// Helper function to apply status filter
+function applyStatusFilter(items) {
+  if (statusFilter === 'all') return items;
+  if (statusFilter === 'completed') return items.filter(it => it.completed);
+  if (statusFilter === 'incomplete') return items.filter(it => !it.completed);
+  if (statusFilter === 'favorites') return items.filter(it => it.peak_id && favorites.has(it.peak_id));
+  if (statusFilter === 'wishlist') return items.filter(it => it.peak_id && wishlist.has(it.peak_id));
+  return items;
+}
+
 async function renderGrid() {
   const gridView = document.getElementById('grid-view');
   if (!currentList) {
@@ -1612,6 +1810,19 @@ async function renderGrid() {
   for (const it of pageItems) {
     const card = document.createElement('article');
     card.className = 'peak-card';
+    
+    // Determine card color based on completion and favorite status
+    if (it.peak_id) {
+      if (it.completed) {
+        card.classList.add('card-complete');
+      } else if (favorites.has(it.peak_id)) {
+        card.classList.add('card-favorite');
+      } else if (wishlist.has(it.peak_id)) {
+        card.classList.add('card-wishlist');
+      } else {
+        card.classList.add('card-incomplete');
+      }
+    }
 
     // Get peak image
     const slug = getSlugForName(it.name);
@@ -1744,6 +1955,10 @@ async function renderTable() {
 
   // Filter
   let items = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  
+  // Apply status filter
+  items = applyStatusFilter(items);
+  
   if (hideCompleted) items = items.filter(it => !it.completed);
 
   // Progress
@@ -1988,6 +2203,17 @@ showBtn.onclick = () => {
   PAGE = 1;
   renderView();
 };
+
+// Status filter dropdown
+const statusFilterEl = document.getElementById('statusFilter');
+if (statusFilterEl) {
+  statusFilterEl.addEventListener('change', () => {
+    statusFilter = statusFilterEl.value;
+    PAGE = 1;
+    renderView();
+  });
+}
+
 exportBtn.onclick = async () => {
   const base = await baseItemsFor(currentList);
   const items = base.map((it, i) => {

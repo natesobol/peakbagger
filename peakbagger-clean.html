@@ -62,6 +62,17 @@
         <div class="ctrl"><span class="ico">🔎</span><input id="search" type="search" placeholder="Search peaks…" /></div>
         <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">⚙️</span> <span>Sort: <strong id="sortLabel">Rank</strong></span></div>
         <div class="ctrl-btn" id="showComplete"><span class="ico">◯</span> <span>Hide completed</span></div>
+        <!-- Status Filter -->
+        <div class="ctrl" style="min-width:150px">
+          <span class="ico">🔽</span>
+          <select id="statusFilter" class="select" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--ink);font-size:14px;cursor:pointer">
+            <option value="all">All Peaks</option>
+            <option value="completed">Completed</option>
+            <option value="favorites">Favorites</option>
+            <option value="wishlist">Wishlist</option>
+            <option value="incomplete">Incomplete</option>
+          </select>
+        </div>
         <!-- NEW: Mode toggle (Checklist / Grid) -->
         <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🔁</span> <span>Mode: <strong id="modeLabel">Checklist</strong></span></div>
         <div class="ctrl-btn" id="exportBtn"><span class="ico">🗄️</span> <span>Export XLSX</span></div>
@@ -158,6 +169,28 @@
           <label>Grid tracking (12 months/peak)</label>
           <label class="switch"><input id="gridTrackingToggle" type="checkbox"><span class="slider"></span></label>
         </div>
+        <!-- Color Legend -->
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+          <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Card Color Legend</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:4px;height:16px;background:#3ddc84;border-radius:2px"></div>
+              <span>Completed</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:4px;height:16px;background:#d4af37;border-radius:2px"></div>
+              <span>Favorite</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:4px;height:16px;background:#800000;border-radius:2px"></div>
+              <span>Wishlist</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:4px;height:16px;background:#646464;border-radius:2px"></div>
+              <span>Incomplete</span>
+            </div>
+          </div>
+        </div>
       </div></details>
 
       <!-- Themes dropdown (pre-collapsed) -->
@@ -225,6 +258,14 @@
             <div class="kv"><span>Location</span><strong id="peakDetailLocation">—</strong></div>
             <div class="kv"><span>Prominence</span><strong id="peakDetailProm">—</strong></div>
             <div class="kv"><span>Difficulty</span><strong id="peakDetailDiff">—</strong></div>
+            <div class="kv" style="border-top:2px solid var(--border);padding-top:12px;margin-top:8px;">
+              <button id="peakDetailFavBtn" class="btn btn-secondary btn-small" style="flex:1">
+                <span id="peakDetailFavIcon">⭐</span> <span id="peakDetailFavText">Favorite</span>
+              </button>
+              <button id="peakDetailWishBtn" class="btn btn-secondary btn-small" style="flex:1;margin-left:8px">
+                <span id="peakDetailWishIcon">❤️</span> <span id="peakDetailWishText">Wishlist</span>
+              </button>
+            </div>
           </section>
 
           <!-- Weather -->
