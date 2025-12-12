@@ -408,9 +408,9 @@
   </div>
   
   <script>
-    // Get peak ID from URL
+    // Get peak slug from URL (primary identifier)
     const params = new URLSearchParams(window.location.search);
-    const peakId = params.get('id');
+    const peakSlug = params.get('slug');
     
     let currentSlide = 0;
     let slides = [];
@@ -419,11 +419,11 @@
     
     // Load peak data
     async function loadPeakData() {
-      console.log('Loading peak data for ID:', peakId);
+      console.log('Loading peak data for slug:', peakSlug);
       
-      if (!peakId) {
+      if (!peakSlug) {
         document.getElementById('peakName').textContent = 'Peak not found';
-        console.error('No peak ID provided');
+        console.error('No peak slug provided');
         return;
       }
       
@@ -435,45 +435,42 @@
         if (stored) {
           const peaks = JSON.parse(stored);
           console.log('Found', peaks.length, 'peaks in localStorage');
-          const peak = peaks.find(p => p.id === parseInt(peakId));
+          const peak = peaks.find(p => p.slug === peakSlug);
           
           if (peak) {
-            console.log('Found peak:', peak.name);
+            console.log('Found peak in localStorage:', peak.name);
             renderPeak(peak);
             return;
           } else {
-            console.warn('Peak ID', peakId, 'not found in localStorage');
+            console.warn('Peak slug', peakSlug, 'not found in localStorage');
           }
         }
         
-        // Fallback: load from NH48 API if we have the slug
-        const slugParam = params.get('slug');
-        console.log('Slug parameter:', slugParam);
+        // Fallback: load directly from NH48 API using slug
+        console.log('Fetching from NH48 API:', peakSlug);
+        const response = await fetch(`https://natesobol.github.io/NH48-API/peaks/${peakSlug}.json`);
+        console.log('API response status:', response.status);
         
-        if (slugParam) {
-          console.log('Fetching from NH48 API:', slugParam);
-          const response = await fetch(`https://natesobol.github.io/NH48-API/peaks/${slugParam}.json`);
-          console.log('API response status:', response.status);
+        if (response.ok) {
+          const apiData = await response.json();
+          console.log('API data loaded:', apiData.name || apiData.peakName);
           
-          if (response.ok) {
-            const apiData = await response.json();
-            console.log('API data loaded:', apiData.name);
-            
-            // Convert API data to peak format
-            const peak = {
-              id: parseInt(peakId),
-              name: apiData.name,
-              elevation: apiData.elevation,
-              location: apiData.range || apiData.location,
-              prominence: apiData.prominence,
-              difficulty: apiData.difficulty,
-              lat: apiData.latitude,
-              lon: apiData.longitude,
-              slug: slugParam
-            };
-            renderPeak(peak);
-            return;
-          }
+          // Convert API data to peak format
+          const peak = {
+            slug: peakSlug,
+            name: apiData.name || apiData.peakName || apiData['Peak Name'],
+            elevation: apiData.elevation || apiData.elevation_ft || apiData['Elevation (ft)'],
+            location: apiData.range || apiData.location || apiData.Range,
+            prominence: apiData.prominence,
+            difficulty: apiData.difficulty,
+            lat: apiData.latitude || apiData.lat,
+            lon: apiData.longitude || apiData.lon,
+            photo: apiData.photo,
+            photos: apiData.photos
+          };
+          console.log('Converted peak:', peak);
+          renderPeak(peak);
+          return;
         }
         
         console.error('Could not load peak from any source');
@@ -557,14 +554,23 @@
       const carousel = document.getElementById('carousel');
       const dotsContainer = document.getElementById('dots');
       
-      // Get images from API
+      // Get images - check if already loaded from API
       let images = [];
-      if (peak.slug) {
+      
+      // If peak already has photos array from API fetch
+      if (peak.photos && peak.photos.length > 0) {
+        console.log('Using photos from peak object:', peak.photos.length);
+        images = peak.photos.map(p => typeof p === 'string' ? p : p.url);
+      }
+      // Otherwise fetch from API
+      else if (peak.slug) {
         try {
+          console.log('Fetching photos for slug:', peak.slug);
           const response = await fetch(`https://natesobol.github.io/NH48-API/peaks/${peak.slug}.json`);
           const data = await response.json();
+          console.log('API photos data:', data.photos);
           if (data.photos && data.photos.length > 0) {
-            images = data.photos.map(p => p.url);
+            images = data.photos.map(p => typeof p === 'string' ? p : p.url);
           }
         } catch (err) {
           console.error('Error loading API images:', err);
@@ -573,8 +579,11 @@
       
       // Fallback to peak.photo if no API images
       if (images.length === 0 && peak.photo) {
+        console.log('Using fallback photo:', peak.photo);
         images = [peak.photo];
       }
+      
+      console.log('Total images for carousel:', images.length);
       
       // Build slides
       slides = [];
