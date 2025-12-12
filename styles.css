@@ -1067,3 +1067,88 @@ a:hover {
 #userProfileLink:active {
   transform: scale(0.98);
 }
+/* Advanced Filters Panel */
+.ctrl-advanced-filters {
+  position: relative;
+}
+
+.ctrl-advanced-filters summary {
+  list-style: none;
+  user-select: none;
+}
+
+.ctrl-advanced-filters summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-filters-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 280px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.filter-row label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-weak);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-row .select,
+.filter-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.filter-row .select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.filter-input::placeholder {
+  color: var(--ink-weak);
+  opacity: 0.6;
+}
+
+/* Mobile responsive filters */
+@media (max-width: 960px) {
+  .advanced-filters-panel {
+    right: auto;
+    left: 0;
+    min-width: 260px;
+  }
+}

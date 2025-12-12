@@ -73,6 +73,37 @@
             <option value="incomplete">Incomplete</option>
           </select>
         </div>
+        <!-- Advanced Filters (collapsible) -->
+        <details class="ctrl-advanced-filters" style="position:relative">
+          <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
+            <span class="ico">⚙️</span>
+            <span>Filters</span>
+          </summary>
+          <div class="advanced-filters-panel">
+            <div class="filter-row">
+              <label>Range:</label>
+              <select id="rangeFilter" class="select">
+                <option value="all">All Ranges</option>
+                <option value="Presidential">Presidential</option>
+                <option value="Franconia">Franconia</option>
+                <option value="Carter-Moriah">Carter-Moriah</option>
+                <option value="Twin">Twin</option>
+                <option value="Bond">Bond</option>
+                <option value="Sandwich">Sandwich</option>
+                <option value="Kinsman">Kinsman</option>
+              </select>
+            </div>
+            <div class="filter-row">
+              <label>Min Elevation (ft):</label>
+              <input type="number" id="elevationMin" class="filter-input" placeholder="4000" min="0" max="10000">
+            </div>
+            <div class="filter-row">
+              <label>Max Elevation (ft):</label>
+              <input type="number" id="elevationMax" class="filter-input" placeholder="6288" min="0" max="10000">
+            </div>
+            <button id="clearFilters" class="btn btn-ghost btn-small" style="width:100%;margin-top:8px">Clear All Filters</button>
+          </div>
+        </details>
         <!-- NEW: Mode toggle (Checklist / Grid) -->
         <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🔁</span> <span>Mode: <strong id="modeLabel">Checklist</strong></span></div>
         <div class="ctrl-btn" id="exportBtn"><span class="ico">🗄️</span> <span>Export XLSX</span></div>

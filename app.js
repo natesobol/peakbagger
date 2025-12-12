@@ -388,6 +388,9 @@ let completions = {};
 let favorites = new Set();  // Peak IDs that are favorited
 let wishlist = new Set();   // Peak IDs on wishlist
 let statusFilter = 'all';  // Filter: 'all', 'completed', 'favorites', 'wishlist', 'incomplete'
+let rangeFilter = 'all';  // Filter by mountain range
+let elevationMin = '';  // Minimum elevation filter
+let elevationMax = '';  // Maximum elevation filter
 
 // Local storage keys and utilities (still used for preferences)
 const PREF_KEY = 'pb_prefs_v1';
@@ -637,20 +640,27 @@ async function loadFavorites() {
   }
   
   try {
-    const { data: favData } = await supabase
+    const { data: favData, error } = await supabase
       .from('user_favorite_peaks')
       .select('peak_id, favorite_type')
       .eq('user_id', currentUser.id);
     
+    if (error) {
+      console.error('Error loading favorites:', error);
+      return;
+    }
+    
     favorites.clear();
     wishlist.clear();
     
-    if (favData) {
+    if (favData && Array.isArray(favData)) {
       favData.forEach(fav => {
-        if (fav.favorite_type === 'favorite') {
-          favorites.add(fav.peak_id);
-        } else if (fav.favorite_type === 'wishlist') {
-          wishlist.add(fav.peak_id);
+        if (fav && fav.peak_id) {
+          if (fav.favorite_type === 'favorite') {
+            favorites.add(fav.peak_id);
+          } else if (fav.favorite_type === 'wishlist') {
+            wishlist.add(fav.peak_id);
+          }
         }
       });
     }
@@ -665,7 +675,15 @@ async function loadFavorites() {
 
 // Toggle favorite or wishlist for a peak
 async function toggleFavorite(peakId, favoriteType) {
-  if (!currentUser || !peakId) return;
+  if (!currentUser || !peakId) {
+    console.warn('Cannot toggle favorite: missing user or peak ID');
+    return;
+  }
+  
+  if (favoriteType !== 'favorite' && favoriteType !== 'wishlist') {
+    console.error('Invalid favorite type:', favoriteType);
+    return;
+  }
   
   try {
     const targetSet = favoriteType === 'favorite' ? favorites : wishlist;
@@ -674,12 +692,14 @@ async function toggleFavorite(peakId, favoriteType) {
     
     if (targetSet.has(peakId)) {
       // Remove from favorites
-      await supabase
+      const { error } = await supabase
         .from('user_favorite_peaks')
         .delete()
         .eq('user_id', currentUser.id)
         .eq('peak_id', peakId)
         .eq('favorite_type', favoriteType);
+      
+      if (error) throw error;
       
       targetSet.delete(peakId);
       console.log(`Removed ${favoriteType} for peak ${peakId}`);
@@ -695,13 +715,15 @@ async function toggleFavorite(peakId, favoriteType) {
         otherSet.delete(peakId);
       }
       
-      await supabase
+      const { error } = await supabase
         .from('user_favorite_peaks')
         .insert({
           user_id: currentUser.id,
           peak_id: peakId,
           favorite_type: favoriteType
         });
+      
+      if (error) throw error;
       
       targetSet.add(peakId);
       console.log(`Added ${favoriteType} for peak ${peakId}`);
@@ -711,6 +733,7 @@ async function toggleFavorite(peakId, favoriteType) {
     renderView();
   } catch (e) {
     console.error(`Failed to toggle ${favoriteType}:`, e);
+    alert(`Failed to update ${favoriteType}. Please try again.`);
   }
 }
 
@@ -1045,62 +1068,86 @@ function placeholderFor(name, w = 800, h = 420) {
 }
 
 async function openPeakDetail(it) {
-  // Store current item for back button and updates
-  window._currentPeakDetail = it;
-  
-  // Show peak detail page, hide main content
-  const mainPanel = document.querySelector('main.panel');
-  const sidebar = document.querySelector('.sidebar');
-  const gridView = document.getElementById('grid-view');
-  const listView = document.getElementById('list-view');
-  const pagerWraps = document.querySelectorAll('.pager-wrap');
-  
-  // Hide everything except peakDetailPage
-  if (gridView) gridView.style.display = 'none';
-  if (listView) listView.style.display = 'none';
-  pagerWraps.forEach(p => p.style.display = 'none');
-  if (sidebar) sidebar.style.display = 'none';
-  document.querySelector('.topbar').style.display = 'none';
-  
-  // Show peakDetailPage
-  document.getElementById('peakDetailPage').style.display = 'block';
-
-  // Set title and subtitle
-  document.getElementById('peakDetailTitle').textContent = it.name;
-  
-  const slug = getSlugForName(it.name);
-  const data = NH48_DATA?.[slug] || null;
-
-  // Update fast facts
-  document.getElementById('peakDetailElev').textContent = fmtElevation(it.elevation_ft ?? null) || '—';
-  document.getElementById('peakDetailLocation').textContent = data?.["Range / Subrange"] || data?.Range || '—';
-  if (document.getElementById('peakDetailLocation').textContent === '') {
-    document.getElementById('peakDetailLocation').textContent = '—';
+  if (!it || !it.name) {
+    console.error('Cannot open detail: invalid peak data');
+    return;
   }
   
-  const promFt = data?.["Prominence (ft)"] || data?.Prominence_ft;
-  document.getElementById('peakDetailProm').textContent = promFt ? (meters ? Math.round(promFt * 0.3048) + ' m' : promFt + ' ft') : '—';
-  document.getElementById('peakDetailDiff').textContent = data?.Difficulty || '—';
+  try {
+    // Store current item for back button and updates
+    window._currentPeakDetail = it;
+    
+    // Show peak detail page, hide main content
+    const mainPanel = document.querySelector('main.panel');
+    const sidebar = document.querySelector('.sidebar');
+    const gridView = document.getElementById('grid-view');
+    const listView = document.getElementById('list-view');
+    const pagerWraps = document.querySelectorAll('.pager-wrap');
+    const topbar = document.querySelector('.topbar');
+    const peakDetailPage = document.getElementById('peakDetailPage');
+    
+    if (!peakDetailPage) {
+      console.error('Peak detail page element not found');
+      return;
+    }
+    
+    // Hide everything except peakDetailPage
+    if (gridView) gridView.style.display = 'none';
+    if (listView) listView.style.display = 'none';
+    pagerWraps.forEach(p => p.style.display = 'none');
+    if (sidebar) sidebar.style.display = 'none';
+    if (topbar) topbar.style.display = 'none';
+    
+    // Show peakDetailPage
+    peakDetailPage.style.display = 'block';
+
+    // Set title and subtitle
+    const titleEl = document.getElementById('peakDetailTitle');
+    if (titleEl) titleEl.textContent = it.name || '\u2014';
+    
+    const slug = getSlugForName(it.name);
+    const data = NH48_DATA?.[slug] || null;
+
+    // Update fast facts with null checks
+    const elevEl = document.getElementById('peakDetailElev');
+    const locEl = document.getElementById('peakDetailLocation');
+    const promEl = document.getElementById('peakDetailProm');
+    const diffEl = document.getElementById('peakDetailDiff');
+    
+    if (elevEl) elevEl.textContent = fmtElevation(it.elevation_ft ?? null) || '\u2014';
+    if (locEl) {
+      locEl.textContent = data?.["Range / Subrange"] || data?.Range || '\u2014';
+      if (locEl.textContent === '') locEl.textContent = '\u2014';
+    }
+    
+    const promFt = data?.["Prominence (ft)"] || data?.Prominence_ft;
+    if (promEl) {
+      promEl.textContent = promFt ? (meters ? Math.round(promFt * 0.3048) + ' m' : promFt + ' ft') : '\u2014';
+    }
+    if (diffEl) diffEl.textContent = data?.Difficulty || '\u2014';
+    
+    // Set date input
+    const dateInput = document.getElementById('peakDetailDateInput');
+    if (dateInput) {
+      dateInput.value = completions[currentList]?.[it.name]?.date || '';
+      dateInput.onchange = () => {
+        const val = document.getElementById('peakDetailDateInput').value;
+        if (val) setDateFor(it.name, val);
+      };
+    }
   
-  // Set date input
-  document.getElementById('peakDetailDateInput').value = completions[currentList]?.[it.name]?.date || '';
-  document.getElementById('peakDetailDateInput').onchange = () => {
-    const val = document.getElementById('peakDetailDateInput').value;
-    if (val) setDateFor(it.name, val);
-  };
+    // Setup favorite/wishlist buttons
+    const favBtn = document.getElementById('peakDetailFavBtn');
+    const wishBtn = document.getElementById('peakDetailWishBtn');
+    const favIcon = document.getElementById('peakDetailFavIcon');
+    const wishIcon = document.getElementById('peakDetailWishIcon');
+    const favText = document.getElementById('peakDetailFavText');
+    const wishText = document.getElementById('peakDetailWishText');
   
-  // Setup favorite/wishlist buttons
-  const favBtn = document.getElementById('peakDetailFavBtn');
-  const wishBtn = document.getElementById('peakDetailWishBtn');
-  const favIcon = document.getElementById('peakDetailFavIcon');
-  const wishIcon = document.getElementById('peakDetailWishIcon');
-  const favText = document.getElementById('peakDetailFavText');
-  const wishText = document.getElementById('peakDetailWishText');
-  
-  if (favBtn && wishBtn && it.peak_id) {
-    // Update button states
-    const isFavorite = favorites.has(it.peak_id);
-    const isWishlist = wishlist.has(it.peak_id);
+    if (favBtn && wishBtn && it.peak_id) {
+      // Update button states
+      const isFavorite = favorites.has(it.peak_id);
+      const isWishlist = wishlist.has(it.peak_id);
     
     if (isFavorite) {
       favIcon.textContent = '⭐';
@@ -1146,12 +1193,12 @@ async function openPeakDetail(it) {
       // Re-open detail to refresh button states
       openPeakDetail(it);
     };
-  }
+    }
 
-  // Populate month grid if grid tracking is enabled
-  const monthGridContainer = document.getElementById('peakDetailMonthGrid');
-  const monthGridEl = monthGridContainer?.querySelector('.detail-month-grid');
-  if (monthGridEl && gridTrackingEnabled) {
+    // Populate month grid if grid tracking is enabled
+    const monthGridContainer = document.getElementById('peakDetailMonthGrid');
+    const monthGridEl = monthGridContainer?.querySelector('.detail-month-grid');
+    if (monthGridEl && gridTrackingEnabled) {
     monthGridEl.innerHTML = '';
     const gridData = completionsGrid[currentList]?.[it.name] || {};
     ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach((month, idx) => {
@@ -1190,106 +1237,111 @@ async function openPeakDetail(it) {
   let photos = [];
 
   if (data && Array.isArray(data.photos) && data.photos.length > 0) {
-    photos = data.photos.filter(p => p && (p.url || p.image_url));
-  } else {
-    try {
-      const apiImgs = await fetchPeakImages(slug);
-      if (apiImgs && apiImgs.length > 0) {
-        photos = apiImgs.map(img => ({ url: img.url || img.thumb || img.image_url || '', caption: img.caption || '' })).filter(p => p.url);
+      photos = data.photos.filter(p => p && (p.url || p.image_url));
+    } else {
+      try {
+        const apiImgs = await fetchPeakImages(slug);
+        if (apiImgs && apiImgs.length > 0) {
+          photos = apiImgs.map(img => ({ url: img.url || img.thumb || img.image_url || '', caption: img.caption || '' })).filter(p => p.url);
+        }
+      } catch (e) {
+        console.error('Failed to load photos:', e);
       }
-    } catch (e) {
-      console.error('Failed to load photos:', e);
     }
-  }
 
-  if (photos.length > 0) {
-    let idx = 0;
-    const wrap = document.createElement('div');
-    wrap.className = 'carousel-wrap';
-    const main = document.createElement('div');
-    main.className = 'carousel-main';
-    const img = document.createElement('img');
-    img.alt = it.name;
-    img.src = photos[0].url;
-    img.className = 'carousel-main-img';
-    img.loading = 'lazy';
-    img.onerror = () => { img.src = placeholderFor(it.name, 800, 420); };
-    main.appendChild(img);
-    
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'carousel-prev';
-    prevBtn.textContent = '‹';
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'carousel-next';
-    nextBtn.textContent = '›';
-    main.appendChild(prevBtn);
-    main.appendChild(nextBtn);
+    if (photos.length > 0) {
+      let idx = 0;
+      const wrap = document.createElement('div');
+      wrap.className = 'carousel-wrap';
+      const main = document.createElement('div');
+      main.className = 'carousel-main';
+      const img = document.createElement('img');
+      img.alt = it.name;
+      img.src = photos[0].url;
+      img.className = 'carousel-main-img';
+      img.loading = 'lazy';
+      img.onerror = () => { img.src = placeholderFor(it.name, 800, 420); };
+      main.appendChild(img);
+      
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'carousel-prev';
+      prevBtn.textContent = '‹';
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'carousel-next';
+      nextBtn.textContent = '›';
+      main.appendChild(prevBtn);
+      main.appendChild(nextBtn);
 
-    const thumbs = document.createElement('div');
-    thumbs.className = 'carousel-thumbs';
-    const indicators = document.createElement('div');
-    indicators.className = 'carousel-indicators';
+      const thumbs = document.createElement('div');
+      thumbs.className = 'carousel-thumbs';
+      const indicators = document.createElement('div');
+      indicators.className = 'carousel-indicators';
 
-    const makeThumb = (p, i) => {
-      const t = document.createElement('img');
-      t.className = 'carousel-thumb';
-      t.src = p.url;
-      t.alt = it.name + ' thumbnail';
-      t.dataset.i = String(i);
-      t.loading = 'lazy';
-      t.onerror = () => { t.src = placeholderFor(it.name, 60, 60); };
-      t.addEventListener('click', (e) => { e.stopPropagation(); setIndex(i); });
-      return t;
-    };
+      const makeThumb = (p, i) => {
+        const t = document.createElement('img');
+        t.className = 'carousel-thumb';
+        t.src = p.url;
+        t.alt = it.name + ' thumbnail';
+        t.dataset.i = String(i);
+        t.loading = 'lazy';
+        t.onerror = () => { t.src = placeholderFor(it.name, 60, 60); };
+        t.addEventListener('click', (e) => { e.stopPropagation(); setIndex(i); });
+        return t;
+      };
 
-    const setIndex = (n) => {
-      idx = ((n % photos.length) + photos.length) % photos.length;
-      img.src = photos[idx].url;
-      thumbs.querySelectorAll('.carousel-thumb').forEach((el) => el.classList.toggle('active', el.dataset.i == String(idx)));
-      indicators.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
-    };
+      const setIndex = (n) => {
+        idx = ((n % photos.length) + photos.length) % photos.length;
+        img.src = photos[idx].url;
+        thumbs.querySelectorAll('.carousel-thumb').forEach((el) => el.classList.toggle('active', el.dataset.i == String(idx)));
+        indicators.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+      };
 
-    photos.forEach((p, i) => {
-      thumbs.appendChild(makeThumb(p, i));
-      const dot = document.createElement('div');
-      dot.className = 'dot';
-      indicators.appendChild(dot);
-    });
+      photos.forEach((p, i) => {
+        thumbs.appendChild(makeThumb(p, i));
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        indicators.appendChild(dot);
+      });
 
-    const AUTOPLAY_MS = 3500;
-    const startTimer = () => {
-      if (photoContainer._carouselTimer) clearInterval(photoContainer._carouselTimer);
-      photoContainer._carouselTimer = setInterval(() => { setIndex(idx + 1); }, AUTOPLAY_MS);
-    };
-    const stopTimer = () => {
-      if (photoContainer._carouselTimer) {
-        clearInterval(photoContainer._carouselTimer);
-        photoContainer._carouselTimer = null;
-      }
-    };
+      const AUTOPLAY_MS = 3500;
+      const startTimer = () => {
+        if (photoContainer._carouselTimer) clearInterval(photoContainer._carouselTimer);
+        photoContainer._carouselTimer = setInterval(() => { setIndex(idx + 1); }, AUTOPLAY_MS);
+      };
+      const stopTimer = () => {
+        if (photoContainer._carouselTimer) {
+          clearInterval(photoContainer._carouselTimer);
+          photoContainer._carouselTimer = null;
+        }
+      };
 
-    prevBtn.addEventListener('click', (e) => { e.stopPropagation(); setIndex(idx - 1); startTimer(); });
-    nextBtn.addEventListener('click', (e) => { e.stopPropagation(); setIndex(idx + 1); startTimer(); });
-    main.addEventListener('mouseenter', stopTimer);
-    main.addEventListener('mouseleave', startTimer);
+      prevBtn.addEventListener('click', (e) => { e.stopPropagation(); setIndex(idx - 1); startTimer(); });
+      nextBtn.addEventListener('click', (e) => { e.stopPropagation(); setIndex(idx + 1); startTimer(); });
+      main.addEventListener('mouseenter', stopTimer);
+      main.addEventListener('mouseleave', startTimer);
 
-    wrap.appendChild(main);
-    wrap.appendChild(thumbs);
-    wrap.appendChild(indicators);
-    photoContainer.appendChild(wrap);
-    setIndex(0);
-    startTimer();
-  } else {
-    const ph = document.createElement('div');
-    ph.style.width = '100%';
-    ph.style.borderRadius = '8px';
-    ph.style.overflow = 'hidden';
-    const pimg = document.createElement('img');
-    pimg.alt = it.name;
-    pimg.src = placeholderFor(it.name, 800, 420);
-    pimg.loading = 'lazy';
-    ph.appendChild(pimg);
-    photoContainer.appendChild(ph);
+      wrap.appendChild(main);
+      wrap.appendChild(thumbs);
+      wrap.appendChild(indicators);
+      photoContainer.appendChild(wrap);
+      setIndex(0);
+      startTimer();
+    } else {
+      const ph = document.createElement('div');
+      ph.style.width = '100%';
+      ph.style.borderRadius = '8px';
+      ph.style.overflow = 'hidden';
+      const pimg = document.createElement('img');
+      pimg.alt = it.name;
+      pimg.src = placeholderFor(it.name, 800, 420);
+      pimg.loading = 'lazy';
+      ph.appendChild(pimg);
+      photoContainer.appendChild(ph);
+    }
+  } catch (e) {
+    console.error('Error opening peak detail:', e);
+    alert('An error occurred while loading peak details. Please try again.');
+    closePeakDetail();
   }
 }
 
@@ -1750,12 +1802,44 @@ async function renderList() {
 /* ======= Render Grid (Cards View) ======= */
 // Helper function to apply status filter
 function applyStatusFilter(items) {
-  if (statusFilter === 'all') return items;
-  if (statusFilter === 'completed') return items.filter(it => it.completed);
-  if (statusFilter === 'incomplete') return items.filter(it => !it.completed);
-  if (statusFilter === 'favorites') return items.filter(it => it.peak_id && favorites.has(it.peak_id));
-  if (statusFilter === 'wishlist') return items.filter(it => it.peak_id && wishlist.has(it.peak_id));
-  return items;
+  if (!items || !Array.isArray(items)) return [];
+  
+  let filtered = items;
+  
+  // Status filter
+  if (statusFilter === 'completed') {
+    filtered = filtered.filter(it => it.completed);
+  } else if (statusFilter === 'incomplete') {
+    filtered = filtered.filter(it => !it.completed);
+  } else if (statusFilter === 'favorites') {
+    filtered = filtered.filter(it => it.peak_id && favorites.has(it.peak_id));
+  } else if (statusFilter === 'wishlist') {
+    filtered = filtered.filter(it => it.peak_id && wishlist.has(it.peak_id));
+  }
+  
+  // Range filter
+  if (rangeFilter && rangeFilter !== 'all') {
+    filtered = filtered.filter(it => {
+      const range = it.range || '';
+      return range.toLowerCase().includes(rangeFilter.toLowerCase());
+    });
+  }
+  
+  // Elevation filters
+  if (elevationMin !== '' && elevationMin !== null) {
+    const minElev = parseInt(elevationMin, 10);
+    if (!isNaN(minElev)) {
+      filtered = filtered.filter(it => (it.elevation_ft || 0) >= minElev);
+    }
+  }
+  if (elevationMax !== '' && elevationMax !== null) {
+    const maxElev = parseInt(elevationMax, 10);
+    if (!isNaN(maxElev)) {
+      filtered = filtered.filter(it => (it.elevation_ft || 0) <= maxElev);
+    }
+  }
+  
+  return filtered;
 }
 
 async function renderGrid() {
@@ -1793,6 +1877,10 @@ async function renderGrid() {
 
   // Filter
   let filteredItems = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+  
+  // Apply status filter
+  filteredItems = applyStatusFilter(filteredItems);
+  
   if (hideCompleted) filteredItems = filteredItems.filter(it => !it.completed);
 
   // Progress
@@ -1938,12 +2026,14 @@ async function renderTable() {
     rows.innerHTML = '';
     return;
   }
-  const q = searchEl.value.trim().toLowerCase();
+  
+  try {
+    const q = searchEl.value.trim().toLowerCase();
 
-  const allItems = (await baseItemsFor(currentList)).map(it => {
-    const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
-    return { ...it, completed: !!c.done, date: c.date || '' };
-  });
+    const allItems = (await baseItemsFor(currentList)).map(it => {
+      const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
+      return { ...it, completed: !!c.done, date: c.date || '' };
+    });
 
   // Sort
   allItems.sort((a, b) => {
@@ -2152,6 +2242,10 @@ async function renderTable() {
       }
     });
   });
+  } catch (e) {
+    console.error('Error rendering table:', e);
+    rows.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:red">Error loading table: ' + e.message + '</td></tr>';
+  }
 }
 
 // =====================================================
@@ -2214,17 +2308,111 @@ if (statusFilterEl) {
   });
 }
 
-exportBtn.onclick = async () => {
-  const base = await baseItemsFor(currentList);
-  const items = base.map((it, i) => {
-    const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
-    return [i + 1, it.name, fmtElevation(it.elevation_ft ?? null), c.date || '', c.done ? 'Yes' : 'No'];
+// Advanced filters
+const rangeFilterEl = document.getElementById('rangeFilter');
+const elevationMinEl = document.getElementById('elevationMin');
+const elevationMaxEl = document.getElementById('elevationMax');
+const clearFiltersBtn = document.getElementById('clearFilters');
+
+if (rangeFilterEl) {
+  rangeFilterEl.addEventListener('change', () => {
+    rangeFilter = rangeFilterEl.value;
+    PAGE = 1;
+    renderView();
   });
-  const ws = XLSX.utils.aoa_to_sheet([['Rank', 'Mountain', 'Elevation', 'Date', 'Completed'], ...items]);
-  ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 14 }, { wch: 12 }, { wch: 10 }];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, currentList.slice(0, 31));
-  XLSX.writeFile(wb, `${currentList.replace(/\s+/g, '_')}.xlsx`);
+}
+
+if (elevationMinEl) {
+  elevationMinEl.addEventListener('change', () => {
+    elevationMin = elevationMinEl.value;
+    PAGE = 1;
+    renderView();
+  });
+}
+
+if (elevationMaxEl) {
+  elevationMaxEl.addEventListener('change', () => {
+    elevationMax = elevationMaxEl.value;
+    PAGE = 1;
+    renderView();
+  });
+}
+
+if (clearFiltersBtn) {
+  clearFiltersBtn.addEventListener('click', () => {
+    statusFilter = 'all';
+    rangeFilter = 'all';
+    elevationMin = '';
+    elevationMax = '';
+    
+    if (statusFilterEl) statusFilterEl.value = 'all';
+    if (rangeFilterEl) rangeFilterEl.value = 'all';
+    if (elevationMinEl) elevationMinEl.value = '';
+    if (elevationMaxEl) elevationMaxEl.value = '';
+    
+    PAGE = 1;
+    renderView();
+  });
+}
+
+exportBtn.onclick = async () => {
+  try {
+    const q = searchEl.value.trim().toLowerCase();
+    const base = await baseItemsFor(currentList);
+    
+    if (!base || base.length === 0) {
+      alert('No data to export');
+      return;
+    }
+    
+    // Apply same filters as current view
+    let allItems = base.map(it => {
+      const c = completions[currentList]?.[it.name] ?? { done: false, date: '' };
+      return { ...it, completed: !!c.done, date: c.date || '' };
+    });
+    
+    // Apply search filter
+    let filteredItems = allItems.filter(it => !q || it.name.toLowerCase().includes(q));
+    
+    // Apply status, range, and elevation filters
+    filteredItems = applyStatusFilter(filteredItems);
+    
+    // Apply hideCompleted filter
+    if (hideCompleted) {
+      filteredItems = filteredItems.filter(it => !it.completed);
+    }
+    
+    // Convert to export format
+    const items = filteredItems.map((it, i) => {
+      const gridData = gridTrackingEnabled && completionsGrid[currentList]?.[it.name];
+      const monthsCompleted = gridData ? Object.values(gridData).filter(d => d).length : 0;
+      
+      return [
+        it.rank || (i + 1),
+        it.name || '',
+        fmtElevation(it.elevation_ft ?? null) || '—',
+        it.range || '—',
+        it.date || '',
+        it.completed ? 'Yes' : 'No',
+        gridTrackingEnabled ? monthsCompleted : ''
+      ];
+    });
+    
+    const headers = gridTrackingEnabled 
+      ? ['Rank', 'Mountain', 'Elevation', 'Range', 'First Date', 'Completed', 'Months']
+      : ['Rank', 'Mountain', 'Elevation', 'Range', 'Date', 'Completed'];
+    
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...items]);
+    ws['!cols'] = [{ wch: 6 }, { wch: 26 }, { wch: 14 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 8 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, currentList.slice(0, 31));
+    
+    const fileName = `${currentList.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  } catch (e) {
+    console.error('Export failed:', e);
+    alert('Failed to export data. Please try again.');
+  }
 };
 
 unitToggle.onclick = () => applyUnitsFlag(!meters);
@@ -2404,7 +2592,6 @@ if (signupPassConfirm) {
     await getCurrentUserData();
     await reflectAuthUI();
     
-    await loadGridFromSupabase();
     ALL_LISTS = await fetchAllLists();
     const preferred = 'NH 48';
     currentList = ALL_LISTS.includes(preferred) ? preferred : (ALL_LISTS[0] || '');
