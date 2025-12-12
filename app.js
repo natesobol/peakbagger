@@ -1190,6 +1190,7 @@ async function saveGridToSupabase(peakName, month, date) {
 
 // Load favorites from Supabase
 async function loadFavorites() {
+  // Skip if not logged in
   if (!currentUser) {
     favorites.clear();
     wishlist.clear();
@@ -1203,7 +1204,14 @@ async function loadFavorites() {
       .eq('user_id', currentUser.id);
     
     if (error) {
-      console.error('Error loading favorites:', error);
+      // Silently handle missing table/column errors - don't spam console
+      if (error.code === '42703' || error.message?.includes('does not exist')) {
+        console.log('Favorites table not configured - using local storage only');
+      } else {
+        console.error('Error loading favorites:', error);
+      }
+      favorites.clear();
+      wishlist.clear();
       return;
     }
     
@@ -1224,7 +1232,7 @@ async function loadFavorites() {
     
     console.log(`Loaded ${favorites.size} favorites and ${wishlist.size} wishlist items`);
   } catch (e) {
-    console.error('Failed to load favorites from Supabase:', e);
+    // Silently fail - favorites will just use local storage
     favorites.clear();
     wishlist.clear();
   }
