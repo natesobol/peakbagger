@@ -2735,7 +2735,7 @@ async function renderGrid() {
             <span class="peak-card-meta-label">Elevation</span>
             <span class="peak-card-meta-value">${elevStr}</span>
           </div>
-          <div class="peak-card-meta-row">
+          <div class="peak-card-meta-row range-row">
             <span class="peak-card-meta-label">Range</span>
             <span class="peak-card-meta-value">${rangeStr}</span>
           </div>

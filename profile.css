@@ -912,6 +912,23 @@ input:checked + .slider:before {
   margin: 0 0 20px 0;
 }
 
+/* Secondary button style */
+.btn-secondary {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--input-bg-hover);
+  border-color: var(--accent);
+}
+
 .danger-zone .btn-danger {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
