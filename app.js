@@ -1716,7 +1716,7 @@ async function openPeakDetail(it) {
       console.error('Peak has no slug:', it);
       return;
     }
-    const url = `peak-detail.html?slug=${it.slug}`;
+    const url = `pages/peak-detail.html?slug=${it.slug}`;
     console.log('Navigating to:', url);
     window.location.href = url;
   } catch (err) {
