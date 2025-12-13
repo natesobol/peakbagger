@@ -47,7 +47,14 @@
 html { scroll-behavior: smooth; }
 html, body { height:auto; min-height:100%; overflow-x: hidden; }
 body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-.app{display:grid;grid-template-rows:auto 1fr;min-height:100vh;gap:16px;border:2px solid var(--border-strong);border-radius:10px;overflow:hidden}
+.app{display:grid;grid-template-rows:auto 1fr;min-height:100vh;gap:16px;border:none;border-radius:0;overflow:hidden}
+
+/* ---------- Progressive image loading ---------- */
+.img-loading{position:relative;background:var(--card);overflow:hidden}
+.img-loading::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.img-blur{filter:blur(20px);transform:scale(1.1);transition:filter 0.3s ease,transform 0.3s ease}
+.img-blur.loaded{filter:blur(0);transform:scale(1)}
 
 /* ---------- Topbar ---------- */
 .topbar{padding:16px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;box-shadow:0 2px 0 var(--border)}
@@ -378,7 +385,6 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 
 @media (max-width:960px){
   body{font-size:15px}
-  .app{border-width:0;border-radius:0}
   
   /* Topbar mobile improvements */
   .topbar{position:static;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.15);border-bottom:2px solid var(--border)}

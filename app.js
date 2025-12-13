@@ -1639,6 +1639,64 @@ function placeholderFor(name, w = 800, h = 420) {
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
+// Low-res placeholder with blur-up effect
+function lowResPlaceholder(w = 20, h = 12) {
+  // Generate a tiny colored placeholder that will be blurred
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}' viewBox='0 0 ${w} ${h}'><rect width='100%' height='100%' fill='%231a1a1a'/><rect x='0' y='${h*0.6}' width='100%' height='${h*0.4}' fill='%23223322'/></svg>`;
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+// Progressive image loading: show low-res first, then load full image
+function loadImageProgressive(img, fullSrc, lowResSrc) {
+  if (!img || !fullSrc) return;
+  
+  // Set up blur effect
+  img.classList.add('img-blur');
+  img.src = lowResSrc || lowResPlaceholder();
+  
+  // Load full image in background
+  const fullImg = new Image();
+  fullImg.onload = () => {
+    img.src = fullSrc;
+    // Small delay for smoother transition
+    requestAnimationFrame(() => {
+      img.classList.add('loaded');
+    });
+  };
+  fullImg.onerror = () => {
+    img.classList.add('loaded'); // Remove blur even on error
+  };
+  fullImg.src = fullSrc;
+}
+
+// IntersectionObserver for lazy loading grid images
+let gridImageObserver = null;
+function observeGridImages() {
+  // Disconnect previous observer if exists
+  if (gridImageObserver) gridImageObserver.disconnect();
+  
+  const images = document.querySelectorAll('.peak-card-thumb img[data-full-src]');
+  if (!images.length) return;
+  
+  gridImageObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        const fullSrc = img.dataset.fullSrc;
+        if (fullSrc && !img.classList.contains('loaded')) {
+          loadImageProgressive(img, fullSrc);
+        }
+        gridImageObserver.unobserve(img);
+      }
+    });
+  }, {
+    rootMargin: '100px', // Start loading 100px before viewport
+    threshold: 0.01
+  });
+  
+  images.forEach(img => gridImageObserver.observe(img));
+}
+
 async function openPeakDetail(it) {
   if (!it || !it.name) {
     console.error('Cannot open detail: invalid peak data');
@@ -2663,8 +2721,8 @@ async function renderGrid() {
     const expStr = nhData['Exposure Level'] || nhData['Weather Exposure Rating'] || '—';
 
     card.innerHTML = `
-      <div class="peak-card-thumb">
-        ${imgSrc ? `<img src="${imgSrc}" alt="${it.name}" loading="lazy" decoding="async">` : `<img src="${placeholderFor(it.name, 800, 480)}" alt="${it.name}" loading="lazy">`}
+      <div class="peak-card-thumb img-loading">
+        <img class="img-blur" data-full-src="${imgSrc || placeholderFor(it.name, 800, 480)}" src="${lowResPlaceholder()}" alt="${it.name}" loading="lazy" decoding="async">
       </div>
       <div class="peak-card-body ${it.completed ? 'completed' : ''}">
         <h3>${it.name}</h3>
@@ -2744,6 +2802,10 @@ async function renderGrid() {
 
     gridView.appendChild(card);
   }
+  
+  // Progressive image loading using IntersectionObserver
+  observeGridImages();
+  
   } catch (e) {
     console.error('Error rendering grid:', e);
     gridView.innerHTML = '<div style="padding:20px;text-align:center;color:red">Error loading grid: ' + e.message + '</div>';
