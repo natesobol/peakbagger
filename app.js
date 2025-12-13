@@ -1508,9 +1508,19 @@ async function getCurrentUserData() {
 
 async function reflectAuthUI() {
   const me = await getCurrentUserData();
+  
+  // Mobile auth elements
+  const mobileSignedOutBox = document.getElementById('mobileAuthSignedOut');
+  const mobileSignedInBox = document.getElementById('mobileAuthSignedIn');
+  const mobileUserInitials = document.getElementById('mobileUserInitials');
+  
   if (me) {
     signedOutBox.style.display = 'none';
     signedInBox.style.display = '';
+    
+    // Mobile auth state
+    if (mobileSignedOutBox) mobileSignedOutBox.style.display = 'none';
+    if (mobileSignedInBox) mobileSignedInBox.style.display = '';
     
     // Get name from user metadata
     const firstName = me.user_metadata?.first_name || me.user_metadata?.name || '';
@@ -1522,15 +1532,22 @@ async function reflectAuthUI() {
     
     // Set user initials in avatar
     const userInitials = document.getElementById('userInitials');
+    const initials = firstName.charAt(0).toUpperCase() + (lastName ? lastName.charAt(0).toUpperCase() : '');
     if (userInitials) {
-      const initials = firstName.charAt(0).toUpperCase() + (lastName ? lastName.charAt(0).toUpperCase() : '');
       userInitials.textContent = initials || me.email.charAt(0).toUpperCase();
+    }
+    if (mobileUserInitials) {
+      mobileUserInitials.textContent = initials || me.email.charAt(0).toUpperCase();
     }
   } else {
     signedOutBox.style.display = '';
     signedInBox.style.display = 'none';
     meNameEl.textContent = '';
     meEmailEl.textContent = '';
+    
+    // Mobile auth state
+    if (mobileSignedOutBox) mobileSignedOutBox.style.display = '';
+    if (mobileSignedInBox) mobileSignedInBox.style.display = 'none';
   }
   
   // Load data from Supabase instead of localStorage
@@ -3289,6 +3306,10 @@ if (introPanelDetails) {
 
 if (openAuthBtn) openAuthBtn.onclick = () => openModal();
 if (closeAuthBtn) closeAuthBtn.onclick = () => closeModal();
+
+// Mobile login button
+const openAuthMobileBtn = document.getElementById('openAuthMobile');
+if (openAuthMobileBtn) openAuthMobileBtn.onclick = () => openModal();
 
 // Toggle between login and signup forms
 if (showSignup) showSignup.onclick = (e) => {
