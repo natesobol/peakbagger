@@ -1514,6 +1514,11 @@ async function reflectAuthUI() {
   const mobileSignedInBox = document.getElementById('mobileAuthSignedIn');
   const mobileUserInitials = document.getElementById('mobileUserInitials');
   
+  // Nav auth elements
+  const navSignedOutBox = document.getElementById('navAuthSignedOut');
+  const navSignedInBox = document.getElementById('navAuthSignedIn');
+  const navUserInitials = document.getElementById('navUserInitials');
+  
   if (me) {
     signedOutBox.style.display = 'none';
     signedInBox.style.display = '';
@@ -1521,6 +1526,10 @@ async function reflectAuthUI() {
     // Mobile auth state
     if (mobileSignedOutBox) mobileSignedOutBox.style.display = 'none';
     if (mobileSignedInBox) mobileSignedInBox.style.display = '';
+    
+    // Nav auth state
+    if (navSignedOutBox) navSignedOutBox.style.display = 'none';
+    if (navSignedInBox) navSignedInBox.style.display = '';
     
     // Get name from user metadata
     const firstName = me.user_metadata?.first_name || me.user_metadata?.name || '';
@@ -1539,6 +1548,9 @@ async function reflectAuthUI() {
     if (mobileUserInitials) {
       mobileUserInitials.textContent = initials || me.email.charAt(0).toUpperCase();
     }
+    if (navUserInitials) {
+      navUserInitials.textContent = initials || me.email.charAt(0).toUpperCase();
+    }
   } else {
     signedOutBox.style.display = '';
     signedInBox.style.display = 'none';
@@ -1548,6 +1560,10 @@ async function reflectAuthUI() {
     // Mobile auth state
     if (mobileSignedOutBox) mobileSignedOutBox.style.display = '';
     if (mobileSignedInBox) mobileSignedInBox.style.display = 'none';
+    
+    // Nav auth state
+    if (navSignedOutBox) navSignedOutBox.style.display = '';
+    if (navSignedInBox) navSignedInBox.style.display = 'none';
   }
   
   // Load data from Supabase instead of localStorage
@@ -3310,6 +3326,10 @@ if (closeAuthBtn) closeAuthBtn.onclick = () => closeModal();
 // Mobile login button
 const openAuthMobileBtn = document.getElementById('openAuthMobile');
 if (openAuthMobileBtn) openAuthMobileBtn.onclick = () => openModal();
+
+// Nav login button
+const openAuthNavBtn = document.getElementById('openAuthNav');
+if (openAuthNavBtn) openAuthNavBtn.onclick = () => openModal();
 
 // Toggle between login and signup forms
 if (showSignup) showSignup.onclick = (e) => {
