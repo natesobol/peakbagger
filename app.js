@@ -1709,6 +1709,9 @@ function lowResPlaceholder(w = 20, h = 12) {
 function loadImageProgressive(img, fullSrc, lowResSrc) {
   if (!img || !fullSrc) return;
   
+  // Get parent container for skeleton state
+  const container = img.closest('.peak-card-thumb');
+  
   // Set up blur effect
   img.classList.add('img-blur');
   img.src = lowResSrc || lowResPlaceholder();
@@ -1720,10 +1723,14 @@ function loadImageProgressive(img, fullSrc, lowResSrc) {
     // Small delay for smoother transition
     requestAnimationFrame(() => {
       img.classList.add('loaded');
+      img.classList.remove('img-blur');
+      if (container) container.classList.remove('img-loading');
     });
   };
   fullImg.onerror = () => {
     img.classList.add('loaded'); // Remove blur even on error
+    img.classList.remove('img-blur');
+    if (container) container.classList.remove('img-loading');
   };
   fullImg.src = fullSrc;
 }
@@ -1743,17 +1750,50 @@ function observeGridImages() {
         const img = entry.target;
         const fullSrc = img.dataset.fullSrc;
         if (fullSrc && !img.classList.contains('loaded')) {
-          loadImageProgressive(img, fullSrc);
+          // Use thumbnail version for catalog (50% quality)
+          const thumbSrc = getThumbnailUrl(fullSrc, 400);
+          loadImageProgressive(img, thumbSrc);
         }
         gridImageObserver.unobserve(img);
       }
     });
   }, {
-    rootMargin: '100px', // Start loading 100px before viewport
+    rootMargin: '300px', // Start loading 300px before viewport for smoother scroll
     threshold: 0.01
   });
   
   images.forEach(img => gridImageObserver.observe(img));
+}
+
+// Get thumbnail URL with reduced size for catalog page
+function getThumbnailUrl(url, maxWidth = 400) {
+  if (!url) return url;
+  
+  // Handle Wix media URLs - add resize parameters
+  if (url.includes('wixstatic.com')) {
+    // Wix supports /v1/fill/w_WIDTH,h_HEIGHT,al_c,q_QUALITY/ format
+    if (url.includes('/v1/')) {
+      // Already has transform params, modify them
+      return url.replace(/w_\d+/, `w_${maxWidth}`).replace(/q_\d+/, 'q_70');
+    }
+    // Add transform params for standard Wix URLs
+    const baseUrl = url.split('?')[0];
+    return `${baseUrl}/v1/fill/w_${maxWidth},h_240,al_c,q_70/image.jpg`;
+  }
+  
+  // Handle other CDN URLs that support width params
+  if (url.includes('cloudinary.com')) {
+    return url.replace('/upload/', `/upload/w_${maxWidth},q_70/`);
+  }
+  
+  // Handle imgix or similar
+  if (url.includes('imgix.net')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}w=${maxWidth}&q=70`;
+  }
+  
+  // Return original URL if no CDN transform available
+  return url;
 }
 
 async function openPeakDetail(it) {
@@ -2741,6 +2781,10 @@ async function renderGrid() {
   updatePager(total, total ? (start + 1) : 0, end);
 
   gridView.innerHTML = '';
+  
+  // Use DocumentFragment for batch DOM updates - much faster
+  const fragment = document.createDocumentFragment();
+  
   for (const it of pageItems) {
     const card = document.createElement('article');
     card.className = 'peak-card';
@@ -2860,8 +2904,11 @@ async function renderGrid() {
       toggleComplete(it.name);
     });
 
-    gridView.appendChild(card);
+    fragment.appendChild(card);
   }
+  
+  // Append all cards at once for better performance
+  gridView.appendChild(fragment);
   
   // Progressive image loading using IntersectionObserver
   observeGridImages();

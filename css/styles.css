@@ -211,6 +211,36 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   position:relative;
 }
 
+/* Skeleton loading animation */
+.peak-card-thumb.img-loading{
+  background:linear-gradient(90deg,var(--panel) 25%,var(--card) 50%,var(--panel) 75%);
+  background-size:200% 100%;
+  animation:skeleton-shimmer 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-shimmer{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+
+/* Blur-up transition for images */
+.peak-card-thumb img.img-blur{
+  filter:blur(10px);
+  transform:scale(1.05);
+  transition:filter 0.3s ease,transform 0.3s ease;
+}
+
+.peak-card-thumb img.loaded{
+  filter:blur(0);
+  transform:scale(1);
+}
+
+/* Content-visibility for off-screen cards - improves scroll performance */
+.peak-card{
+  content-visibility:auto;
+  contain-intrinsic-size:auto 400px;
+}
+
 .peak-card-thumb img{
   width:100%;
   height:100%;
