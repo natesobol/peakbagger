@@ -61,7 +61,7 @@
 
 <div class="profile-page">
   <div class="profile-header">
-    <a href="peakbagger-clean.html" class="back-link">← Back to Peakbagger</a>
+    <a href="/" class="back-link">← Back to Peakbagger</a>
     <h1 id="pageTitle">Log Your Hike</h1>
     <p class="subtitle" id="pageSubtitle">Record the details of your summit experience</p>
   </div>
@@ -366,7 +366,7 @@
     // Error handling: Redirect if not logged in
     if (error || !user) {
       console.warn('Not authenticated, redirecting...');
-      window.location.href = 'peakbagger-clean.html';
+      window.location.href = '/';
       return;
     }
     
@@ -620,9 +620,9 @@
     // Cancel button
     cancelBtn.addEventListener('click', () => {
       if (currentPeakSlug) {
-        window.location.href = `peak-detail.html?slug=${currentPeakSlug}`;
+        window.location.href = `/peak-detail?slug=${currentPeakSlug}`;
       } else {
-        window.location.href = 'peakbagger-clean.html';
+        window.location.href = '/';
       }
     });
   }
@@ -759,9 +759,9 @@
         const selectedOption = peakSelect.selectedOptions[0];
         const slug = selectedOption?.dataset.slug || currentPeakSlug;
         if (slug) {
-          window.location.href = `peak-detail.html?slug=${slug}`;
+          window.location.href = `/peak-detail?slug=${slug}`;
         } else {
-          window.location.href = 'profile.html';
+          window.location.href = '/profile';
         }
       }, 1500);
       

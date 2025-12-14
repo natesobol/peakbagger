@@ -59,7 +59,7 @@ if (window.location.pathname.includes('/pages/')) {
 
 <div class="profile-page">
   <div class="profile-header">
-    <a href="peakbagger-clean.html" class="back-link">← Back to Peakbagger</a>
+    <a href="/" class="back-link">← Back to Peakbagger</a>
     <h1>Profile Settings</h1>
     <p class="subtitle">Manage your account information and security settings</p>
   </div>
@@ -367,7 +367,7 @@ if (window.location.pathname.includes('/pages/')) {
     
     if (error || !user) {
       // Not logged in, redirect to main page
-      window.location.href = 'peakbagger-clean.html';
+      window.location.href = '/';
       return;
     }
 
@@ -474,7 +474,7 @@ if (window.location.pathname.includes('/pages/')) {
     if (!confirm('Are you sure you want to sign out?')) return;
     
     await supabase.auth.signOut();
-    window.location.href = 'peakbagger-clean.html';
+    window.location.href = '/';
   });
 
   // Load profile on page load
@@ -527,7 +527,7 @@ if (window.location.pathname.includes('/pages/')) {
             <div class="empty-icon">🥾</div>
             <div>No peaks completed yet</div>
             <p style="margin-top:8px;font-size:13px">Start tracking your hikes to see them here!</p>
-            <a href="peakbagger-clean.html" class="btn btn-primary btn-small" style="margin-top:16px">Browse Peaks</a>
+            <a href="/" class="btn btn-primary btn-small" style="margin-top:16px">Browse Peaks</a>
           </div>
         `;
         return;
@@ -596,11 +596,11 @@ if (window.location.pathname.includes('/pages/')) {
               }) : '—';
               return `
                 <tr>
-                  <td style="cursor:pointer" onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'">${formattedDate}</td>
-                  <td style="cursor:pointer" onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'">${item.peakName}</td>
-                  <td style="cursor:pointer" onclick="window.location.href='peak-detail.html?slug=${item.peakSlug}'">${item.listName}</td>
+                  <td style="cursor:pointer" onclick="window.location.href='/peak-detail?slug=${item.peakSlug}'">${formattedDate}</td>
+                  <td style="cursor:pointer" onclick="window.location.href='/peak-detail?slug=${item.peakSlug}'">${item.peakName}</td>
+                  <td style="cursor:pointer" onclick="window.location.href='/peak-detail?slug=${item.peakSlug}'">${item.listName}</td>
                   <td style="text-align:center">
-                    <button class="social-card-btn" onclick="event.stopPropagation(); window.location.href='social-card.html?peak=${item.peakSlug}&progress=${item.id}'" title="Generate Social Card">
+                    <button class="social-card-btn" onclick="event.stopPropagation(); window.location.href='/social-card?peak=${item.peakSlug}&progress=${item.id}'" title="Generate Social Card">
                       📸
                     </button>
                   </td>
@@ -2038,7 +2038,7 @@ if (window.location.pathname.includes('/pages/')) {
       'Are you sure you want to sign out of your account?',
       async () => {
         await supabase.auth.signOut();
-        window.location.href = 'peakbagger-clean.html';
+        window.location.href = '/';
       },
       'Sign Out'
     );

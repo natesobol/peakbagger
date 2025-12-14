@@ -34,7 +34,7 @@
 </head>
 <body>
   <div class="wrap">
-    <a href="peakbagger-clean.html" class="back">← Back to Peakbagger</a>
+    <a href="/" class="back">← Back to Peakbagger</a>
     
     <h1 id="peakName">Loading…</h1>
     
@@ -284,10 +284,10 @@
       updateWishBtn(wishlist.includes(peak.slug));
       
       // Set up Log Hike button link
-      document.getElementById('logHikeBtn').href = `hike-log.html?peak=${peak.slug}`;
+      document.getElementById('logHikeBtn').href = `/hike-log?peak=${peak.slug}`;
       
       // Set up Social Card button link
-      document.getElementById('socialCardBtn').href = `social-card.html?peak=${peak.slug}`;
+      document.getElementById('socialCardBtn').href = `/social-card?peak=${peak.slug}`;
       
       document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
       document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
@@ -613,7 +613,7 @@
     // =====================================================
     function editLog(logId) {
       if (currentPeakSlug) {
-        window.location.href = `hike-log.html?peak=${currentPeakSlug}&edit=${logId}`;
+        window.location.href = `/hike-log?peak=${currentPeakSlug}&edit=${logId}`;
       }
     }
     
@@ -622,7 +622,7 @@
     // =====================================================
     function generateSocialCard(logId) {
       if (currentPeakSlug) {
-        window.location.href = `social-card.html?peak=${currentPeakSlug}&log=${logId}`;
+        window.location.href = `/social-card?peak=${currentPeakSlug}&log=${logId}`;
       }
     }
     

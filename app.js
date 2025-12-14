@@ -1815,8 +1815,8 @@ async function openPeakDetail(it) {
       console.error('Peak has no slug:', it);
       return;
     }
-    // Use relative URL - since we're already in /pages/, just use peak-detail.html
-    const url = `peak-detail.html?slug=${it.slug}`;
+    // Use clean masked URL
+    const url = `/peak-detail?slug=${it.slug}`;
     console.log('Navigating to:', url);
     window.location.href = url;
   } catch (err) {
