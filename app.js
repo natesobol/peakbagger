@@ -1561,8 +1561,8 @@ async function reflectAuthUI() {
   const navUserInitials = document.getElementById('navUserInitials');
   
   if (me) {
-    signedOutBox.style.display = 'none';
-    signedInBox.style.display = '';
+    if (signedOutBox) signedOutBox.style.display = 'none';
+    if (signedInBox) signedInBox.style.display = '';
     
     // Mobile auth state
     if (mobileSignedOutBox) mobileSignedOutBox.style.display = 'none';
@@ -1577,8 +1577,8 @@ async function reflectAuthUI() {
     const lastName = me.user_metadata?.last_name || '';
     const fullName = lastName ? `${firstName} ${lastName}` : firstName;
     
-    meNameEl.textContent = fullName || me.email;
-    meEmailEl.textContent = me.email || '';
+    if (meNameEl) meNameEl.textContent = fullName || me.email;
+    if (meEmailEl) meEmailEl.textContent = me.email || '';
     
     // Set user initials in avatar
     const userInitials = document.getElementById('userInitials');
@@ -1593,10 +1593,10 @@ async function reflectAuthUI() {
       navUserInitials.textContent = initials || me.email.charAt(0).toUpperCase();
     }
   } else {
-    signedOutBox.style.display = '';
-    signedInBox.style.display = 'none';
-    meNameEl.textContent = '';
-    meEmailEl.textContent = '';
+    if (signedOutBox) signedOutBox.style.display = '';
+    if (signedInBox) signedInBox.style.display = 'none';
+    if (meNameEl) meNameEl.textContent = '';
+    if (meEmailEl) meEmailEl.textContent = '';
     
     // Mobile auth state
     if (mobileSignedOutBox) mobileSignedOutBox.style.display = '';
