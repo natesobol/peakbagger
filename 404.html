@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peakbagger's Journal – Track the NH 48 and other 4K peaks</title>
+  <meta name="description" content="A free, offline-friendly web app for hikers to log ascents of New Hampshire 4000 footers, 52 With a View and other peak lists.">
+  <link rel="canonical" href="https://nh48.app/">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nh48.app/">
+  <meta property="og:title" content="Peakbagger's Journal – Track your NH 48 progress">
+  <meta property="og:description" content="Log your hikes of the NH 48, 52 With a View and other peak lists. Free, offline and community-driven.">
+  <meta property="og:image" content="https://nh48pics.com/images/peakbagger-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://nh48.app/">
+  <meta name="twitter:title" content="Peakbagger's Journal – Track your NH 48 progress">
+  <meta name="twitter:description" content="Log your hikes of the NH 48, 52 With a View and other peak lists. Free, offline and community-driven.">
+  <meta name="twitter:image" content="https://nh48pics.com/images/peakbagger-preview.png">
+  
+  <script>
+    // GitHub Pages SPA redirect hack
+    // If someone navigates directly to / or refreshes, redirect to the actual page
+    // but preserve the clean URL in the browser
+    (function() {
+      var path = window.location.pathname;
+      // Only redirect if at root or unknown path (not actual files)
+      if (path === '/' || !path.includes('.')) {
+        // Store the intended path and redirect to the actual page
+        sessionStorage.setItem('redirect_path', path);
+        window.location.replace('/pages/peakbagger-clean.html');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <p>Loading Peakbagger's Journal...</p>
+</body>
+</html>

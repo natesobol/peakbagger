@@ -578,6 +578,22 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 </script>
 
+<!-- URL masking: show clean URL without /pages/ subfolder -->
+<script>
+(function() {
+  // If we're on /pages/peakbagger-clean.html, rewrite URL to just /
+  if (window.location.pathname.includes('/pages/peakbagger-clean.html')) {
+    // Check if we came from a 404 redirect with a specific path
+    var redirectPath = sessionStorage.getItem('redirect_path');
+    sessionStorage.removeItem('redirect_path');
+    
+    // Use the stored path or default to /
+    var cleanUrl = redirectPath || '/';
+    window.history.replaceState({}, document.title, cleanUrl);
+  }
+})();
+</script>
+
 <!-- App Module -->
 <script type="module" src="../app.js"></script>
 
