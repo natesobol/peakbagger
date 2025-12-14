@@ -230,40 +230,8 @@
     </div>
   </div>
 
-  <!-- Mobile Header - Logo + Auth at top on mobile -->
-  <div class="mobile-header" id="mobileHeader">
-    <div class="mobile-header-brand">
-      <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="logo" style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border-strong)" loading="lazy" />
-      <div>
-        <div style="font-weight:700;font-size:14px">Peakbagger (Web)</div>
-        <div class="subtle" style="font-size:11px">Sign in for persistence</div>
-      </div>
-    </div>
-    <div class="mobile-header-auth" id="mobileAuthCard">
-      <div id="mobileAuthSignedOut">
-        <button class="btn btn-primary btn-small" id="openAuthMobile">Log in</button>
-      </div>
-      <div id="mobileAuthSignedIn" style="display:none">
-        <a href="profile.html" id="mobileUserProfileLink" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px">
-          <div id="mobileUserAvatarIcon" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6b8cff);display:flex;align-items:center;justify-content:center;font-size:12px;color:white;font-weight:600;border:1px solid var(--border);flex-shrink:0">
-            <span id="mobileUserInitials">U</span>
-          </div>
-          <div style="color:var(--ink-weak);font-size:16px">›</div>
-        </a>
-      </div>
-    </div>
-  </div>
-
   <div class="content">
     <aside class="sidebar">
-      <div class="brand desktop-only">
-        <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="logo" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border-strong)" loading="lazy" />
-        <div>
-          <h1 style="margin:0">Peakbagger (Web)</h1>
-          <div class="subtle">Sign in for persistence</div>
-        </div>
-      </div>
-
       <div class="auth desktop-only" id="authCard">
         <div id="authSignedOut">
           <div class="row">
@@ -314,7 +282,7 @@
           <div class="app-promo__title">Peakbagger's Journal (iOS)</div>
           <div class="app-promo__sub">Available on the App Store</div>
         </div>
-        <span class="btn btn-primary btn-small app-promo__cta">View</span>
+        <span class="btn btn-primary btn-small app-promo__cta" style="background:#22c55e;border-color:#22c55e">View</span>
       </a>
 
       <!-- Mobile Search -->
@@ -329,17 +297,7 @@
           <label class="switch"><input id="metersToggle" type="checkbox"><span class="slider"></span></label>
         </div>
 
-        <!-- NEW: Row density -->
-        <div class="row">
-          <label><span data-i18n="Row density">Row density:</span> <strong id="densityLabel" data-i18n="Comfortable">Comfortable</strong></label>
-          <label class="switch"><input id="densityToggle" type="checkbox"><span class="slider"></span></label>
-        </div>
-        <!-- NEW: Sticky header -->
-        <div class="row">
-          <label data-i18n="Sticky header">Sticky header</label>
-          <label class="switch"><input id="stickyToggle" type="checkbox"><span class="slider"></span></label>
-        </div>
-        <!-- NEW: Grid Tracking Mode -->
+        <!-- Grid Tracking Mode -->
         <div class="row">
           <label data-i18n="Grid tracking (12 months/peak)">Grid tracking (12 months/peak)</label>
           <label class="switch"><input id="gridTrackingToggle" type="checkbox"><span class="slider"></span></label>

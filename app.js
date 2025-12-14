@@ -139,6 +139,10 @@ const translations = {
     'Log out': 'Log out',
     'Signed in as': 'Signed in as',
     
+    // Month abbreviations
+    'Jan': 'Jan', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Apr', 'May': 'May', 'Jun': 'Jun',
+    'Jul': 'Jul', 'Aug': 'Aug', 'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dec',
+    
     // Errors
     'Error loading peak details': 'Error loading peak details. Please try again.',
     'Error loading list': 'Error loading list',
@@ -248,6 +252,10 @@ const translations = {
     'Log out': 'Cerrar sesión',
     'Signed in as': 'Conectado como',
     
+    // Month abbreviations
+    'Jan': 'Ene', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Abr', 'May': 'May', 'Jun': 'Jun',
+    'Jul': 'Jul', 'Aug': 'Ago', 'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Dic',
+    
     'Error loading peak details': 'Error al cargar detalles del pico. Por favor, inténtalo de nuevo.',
     'Error loading list': 'Error al cargar lista',
     'Error loading table': 'Error al cargar tabla',
@@ -319,6 +327,10 @@ const translations = {
     'Log in': 'Se connecter',
     'Log out': 'Se déconnecter',
     'Signed in as': 'Connecté en tant que',
+    
+    // Month abbreviations
+    'Jan': 'Jan', 'Feb': 'Fév', 'Mar': 'Mar', 'Apr': 'Avr', 'May': 'Mai', 'Jun': 'Jun',
+    'Jul': 'Jul', 'Aug': 'Aoû', 'Sep': 'Sep', 'Oct': 'Oct', 'Nov': 'Nov', 'Dec': 'Déc',
     
     'Error loading peak details': 'Erreur lors du chargement des détails du sommet. Veuillez réessayer.',
     'Error loading list': 'Erreur lors du chargement de la liste',
@@ -392,6 +404,10 @@ const translations = {
     'Log out': 'Abmelden',
     'Signed in as': 'Angemeldet als',
     
+    // Month abbreviations
+    'Jan': 'Jan', 'Feb': 'Feb', 'Mar': 'Mär', 'Apr': 'Apr', 'May': 'Mai', 'Jun': 'Jun',
+    'Jul': 'Jul', 'Aug': 'Aug', 'Sep': 'Sep', 'Oct': 'Okt', 'Nov': 'Nov', 'Dec': 'Dez',
+    
     'Error loading peak details': 'Fehler beim Laden der Gipfeldetails. Bitte versuchen Sie es erneut.',
     'Error loading list': 'Fehler beim Laden der Liste',
     'Error loading table': 'Fehler beim Laden der Tabelle',
@@ -464,6 +480,10 @@ const translations = {
     'Log out': '登出',
     'Signed in as': '登录为',
     
+    // Month abbreviations
+    'Jan': '1月', 'Feb': '2月', 'Mar': '3月', 'Apr': '4月', 'May': '5月', 'Jun': '6月',
+    'Jul': '7月', 'Aug': '8月', 'Sep': '9月', 'Oct': '10月', 'Nov': '11月', 'Dec': '12月',
+    
     'Error loading peak details': '加载山峰详情时出错。请重试。',
     'Error loading list': '加载列表时出错',
     'Error loading table': '加载表格时出错',
@@ -535,6 +555,10 @@ const translations = {
     'Log in': 'ログイン',
     'Log out': 'ログアウト',
     'Signed in as': 'サインイン中',
+    
+    // Month abbreviations
+    'Jan': '1月', 'Feb': '2月', 'Mar': '3月', 'Apr': '4月', 'May': '5月', 'Jun': '6月',
+    'Jul': '7月', 'Aug': '8月', 'Sep': '9月', 'Oct': '10月', 'Nov': '11月', 'Dec': '12月',
     
     'Error loading peak details': '山の詳細の読み込みエラー。もう一度お試しください。',
     'Error loading list': 'リストの読み込みエラー',
@@ -2761,20 +2785,20 @@ async function renderGrid() {
         <h3>${it.name}</h3>
         <div class="peak-card-meta">
           <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Rank</span>
+            <span class="peak-card-meta-label">${t('Rank')}</span>
             <span class="peak-card-meta-value">${it.rank}</span>
           </div>
           <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Elevation</span>
+            <span class="peak-card-meta-label">${t('Elevation')}</span>
             <span class="peak-card-meta-value">${elevStr}</span>
           </div>
           <div class="peak-card-meta-row range-row">
-            <span class="peak-card-meta-label">Range</span>
+            <span class="peak-card-meta-label">${t('Range')}</span>
             <span class="peak-card-meta-value">${rangeStr}</span>
           </div>
           ${gridTrackingEnabled ? `
           <div class="peak-card-month-grid-container">
-            <div class="peak-card-month-grid-label">Monthly Completions</div>
+            <div class="peak-card-month-grid-label">${t('Monthly Completions')}</div>
             <div class="peak-card-month-grid">
               ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
                 const monthNum = idx + 1;
@@ -2782,7 +2806,7 @@ async function renderGrid() {
                 const dateValue = gridData[monthNum] || '';
                 return `
                   <div class="month-cell">
-                    <label class="month-label">${month}</label>
+                    <label class="month-label">${t(month)}</label>
                     <input type="date" class="month-date-input" data-month="${monthNum}" data-name="${it.name}" value="${dateValue}">
                   </div>
                 `;
@@ -2791,12 +2815,12 @@ async function renderGrid() {
           </div>
           ` : `
           <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Date</span>
+            <span class="peak-card-meta-label">${t('Date')}</span>
             <span class="peak-card-meta-value"><input type="date" class="card-date-input" value="${it.date || ''}" data-name="${it.name}" placeholder="mm/dd/yyyy" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--ink);font-size:0.85rem;width:100%;min-width:120px;box-sizing:border-box;"></span>
           </div>
           `}
           <div class="peak-card-meta-row">
-            <span class="peak-card-meta-label">Completed</span>
+            <span class="peak-card-meta-label">${t('Completed')}</span>
             <span class="peak-card-meta-value"><img class="check card-check" alt="completed" src="${it.completed ? CHECKED_IMG : UNCHECKED_IMG}" loading="lazy" style="width:20px;height:20px;cursor:pointer;"></span>
           </div>
         </div>
