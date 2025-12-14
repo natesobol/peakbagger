@@ -1595,7 +1595,8 @@ async function reflectAuthUI() {
   await loadGridFromSupabase();
   await loadGridTrackingSettings();
   await loadFavorites();
-  renderView();
+  // Only render if a list is already selected (avoid rendering empty state on initial load)
+  if (currentList) renderView();
 }
 
 // Listen for auth state changes
