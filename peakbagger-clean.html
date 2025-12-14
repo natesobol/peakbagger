@@ -3,43 +3,53 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Peakbagger's Journal Web</title>
+<title>Peakbagger’s Journal – Track the NH 48 and other 4K peaks</title>
 
 <!-- Favicon -->
 <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png">
 <link rel="apple-touch-icon" href="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png">
 
 <!-- SEO -->
-<meta name="description" content="Peakbagger's Journal Web — a private, offline-friendly checklist to track progress on the NH 48 and other peak lists. Toggle units, export to XLSX, and learn more about each mountain." />
-<link rel="canonical" href="https://nh48.app" />
+<meta name="description" content="A free, offline-friendly web app for hikers to log ascents of New Hampshire 4000 footers, 52 With a View and other peak lists. Search, sort, filter and export your progress." />
+<meta name="keywords" content="NH 48 peak list, White Mountain 4000 footers, peakbagging app, hiking log, New England 4000 footers, 52 with a View, hiking progress, peak tracking, summit log, Appalachian Mountains, White Mountain hiking app" />
+<link rel="canonical" href="https://nh48.app/" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 
 <!-- Open Graph -->
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Peakbagger's Journal Web" />
-<meta property="og:description" content="Track your NH 48 and other lists privately, offline-friendly. Clean UI, XLSX export, mountain detail panel, and more." />
-<meta property="og:url" content="https://nh48.app" />
-<meta property="og:site_name" content="NH48.app" />
-<meta property="og:image" content="https://nh48.app/og/peakbagger-og.jpg" />
+<meta property="og:url" content="https://nh48.app/" />
+<meta property="og:title" content="Peakbagger’s Journal – Track your NH 48 progress" />
+<meta property="og:description" content="Log your hikes of the NH 48, 52 With a View and other peak lists. Free, offline and community-driven." />
+<meta property="og:image" content="https://nh48pics.com/images/peakbagger-og.jpg" />
+<meta property="og:image:alt" content="NH 4000 footers peaks overview with progress bar" />
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Peakbagger's Journal Web" />
-<meta name="twitter:description" content="Private, offline-friendly checklist for NH 48 and more." />
-<meta name="twitter:image" content="https://nh48.app/og/peakbagger-og.jpg" />
+<meta name="twitter:title" content="Peakbagger’s Journal – Track your NH 48 progress" />
+<meta name="twitter:description" content="Log your hikes of the NH 48, 52 With a View and other peak lists. Free, offline and community-driven." />
+<meta name="twitter:image" content="https://nh48pics.com/images/peakbagger-og.jpg" />
 
 <!-- JSON-LD: SoftwareApplication -->
 <script type="application/ld+json">
 {
-  "@context":"https://schema.org",
-  "@type":"SoftwareApplication",
-  "name":"Peakbagger's Journal Web",
-  "applicationCategory":"LifestyleApplication",
-  "operatingSystem":"Web",
-  "author":{"@type":"Person","name":"Nathan Sobol"},
-  "description":"A private, offline-friendly checklist to track peakbagging progress (e.g., NH 48), including units toggle, XLSX export, and a mountain detail panel.",
-  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
-  "url":"https://nh48.app"
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Peakbagger’s Journal",
+  "operatingSystem": "Web",
+  "applicationCategory": "SportsApplication",
+  "description": "Free hiking log for tracking New Hampshire’s 4000 footers, 52 With a View and other peak lists. Search, sort, filter and record your climbs and dates.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "url": "https://nh48.app/",
+  "image": "https://nh48pics.com/images/peakbagger-og.jpg",
+  "publisher": {
+    "@type": "Person",
+    "name": "Nathan Sobol",
+    "url": "https://www.nh48pics.com/"
+  }
 }
 </script>
 
@@ -623,6 +633,36 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <!-- Version badge -->
 <div class="app-version" aria-hidden="true">v0.8.0.1</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0oVfsHNCBoMbJs3qPVtww8rizKSZ84uo",
+    authDomain: "nh48-app.firebaseapp.com",
+    projectId: "nh48-app",
+    storageBucket: "nh48-app.firebasestorage.app",
+    messagingSenderId: "287695607808",
+    appId: "1:287695607808:web:a45dc3bc0f5096b22560e5",
+    measurementId: "G-T3QTRLC22T"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+
+  // Expose globally so your existing JS can use it
+  window.NH48_ANALYTICS = {
+    analytics,
+    logEvent
+  };
+
+  // First event to confirm wiring works
+  logEvent(analytics, "app_loaded", {
+    app: "peakbagger",
+    host: location.hostname
+  });
+</script>
 
 </body>
 </html>

@@ -3,7 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Peak Details - Peakbagger's Journal</title>
+  <title>Peakbagger – Peak stats, photos & routes</title>
+  <meta name="description" content="Elevation, prominence, difficulty, weather links and route info for White Mountain peaks in the NH 48, 52 With a View and other lists." />
+  <meta name="keywords" content="NH 48 peaks, White Mountain hiking app, New Hampshire 4000 footers, summit stats, peak photos, hiking routes, peakbagger detail" />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://nh48.app/pages/peak-detail.html" id="canonicalLink">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Peakbagger – Peak stats, photos & routes" />
+  <meta property="og:description" content="Elevation, prominence, difficulty, weather links and route info for White Mountain peaks in the NH 48, 52 With a View and other lists." />
+  <meta property="og:url" content="https://nh48.app/pages/peak-detail.html" />
+  <meta property="og:image" content="https://nh48pics.com/images/peakbagger-og.jpg" />
+  <meta property="og:image:alt" content="White Mountain peak collage" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Peakbagger – Peak stats, photos & routes" />
+  <meta name="twitter:description" content="Elevation, prominence, difficulty, weather links and route info for White Mountain peaks in the NH 48, 52 With a View and other lists." />
+  <meta name="twitter:image" content="https://nh48pics.com/images/peakbagger-og.jpg" />
   <link rel="stylesheet" href="../css/peak-detail.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -145,6 +163,40 @@
     
     let carouselImgs = [], carouselIdx = 0, carouselTimer = null, timerInterval = null;
     const BASE_DELAY = 8000;
+
+    function setMetaContent(selector, value, attribute = 'content') {
+      const tag = document.querySelector(selector);
+      if (tag && value) {
+        tag.setAttribute(attribute, value);
+      }
+    }
+
+    function updateMetaTags(peak) {
+      const title = peak.name ? `Peakbagger – ${peak.name} stats, photos & routes` : 'Peakbagger – Peak stats, photos & routes';
+      const description = peak.name
+        ? `Elevation, prominence, difficulty, weather links and route info for ${peak.name} in the White Mountains.`
+        : 'Elevation, prominence, difficulty, weather links and route info for White Mountain peaks in the NH 48, 52 With a View and other lists.';
+      const pageUrl = peak.slug ? `https://nh48.app/pages/peak-detail.html?slug=${encodeURIComponent(peak.slug)}` : 'https://nh48.app/pages/peak-detail.html';
+      const primaryPhoto = Array.isArray(peak.photos) && peak.photos.length > 0
+        ? (typeof peak.photos[0] === 'string' ? peak.photos[0] : peak.photos[0].url || peak.photos[0].src || peak.photos[0].image)
+        : null;
+      const imageUrl = primaryPhoto || 'https://nh48pics.com/images/peakbagger-og.jpg';
+      const imageAlt = peak.name ? `${peak.name} summit photo` : 'White Mountain peak collage';
+
+      document.title = title;
+      const canonical = document.getElementById('canonicalLink');
+      if (canonical) canonical.setAttribute('href', pageUrl);
+
+      setMetaContent('meta[name="description"]', description);
+      setMetaContent('meta[name="twitter:description"]', description);
+      setMetaContent('meta[property="og:description"]', description);
+      setMetaContent('meta[property="og:title"]', title);
+      setMetaContent('meta[name="twitter:title"]', title);
+      setMetaContent('meta[property="og:url"]', pageUrl);
+      setMetaContent('meta[property="og:image"]', imageUrl);
+      setMetaContent('meta[property="og:image:alt"]', imageAlt);
+      setMetaContent('meta[name="twitter:image"]', imageUrl);
+    }
     
     function cleanJSON(raw) {
       return raw.replace(/:contentReference\[.*?\]\{index=\d+\}/g, '').replace(/\/\*\s*Lines?\s+\d+[\d\-,\s]*omitted\s*\*\//g, '');
@@ -201,7 +253,7 @@
     
     function renderPeak(peak) {
       document.getElementById('peakName').textContent = peak.name;
-      document.title = `${peak.name} - Peakbagger's Journal`;
+      updateMetaTags(peak);
       
       buildCarousel(peak);
       
