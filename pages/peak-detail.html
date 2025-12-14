@@ -155,9 +155,16 @@
     // =====================================================
     // Supabase Configuration
     // =====================================================
-    const SUPABASE_URL = 'https://jyvlwkxcrqprjdlnhqms.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmx3a3hjcnFwcmpkbG5ocW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MDEzODksImV4cCI6MjA2MTE3NzM4OX0.DK0FPbAGdXBsmdy6VzoGLO2sXL0bxMh0VHnJ9xI5lfo';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_URL = 'https://uobvavnsstrgyezcklib.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvYnZhdm5zc3RyZ3llemNrbGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODEzNTksImV4cCI6MjA4MTA1NzM1OX0.KL32AFytJcOC5RPEPlWlCzBDiA8N_Su9qb0yXT2n2ZI';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage
+      }
+    });
     
     let currentUser = null;
     let currentPeakId = null;
@@ -278,11 +285,11 @@
       document.getElementById('difficulty').textContent = peak.difficulty || '—';
       document.getElementById('exposure').textContent = peak.exposure || '—';
       
-      const completionDate = localStorage.getItem(`peak_${peak.slug}_date`);
-      if (completionDate) document.getElementById('dateInput').value = completionDate;
-      
-      document.getElementById('dateInput').addEventListener('change', (e) => {
-        localStorage.setItem(`peak_${peak.slug}_date`, e.target.value);
+      // Quick Log Date - loads from user_hike_logs and syncs changes back
+      // This will be populated after we have the peak ID
+      document.getElementById('dateInput').addEventListener('change', async (e) => {
+        const newDate = e.target.value;
+        await handleQuickLogDateChange(newDate);
       });
       
       const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
@@ -440,6 +447,128 @@
         console.log('initUserSession: User logged in:', currentUser.email);
       } else {
         console.log('initUserSession: No user logged in');
+      }
+    }
+    
+    // =====================================================
+    // Load Most Recent Hike Date for Quick Log Input
+    // DB Load: user_hike_logs - Get most recent date for this peak
+    // =====================================================
+    async function loadQuickLogDate() {
+      const dateInput = document.getElementById('dateInput');
+      
+      if (!currentUser || !currentPeakId) {
+        console.log('loadQuickLogDate: No user or peak ID');
+        return;
+      }
+      
+      try {
+        console.log('loadQuickLogDate: Fetching most recent hike for peak', currentPeakId);
+        const { data: logs, error } = await supabase
+          .from('user_hike_logs')
+          .select('hike_date')
+          .eq('user_id', currentUser.id)
+          .eq('peak_id', currentPeakId)
+          .order('hike_date', { ascending: false })
+          .limit(1);
+        
+        if (error) {
+          console.error('loadQuickLogDate Error:', error);
+          return;
+        }
+        
+        if (logs && logs.length > 0) {
+          dateInput.value = logs[0].hike_date || '';
+          console.log('loadQuickLogDate: Set date to', logs[0].hike_date);
+        } else {
+          dateInput.value = '';
+          console.log('loadQuickLogDate: No hikes found, date cleared');
+        }
+      } catch (e) {
+        console.error('loadQuickLogDate Error:', e);
+      }
+    }
+    
+    // =====================================================
+    // Handle Quick Log Date Change
+    // DB Save: user_hike_logs - Create or update entry
+    // =====================================================
+    async function handleQuickLogDateChange(newDate) {
+      const dateInput = document.getElementById('dateInput');
+      
+      if (!currentUser) {
+        alert('Please log in to track your hikes');
+        dateInput.value = '';
+        return;
+      }
+      
+      if (!currentPeakId) {
+        console.error('handleQuickLogDateChange: No peak ID');
+        return;
+      }
+      
+      // Show saving state
+      dateInput.classList.add('saving');
+      
+      try {
+        if (!newDate) {
+          // Date cleared - don't delete logs, just clear the input
+          console.log('handleQuickLogDateChange: Date cleared, hike logs preserved');
+          dateInput.classList.remove('saving');
+          return;
+        }
+        
+        // Check if a log already exists for this date
+        const { data: existing } = await supabase
+          .from('user_hike_logs')
+          .select('id')
+          .eq('user_id', currentUser.id)
+          .eq('peak_id', currentPeakId)
+          .eq('hike_date', newDate)
+          .maybeSingle();
+        
+        if (existing) {
+          console.log('handleQuickLogDateChange: Log already exists for', newDate);
+          dateInput.classList.remove('saving');
+          dateInput.style.borderColor = 'var(--accent)';
+          setTimeout(() => { dateInput.style.borderColor = ''; }, 500);
+          return;
+        }
+        
+        // Create new hike log entry
+        console.log('handleQuickLogDateChange: Creating new log for', newDate);
+        const { error: insertError } = await supabase
+          .from('user_hike_logs')
+          .insert({
+            user_id: currentUser.id,
+            peak_id: currentPeakId,
+            hike_date: newDate,
+            visibility: 'private',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        
+        if (insertError) {
+          console.error('handleQuickLogDateChange Insert Error:', insertError);
+          alert('Error saving hike: ' + insertError.message);
+          dateInput.classList.remove('saving');
+          return;
+        }
+        
+        console.log('handleQuickLogDateChange: Created log successfully');
+        
+        // Visual feedback
+        dateInput.classList.remove('saving');
+        dateInput.style.borderColor = 'var(--accent)';
+        setTimeout(() => { dateInput.style.borderColor = ''; }, 500);
+        
+        // Reload hike history to show new entry
+        await loadHikeHistory();
+        
+      } catch (e) {
+        console.error('handleQuickLogDateChange Error:', e);
+        alert('Error saving hike: ' + e.message);
+        dateInput.classList.remove('saving');
       }
     }
     
@@ -678,8 +807,10 @@
         
         console.log('DB Save Success: user_hike_logs - Log deleted');
         
-        // Reload the table
-        loadHikeHistory();
+        // Reload the quick log date (might need to show different date now)
+        await loadQuickLogDate();
+        // Reload the hike history list
+        await loadHikeHistory();
         
       } catch (e) {
         console.error('deleteLog Error:', e);
@@ -727,11 +858,14 @@
       await initUserSession();
       await loadPeakData();
       
-      // Get peak ID and load hike history
+      // Get peak ID and load hike history + quick log date
       if (peakSlug) {
         currentPeakSlug = peakSlug;
         currentPeakId = await getPeakIdBySlug(peakSlug);
         if (currentPeakId) {
+          // Load the Quick Log Date from most recent hike log
+          await loadQuickLogDate();
+          // Load full hike history list
           await loadHikeHistory();
         }
       }

@@ -1024,7 +1024,8 @@ async function loadUserSettingsFromSupabase() {
   }
 }
 
-// Load state from Supabase
+// Load state from Supabase - reads from user_hike_logs table
+// Each peak's completion status is determined by having at least one hike log entry
 async function loadStateFromSupabase() {
   if (!currentUser || !currentList) {
     completions = {};
@@ -1046,72 +1047,97 @@ async function loadStateFromSupabase() {
     
     const listId = lists.id;
     
-    // Load user progress for this list
-    const { data: progressRows } = await supabase
-      .from('user_peak_progress')
-      .select('peak_id, completed, first_completed_at, last_completed_at, peaks(slug, name)')
+    // Load hike logs for this user - these are the source of truth for completion
+    // We get the most recent hike date per peak as the "completion date"
+    const { data: hikeLogs, error } = await supabase
+      .from('user_hike_logs')
+      .select('peak_id, hike_date, list_id, peaks(slug, name)')
       .eq('user_id', currentUser.id)
-      .eq('list_id', listId)
-      .eq('completed', true);
+      .order('hike_date', { ascending: false });
+    
+    if (error) {
+      console.error('Failed to load hike logs:', error);
+      completions = {};
+      return;
+    }
     
     completions[currentList] = {};
-    if (progressRows) {
-      progressRows.forEach(row => {
-        const peakName = row.peaks?.name || `peak-${row.peak_id}`;
-        // Use 'done' key for consistency with local state (not 'checked')
-        const dateVal = row.first_completed_at || row.last_completed_at || '';
+    
+    if (hikeLogs) {
+      // Group by peak - first occurrence (most recent) determines the date shown
+      const peaksSeen = new Set();
+      hikeLogs.forEach(log => {
+        const peakName = log.peaks?.name;
+        if (!peakName || peaksSeen.has(peakName)) return;
+        
+        // Only include logs that match this list or have no list_id
+        if (log.list_id && log.list_id !== listId) return;
+        
+        peaksSeen.add(peakName);
         completions[currentList][peakName] = {
           done: true,
-          date: dateVal ? dateVal.split('T')[0] : ''  // Strip time portion for date input
+          date: log.hike_date || '',
+          logId: log.id  // Store log ID for potential updates
         };
       });
     }
+    
+    console.log('loadStateFromSupabase: Loaded', Object.keys(completions[currentList] || {}).length, 'completed peaks from hike logs');
   } catch (e) {
     console.error('Failed to load state from Supabase:', e);
     completions = {};
   }
 }
 
-// Save state to Supabase
+// Save state to Supabase - now only uses user_hike_logs table
+// This function is a wrapper that delegates to createOrUpdateHikeLog or deleteHikeLog
 async function saveStateToSupabase(peakName, checked, date) {
   if (!currentUser || !currentList) return;
   
+  if (checked && date) {
+    // Create or update a hike log entry
+    await createOrUpdateHikeLog(peakName, date);
+  } else if (!checked) {
+    // When unchecking, we don't delete logs - user might want to keep history
+    // They can delete individual logs from the peak detail page
+    console.log('saveStateToSupabase: Peak unchecked but not deleting logs -', peakName);
+  }
+}
+
+// Delete a hike log entry by peak name and date
+async function deleteHikeLog(peakName, dateStr) {
+  if (!currentUser || !currentList) return;
+  
   try {
-    // Get the list ID
-    const { data: lists } = await supabase
-      .from('lists')
-      .select('id')
-      .eq('slug', slugify(currentList))
-      .single();
-    
-    if (!lists) return;
-    
-    const listId = lists.id;
-    
     // Get the peak ID by name
-    const { data: peaks } = await supabase
+    const { data: peak, error: peakError } = await supabase
       .from('peaks')
       .select('id')
       .eq('name', peakName)
       .single();
     
-    if (!peaks) return;
+    if (peakError || !peak) {
+      console.log('deleteHikeLog: Peak not found:', peakName);
+      return;
+    }
     
-    const peakId = peaks.id;
+    const peakId = peak.id;
     
-    // Upsert the progress
-    await supabase
-      .from('user_peak_progress')
-      .upsert({
-        user_id: currentUser.id,
-        list_id: listId,
-        peak_id: peakId,
-        completed: checked,
-        first_completed_at: checked ? (date || new Date().toISOString()) : null,
-        last_completed_at: checked ? (date || new Date().toISOString()) : null
-      }, { onConflict: 'user_id,list_id,peak_id' });
+    // Delete the hike log entry for this date
+    const { error: deleteError } = await supabase
+      .from('user_hike_logs')
+      .delete()
+      .eq('user_id', currentUser.id)
+      .eq('peak_id', peakId)
+      .eq('hike_date', dateStr);
+    
+    if (deleteError) {
+      console.error('deleteHikeLog: Delete error:', deleteError);
+    } else {
+      console.log('deleteHikeLog: Deleted log for', peakName, dateStr);
+    }
   } catch (e) {
-    console.error('Failed to save state to Supabase:', e);
+    console.error('deleteHikeLog error:', e);
   }
 }
 
@@ -2462,32 +2488,34 @@ function renderListDropdown() {
   });
 }
 
+// Set date for a peak - creates/updates hike log in user_hike_logs table
 function setDateFor(peakName, dateStr) {
   completions[currentList] ??= {};
   completions[currentList][peakName] ??= { done: false, date: '' };
+  
+  const oldDate = completions[currentList][peakName].date;
   completions[currentList][peakName].date = dateStr;
   
   // SYNC: When date is set, always mark as completed
-  // When date is cleared, always mark as not completed
+  // When date is cleared, mark as not completed (but don't delete logs)
   if (dateStr) {
     completions[currentList][peakName].done = true;
     
-    // SYNC TO GRID: Also set the corresponding month in grid mode
-    const month = new Date(dateStr).getMonth() + 1;
-    const gridRec = ensureGridRecord(currentList, peakName);
-    gridRec[String(month)] = dateStr;
-    saveGridToSupabase(peakName, month, dateStr);
+    // PRIMARY: Create/update hike log entry - this is the source of truth
+    createOrUpdateHikeLog(peakName, dateStr, { updateExisting: !!oldDate });
     
-    // SYNC TO HIKE LOG: Also create/update a hike log entry
-    createOrUpdateHikeLog(peakName, dateStr);
+    // SYNC TO GRID: Also set the corresponding month in grid mode (legacy support)
+    if (gridTrackingEnabled) {
+      const month = new Date(dateStr).getMonth() + 1;
+      const gridRec = ensureGridRecord(currentList, peakName);
+      gridRec[String(month)] = dateStr;
+      saveGridToSupabase(peakName, month, dateStr);
+    }
   } else {
     completions[currentList][peakName].done = false;
-    // Note: We don't clear grid months when clearing list date
-    // User may want to keep monthly tracking independent
+    // Note: We don't delete hike logs when clearing date via date picker
+    // User can delete individual logs from the peak detail page
   }
-  
-  // Save to Supabase with synced values immediately
-  saveStateToSupabase(peakName, !!dateStr, dateStr);
   
   saveState();
   queueRemoteSave();
@@ -2496,10 +2524,20 @@ function setDateFor(peakName, dateStr) {
 }
 
 // Create or update a hike log entry when quick-logging a date
-async function createOrUpdateHikeLog(peakName, dateStr) {
-  if (!currentUser || !currentList) return;
+// This is the PRIMARY function for saving completion status - all progress is stored in user_hike_logs
+async function createOrUpdateHikeLog(peakName, dateStr, options = {}) {
+  if (!currentUser || !currentList) return null;
   
   try {
+    // Get the list ID
+    const { data: listData } = await supabase
+      .from('lists')
+      .select('id')
+      .eq('slug', slugify(currentList))
+      .single();
+    
+    const listId = listData?.id || null;
+    
     // Get the peak ID by name
     const { data: peak, error: peakError } = await supabase
       .from('peaks')
@@ -2509,13 +2547,25 @@ async function createOrUpdateHikeLog(peakName, dateStr) {
     
     if (peakError || !peak) {
       console.log('createOrUpdateHikeLog: Peak not found:', peakName);
-      return;
+      return null;
     }
     
     const peakId = peak.id;
     
-    // Check if a hike log already exists for this date
-    const { data: existing } = await supabase
+    // Check if a hike log already exists for this peak (any date)
+    // This helps us decide whether to update an existing log or create new
+    const { data: existingLogs } = await supabase
+      .from('user_hike_logs')
+      .select('id, hike_date')
+      .eq('user_id', currentUser.id)
+      .eq('peak_id', peakId)
+      .order('hike_date', { ascending: false })
+      .limit(1);
+    
+    const existingLog = existingLogs?.[0];
+    
+    // Check if a log exists for this specific date
+    const { data: existingForDate } = await supabase
       .from('user_hike_logs')
       .select('id')
       .eq('user_id', currentUser.id)
@@ -2523,62 +2573,89 @@ async function createOrUpdateHikeLog(peakName, dateStr) {
       .eq('hike_date', dateStr)
       .maybeSingle();
     
-    if (existing) {
+    if (existingForDate) {
       // Already exists for this date, no need to create
       console.log('createOrUpdateHikeLog: Log already exists for', peakName, dateStr);
-      return;
+      return existingForDate.id;
     }
     
-    // Create a new basic hike log entry
-    const { error: insertError } = await supabase
+    // If updating from checkbox (options.updateExisting) and a log exists, update its date
+    if (options.updateExisting && existingLog && !existingForDate) {
+      const { error: updateError } = await supabase
+        .from('user_hike_logs')
+        .update({
+          hike_date: dateStr,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingLog.id);
+      
+      if (updateError) {
+        console.error('createOrUpdateHikeLog: Update error:', updateError);
+        return null;
+      }
+      
+      console.log('createOrUpdateHikeLog: Updated log date for', peakName, 'to', dateStr);
+      return existingLog.id;
+    }
+    
+    // Create a new hike log entry
+    const { data: newLog, error: insertError } = await supabase
       .from('user_hike_logs')
       .insert({
         user_id: currentUser.id,
+        list_id: listId,
         peak_id: peakId,
         hike_date: dateStr,
         notes: '',
+        visibility: 'private',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      });
+      })
+      .select('id')
+      .single();
     
     if (insertError) {
       console.error('createOrUpdateHikeLog: Insert error:', insertError);
-    } else {
-      console.log('createOrUpdateHikeLog: Created log for', peakName, dateStr);
+      return null;
     }
+    
+    console.log('createOrUpdateHikeLog: Created log for', peakName, dateStr, '- ID:', newLog?.id);
+    return newLog?.id || null;
   } catch (e) {
     console.error('createOrUpdateHikeLog error:', e);
+    return null;
   }
 }
 
+// Toggle completion status - creates hike log on check, preserves log on uncheck
 function toggleComplete(peakName) {
   completions[currentList] ??= {};
   const rec = completions[currentList][peakName] ??= { done: false, date: '' };
   rec.done = !rec.done;
   
   if (!rec.done) {
+    // Unchecking - clear local state but preserve hike logs in DB
+    // User can delete individual logs from peak detail page if needed
     rec.date = '';
-    // Note: Don't clear grid months when unchecking - user may want to keep monthly data
+    console.log('toggleComplete: Unchecked', peakName, '- hike logs preserved in DB');
   } else {
-    // When marking as complete, auto-set today's date if no date exists
-    if (!rec.date) {
-      const today = new Date();
-      rec.date = today.toISOString().split('T')[0];
-    }
+    // Checking - create a new hike log entry with today's date
+    const today = new Date();
+    rec.date = today.toISOString().split('T')[0];
     
-    // SYNC TO GRID: Also set the corresponding month in grid mode
-    const month = new Date(rec.date).getMonth() + 1;
-    const gridRec = ensureGridRecord(currentList, peakName);
-    gridRec[String(month)] = rec.date;
-    saveGridToSupabase(peakName, month, rec.date);
-    
-    // SYNC TO HIKE LOG: Also create a hike log entry
+    // PRIMARY: Create hike log entry - this is the source of truth
     createOrUpdateHikeLog(peakName, rec.date);
+    
+    // SYNC TO GRID: Also set the corresponding month in grid mode (legacy support)
+    if (gridTrackingEnabled) {
+      const month = today.getMonth() + 1;
+      const gridRec = ensureGridRecord(currentList, peakName);
+      gridRec[String(month)] = rec.date;
+      saveGridToSupabase(peakName, month, rec.date);
+    }
   }
-  completions[currentList][peakName] = rec;
   
-  // Save to Supabase immediately
-  saveStateToSupabase(peakName, rec.done, rec.date);
+  completions[currentList][peakName] = rec;
   
   saveState();
   queueRemoteSave();
