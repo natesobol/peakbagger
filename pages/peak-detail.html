@@ -91,17 +91,25 @@
       </div>
     </div>
     
-    <!-- YOUR PROGRESS + LEARN MORE SIDE BY SIDE -->
+    <!-- SUMMIT LOG + LEARN MORE SIDE BY SIDE -->
     <div class="meta-info-row">
-      <!-- Your Progress Panel -->
+      <!-- Summit Log Panel -->
       <div id="progressPanel" class="metadata-panel">
         <div class="metadata-header">
-          <div class="metadata-title">Your Progress</div>
+          <div class="metadata-title" id="summitLogTitle">Summit Log</div>
         </div>
         <div class="metadata-primary">
-          <div class="metadata-row">
-            <div class="metadata-label">Quick Log Date</div>
-            <div class="metadata-value"><input type="date" id="dateInput" class="date-input" /></div>
+          <!-- Most recent summit entry - shows inline controls -->
+          <div id="recentSummitEntry" class="summit-entry" style="display:none;">
+            <div class="summit-entry-row">
+              <input type="date" id="dateInput" class="date-input compact" />
+              <button class="log-card-btn" id="editRecentBtn" title="Edit hike details">✏️ Edit</button>
+              <button class="log-card-btn accent" id="socialRecentBtn" title="Create social card">📸 Social</button>
+            </div>
+          </div>
+          <!-- Empty state when no summits -->
+          <div id="noSummitEntry" class="no-summit-message">
+            <span style="color:var(--muted);font-size:13px;">No summits logged yet</span>
           </div>
         </div>
         <div class="btn-row">
@@ -169,6 +177,7 @@
     let currentUser = null;
     let currentPeakId = null;
     let currentPeakSlug = null;
+    let currentPeakName = null;
     
     const params = new URLSearchParams(window.location.search);
     const peakSlug = params.get('slug');
@@ -273,6 +282,7 @@
     }
     
     function renderPeak(peak) {
+      currentPeakName = peak.name;  // Store for summit log panel
       document.getElementById('peakName').textContent = peak.name;
       updateMetaTags(peak);
       
@@ -450,48 +460,85 @@
       }
     }
     
+    // Store the most recent log ID for the summit panel buttons
+    let mostRecentLogId = null;
+    
     // =====================================================
-    // Load Most Recent Hike Date for Quick Log Input
-    // DB Load: user_hike_logs - Get most recent date for this peak
+    // Load Most Recent Summit for the Summit Log Panel
+    // DB Load: user_hike_logs - Get most recent entry for this peak
     // =====================================================
-    async function loadQuickLogDate() {
+    async function loadSummitLogPanel(peakName) {
       const dateInput = document.getElementById('dateInput');
+      const recentEntry = document.getElementById('recentSummitEntry');
+      const noEntry = document.getElementById('noSummitEntry');
+      const titleEl = document.getElementById('summitLogTitle');
+      const editBtn = document.getElementById('editRecentBtn');
+      const socialBtn = document.getElementById('socialRecentBtn');
+      
+      // Update title with peak name
+      if (titleEl && peakName) {
+        titleEl.textContent = `${peakName} Summit`;
+      }
       
       if (!currentUser || !currentPeakId) {
-        console.log('loadQuickLogDate: No user or peak ID');
+        console.log('loadSummitLogPanel: No user or peak ID');
+        recentEntry.style.display = 'none';
+        noEntry.style.display = 'block';
+        noEntry.innerHTML = '<span style="color:var(--muted);font-size:13px;">Log in to track summits</span>';
         return;
       }
       
       try {
-        console.log('loadQuickLogDate: Fetching most recent hike for peak', currentPeakId);
+        console.log('loadSummitLogPanel: Fetching most recent hike for peak', currentPeakId);
         const { data: logs, error } = await supabase
           .from('user_hike_logs')
-          .select('hike_date')
+          .select('id, hike_date')
           .eq('user_id', currentUser.id)
           .eq('peak_id', currentPeakId)
           .order('hike_date', { ascending: false })
           .limit(1);
         
         if (error) {
-          console.error('loadQuickLogDate Error:', error);
+          console.error('loadSummitLogPanel Error:', error);
           return;
         }
         
         if (logs && logs.length > 0) {
+          mostRecentLogId = logs[0].id;
           dateInput.value = logs[0].hike_date || '';
-          console.log('loadQuickLogDate: Set date to', logs[0].hike_date);
+          recentEntry.style.display = 'block';
+          noEntry.style.display = 'none';
+          
+          // Wire up edit button
+          editBtn.onclick = () => {
+            if (currentPeakSlug && mostRecentLogId) {
+              window.location.href = `/hike-log?peak=${currentPeakSlug}&edit=${mostRecentLogId}`;
+            }
+          };
+          
+          // Wire up social button
+          socialBtn.onclick = () => {
+            if (currentPeakSlug && mostRecentLogId) {
+              window.location.href = `/social-card?peak=${currentPeakSlug}&log=${mostRecentLogId}`;
+            }
+          };
+          
+          console.log('loadSummitLogPanel: Set date to', logs[0].hike_date, 'logId:', mostRecentLogId);
         } else {
+          mostRecentLogId = null;
           dateInput.value = '';
-          console.log('loadQuickLogDate: No hikes found, date cleared');
+          recentEntry.style.display = 'none';
+          noEntry.style.display = 'block';
+          console.log('loadSummitLogPanel: No hikes found');
         }
       } catch (e) {
-        console.error('loadQuickLogDate Error:', e);
+        console.error('loadSummitLogPanel Error:', e);
       }
     }
     
     // =====================================================
-    // Handle Quick Log Date Change
-    // DB Save: user_hike_logs - Create or update entry
+    // Handle Summit Date Change (creates new log entry)
+    // DB Save: user_hike_logs - Create new entry
     // =====================================================
     async function handleQuickLogDateChange(newDate) {
       const dateInput = document.getElementById('dateInput');
@@ -562,7 +609,8 @@
         dateInput.style.borderColor = 'var(--accent)';
         setTimeout(() => { dateInput.style.borderColor = ''; }, 500);
         
-        // Reload hike history to show new entry
+        // Reload summit panel (to update the mostRecentLogId) and hike history
+        await loadSummitLogPanel(currentPeakName);
         await loadHikeHistory();
         
       } catch (e) {
@@ -807,8 +855,8 @@
         
         console.log('DB Save Success: user_hike_logs - Log deleted');
         
-        // Reload the quick log date (might need to show different date now)
-        await loadQuickLogDate();
+        // Reload the summit panel (might need to show different entry now)
+        await loadSummitLogPanel(currentPeakName);
         // Reload the hike history list
         await loadHikeHistory();
         
@@ -858,15 +906,18 @@
       await initUserSession();
       await loadPeakData();
       
-      // Get peak ID and load hike history + quick log date
+      // Get peak ID and load summit log + hike history
       if (peakSlug) {
         currentPeakSlug = peakSlug;
         currentPeakId = await getPeakIdBySlug(peakSlug);
         if (currentPeakId) {
-          // Load the Quick Log Date from most recent hike log
-          await loadQuickLogDate();
+          // Load the Summit Log panel with most recent entry
+          await loadSummitLogPanel(currentPeakName);
           // Load full hike history list
           await loadHikeHistory();
+        } else {
+          // Still show panel title even if no peak ID
+          loadSummitLogPanel(currentPeakName);
         }
       }
     }
