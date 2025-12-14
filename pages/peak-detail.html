@@ -24,6 +24,13 @@
   <meta name="twitter:image" content="https://nh48pics.com/images/peakbagger-og.jpg" />
   <link rel="stylesheet" href="../css/peak-detail.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- URL Masking: hide /pages/ from URL bar -->
+  <script>
+  if (window.location.pathname.includes('/pages/')) {
+    const params = window.location.search; // preserve ?peak=xxx
+    history.replaceState(null, '', '/peak-detail' + params);
+  }
+  </script>
 </head>
 <body>
   <div class="wrap">

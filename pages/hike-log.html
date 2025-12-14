@@ -49,6 +49,13 @@
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/profile.css">
   <link rel="stylesheet" href="../css/hike-log.css">
+  <!-- URL Masking: hide /pages/ from URL bar -->
+  <script>
+  if (window.location.pathname.includes('/pages/')) {
+    const params = window.location.search; // preserve ?peak=xxx query params
+    history.replaceState(null, '', '/hike-log' + params);
+  }
+  </script>
 </head>
 <body>
 

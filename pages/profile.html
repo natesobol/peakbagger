@@ -48,6 +48,12 @@
 </script>
 <link rel="stylesheet" href="../css/styles.css">
 <link rel="stylesheet" href="../css/profile.css">
+<!-- URL Masking: hide /pages/ from URL bar -->
+<script>
+if (window.location.pathname.includes('/pages/')) {
+  history.replaceState(null, '', '/profile');
+}
+</script>
 </head>
 <body>
 

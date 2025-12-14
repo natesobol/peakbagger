@@ -28,16 +28,37 @@
   
   <script>
     // GitHub Pages SPA redirect hack
-    // If someone navigates directly to / or refreshes, redirect to the actual page
-    // but preserve the clean URL in the browser
+    // Redirects clean URLs to actual files in /pages/ folder
     (function() {
       var path = window.location.pathname;
-      // Only redirect if at root or unknown path (not actual files)
-      if (path === '/' || !path.includes('.')) {
-        // Store the intended path and redirect to the actual page
+      var search = window.location.search || '';
+      
+      // Map of clean URLs to actual page files
+      var pageMap = {
+        '/': '/pages/peakbagger-clean.html',
+        '/profile': '/pages/profile.html',
+        '/profile.html': '/pages/profile.html',
+        '/hike-log': '/pages/hike-log.html',
+        '/hike-log.html': '/pages/hike-log.html',
+        '/peak-detail': '/pages/peak-detail.html',
+        '/peak-detail.html': '/pages/peak-detail.html',
+        '/social-card': '/pages/social-card.html',
+        '/social-card.html': '/pages/social-card.html'
+      };
+      
+      // Check if path matches a known page
+      var targetPage = pageMap[path];
+      
+      if (targetPage) {
+        // Store the intended clean path for URL masking
         sessionStorage.setItem('redirect_path', path);
+        window.location.replace(targetPage + search);
+      } else if (!path.includes('/pages/') && !path.includes('.')) {
+        // Unknown path without extension - redirect to home
+        sessionStorage.setItem('redirect_path', '/');
         window.location.replace('/pages/peakbagger-clean.html');
       }
+      // If path includes /pages/ or has a file extension, let it 404 naturally
     })();
   </script>
 </head>
