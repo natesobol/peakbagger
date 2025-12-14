@@ -54,88 +54,95 @@
       </div>
     </div>
     
-    <!-- METADATA + INFO SIDE BY SIDE -->
-    <div class="meta-info-row">
-      <div id="fastFactsPanel" class="metadata-panel">
-        <div class="metadata-header">
-          <div class="metadata-title">General Peak Info</div>
+    <!-- METADATA: Peak Info -->
+    <div id="fastFactsPanel" class="metadata-panel full-width">
+      <div class="metadata-header">
+        <div class="metadata-title">General Peak Info</div>
+      </div>
+      <div class="metadata-primary metadata-grid">
+        <div class="metadata-row">
+          <div class="metadata-label">Elevation</div>
+          <div class="metadata-value" id="elevation">—</div>
         </div>
-        <div class="metadata-primary">
-          <div class="metadata-row">
-            <div class="metadata-label">Elevation</div>
-            <div class="metadata-value" id="elevation">—</div>
-          </div>
-          <div class="metadata-row">
-            <div class="metadata-label">Prominence</div>
-            <div class="metadata-value" id="prominence">—</div>
-          </div>
-          <div class="metadata-row">
-            <div class="metadata-label">Range</div>
-            <div class="metadata-value" id="location">—</div>
-          </div>
-          <div class="metadata-row">
-            <div class="metadata-label">Trail Type</div>
-            <div class="metadata-value" id="trailType">—</div>
-          </div>
-          <div class="metadata-row">
-            <div class="metadata-label">Difficulty</div>
-            <div class="metadata-value" id="difficulty">—</div>
-          </div>
-          <div class="metadata-row">
-            <div class="metadata-label">Exposure</div>
-            <div class="metadata-value" id="exposure">—</div>
-          </div>
+        <div class="metadata-row">
+          <div class="metadata-label">Prominence</div>
+          <div class="metadata-value" id="prominence">—</div>
         </div>
-        <div class="btn-row">
-          <button class="btn" id="favBtn"><span id="favIcon">☆</span> <span id="favText">Favorite</span></button>
-          <button class="btn" id="wishBtn"><span id="wishIcon">🤍</span> <span id="wishText">Wishlist</span></button>
+        <div class="metadata-row">
+          <div class="metadata-label">Range</div>
+          <div class="metadata-value" id="location">—</div>
+        </div>
+        <div class="metadata-row">
+          <div class="metadata-label">Trail Type</div>
+          <div class="metadata-value" id="trailType">—</div>
+        </div>
+        <div class="metadata-row">
+          <div class="metadata-label">Difficulty</div>
+          <div class="metadata-value" id="difficulty">—</div>
+        </div>
+        <div class="metadata-row">
+          <div class="metadata-label">Exposure</div>
+          <div class="metadata-value" id="exposure">—</div>
         </div>
       </div>
-      
+      <div class="btn-row">
+        <button class="btn" id="favBtn"><span id="favIcon">☆</span> <span id="favText">Favorite</span></button>
+        <button class="btn" id="wishBtn"><span id="wishIcon">🤍</span> <span id="wishText">Wishlist</span></button>
+      </div>
+    </div>
+    
+    <!-- YOUR PROGRESS + LEARN MORE SIDE BY SIDE -->
+    <div class="meta-info-row">
+      <!-- Your Progress Panel -->
       <div id="progressPanel" class="metadata-panel">
         <div class="metadata-header">
           <div class="metadata-title">Your Progress</div>
         </div>
         <div class="metadata-primary">
           <div class="metadata-row">
-            <div class="metadata-label">Date Completed</div>
+            <div class="metadata-label">Quick Log Date</div>
             <div class="metadata-value"><input type="date" id="dateInput" class="date-input" /></div>
           </div>
         </div>
         <div class="btn-row">
-          <a href="#" class="btn" id="logHikeBtn">📝 Log Hike Details</a>
-          <a href="#" class="btn btn-secondary" id="socialCardBtn">📸 Social Card</a>
+          <a href="#" class="btn" id="logHikeBtn">📝 Log New Hike</a>
+        </div>
+      </div>
+      
+      <!-- Learn More Panel -->
+      <div class="info-panel">
+        <div class="info-label">Learn More</div>
+        <div class="links-col compact">
+          <a class="btn-link primary" id="lnkNH48" href="#" target="_blank" rel="noopener" style="display:none">🏔️ View Full NH48 Peak Details →</a>
+          <a class="btn-link" id="lnkWikipedia" href="#" target="_blank" rel="noopener">Wikipedia</a>
+          <a class="btn-link" id="lnkPeakbagger" href="#" target="_blank" rel="noopener">Peakbagger.com</a>
+          <a class="btn-link" id="lnkAllTrails" href="#" target="_blank" rel="noopener">AllTrails</a>
+          <a class="btn-link" id="wxNoaa" href="#" target="_blank" rel="noopener">NOAA Weather</a>
         </div>
       </div>
     </div>
     
-    <!-- LOGGED PROGRESS HISTORY -->
-    <div id="loggedProgressSection" class="logged-progress-section" style="display:none;">
-      <div class="section-title">Hike History</div>
+    <!-- HIKE LOG LIST - Full Width -->
+    <div id="loggedProgressSection" class="logged-progress-section">
+      <div class="section-title">Your Hike Log</div>
       <div id="loggedProgressContainer" class="logged-progress-container">
         <div class="loading-message">Loading hike history...</div>
       </div>
     </div>
     
-    <!-- LEARN MORE -->
-    <div class="section-title">Learn More</div>
-    <div class="info-grid">
+    <!-- ADDITIONAL RESOURCES -->
+    <div class="section-title">Additional Resources</div>
+    <div class="info-grid two-col">
       <div class="info-panel">
         <div class="info-label">External Resources</div>
         <div class="links-col">
-          <a class="btn-link primary" id="lnkNH48" href="#" target="_blank" rel="noopener" style="display:none">🏔️ View Full NH48 Peak Details →</a>
-          <a class="btn-link" id="lnkWikipedia" href="#" target="_blank" rel="noopener">Wikipedia</a>
-          <a class="btn-link" id="lnkPeakbagger" href="#" target="_blank" rel="noopener">Peakbagger.com</a>
-          <a class="btn-link" id="lnkAllTrails" href="#" target="_blank" rel="noopener">AllTrails</a>
           <a class="btn-link" id="lnkSummitPost" href="#" target="_blank" rel="noopener">SummitPost</a>
           <a class="btn-link" id="lnkMaps" href="#" target="_blank" rel="noopener">OpenStreetMap</a>
         </div>
       </div>
       <div class="info-panel">
         <div class="info-label">Weather Forecasts</div>
-        <p class="subtle">Links open in a new tab.</p>
         <div class="links-col">
-          <a class="btn-link" id="wxNoaa" href="#" target="_blank" rel="noopener">NOAA Point Forecast</a>
           <a class="btn-link" id="wxOpenMeteo" href="#" target="_blank" rel="noopener">Open-Meteo</a>
           <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
           <a class="btn-link" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
@@ -285,9 +292,6 @@
       
       // Set up Log Hike button link
       document.getElementById('logHikeBtn').href = `/hike-log?peak=${peak.slug}`;
-      
-      // Set up Social Card button link
-      document.getElementById('socialCardBtn').href = `/social-card?peak=${peak.slug}`;
       
       document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
       document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
@@ -447,9 +451,18 @@
       const section = document.getElementById('loggedProgressSection');
       const container = document.getElementById('loggedProgressContainer');
       
+      // Always show the section
+      section.style.display = 'block';
+      
       // Error handling: Check user authentication
       if (!currentUser) {
-        section.style.display = 'none';
+        container.innerHTML = `
+          <div class="no-logs-message">
+            <div class="empty-icon">🔒</div>
+            <div>Log in to track your hikes</div>
+            <p style="margin-top:8px;font-size:12px;color:var(--muted)">Sign in to record and view your hike history for this peak</p>
+          </div>
+        `;
         return;
       }
       
@@ -460,7 +473,6 @@
       }
       
       console.log('loadHikeHistory: Loading for peak', currentPeakId);
-      section.style.display = 'block';
       container.innerHTML = '<div class="loading-message">Loading hike history...</div>';
       
       try {
@@ -487,52 +499,57 @@
             <div class="no-logs-message">
               <div class="empty-icon">📝</div>
               <div>No hike logs yet</div>
-              <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Log Hike Details" above to add your first entry</p>
+              <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Log New Hike" above to record your first summit!</p>
             </div>
           `;
           return;
         }
         
-        // Render table with logs
-        const tableHtml = `
-          <table class="hike-logs-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Notes</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${logs.map(log => {
-                const dateValue = log.hike_date || '';
-                const notes = log.notes || log.trail_name || '—';
-                return `
-                  <tr data-log-id="${log.id}">
-                    <td>
+        // Render card-based log list with buttons
+        const cardsHtml = `
+          <div class="hike-log-cards">
+            ${logs.map(log => {
+              const dateValue = log.hike_date || '';
+              const formattedDate = dateValue ? new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', { 
+                month: 'short', day: 'numeric', year: 'numeric' 
+              }) : 'No date';
+              const notes = log.notes || '';
+              const trailName = log.trail_name || '';
+              const subtitle = trailName || (notes.length > 50 ? notes.substring(0, 50) + '...' : notes) || 'No details';
+              
+              return `
+                <div class="hike-log-card" data-log-id="${log.id}">
+                  <div class="hike-log-card-main">
+                    <div class="hike-log-date-section">
                       <input type="date" 
-                             class="log-date-input" 
+                             class="log-date-input compact" 
                              value="${dateValue}"
-                             onchange="updateLogDate('${log.id}', this.value)" />
-                    </td>
-                    <td>
-                      <span class="log-notes" title="${notes}">${notes}</span>
-                    </td>
-                    <td>
-                      <div class="log-actions">
-                        <button class="log-action-btn" onclick="editLog('${log.id}')" title="Edit">✏️</button>
-                        <button class="log-action-btn" onclick="generateSocialCard('${log.id}')" title="Social Card">📸</button>
-                        <button class="log-action-btn delete" onclick="deleteLog('${log.id}')" title="Delete">🗑️</button>
-                      </div>
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
+                             onchange="updateLogDate('${log.id}', this.value)" 
+                             title="Change date" />
+                      <span class="hike-log-date-display">${formattedDate}</span>
+                    </div>
+                    <div class="hike-log-details">
+                      <div class="hike-log-subtitle">${subtitle}</div>
+                    </div>
+                  </div>
+                  <div class="hike-log-card-actions">
+                    <button class="log-card-btn" onclick="editLog('${log.id}')" title="Edit hike details">
+                      ✏️ Edit
+                    </button>
+                    <button class="log-card-btn accent" onclick="generateSocialCard('${log.id}')" title="Create social card with this date">
+                      📸 Social Card
+                    </button>
+                    <button class="log-card-btn delete" onclick="deleteLog('${log.id}')" title="Delete this log">
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
         `;
         
-        container.innerHTML = tableHtml;
+        container.innerHTML = cardsHtml;
         
       } catch (e) {
         console.error('loadHikeHistory Error:', e);
