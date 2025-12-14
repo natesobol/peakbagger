@@ -2477,6 +2477,9 @@ function setDateFor(peakName, dateStr) {
     const gridRec = ensureGridRecord(currentList, peakName);
     gridRec[String(month)] = dateStr;
     saveGridToSupabase(peakName, month, dateStr);
+    
+    // SYNC TO HIKE LOG: Also create/update a hike log entry
+    createOrUpdateHikeLog(peakName, dateStr);
   } else {
     completions[currentList][peakName].done = false;
     // Note: We don't clear grid months when clearing list date
@@ -2490,6 +2493,62 @@ function setDateFor(peakName, dateStr) {
   queueRemoteSave();
   playPingSound();
   renderView();  // Full re-render to update both list and grid UI
+}
+
+// Create or update a hike log entry when quick-logging a date
+async function createOrUpdateHikeLog(peakName, dateStr) {
+  if (!currentUser || !currentList) return;
+  
+  try {
+    // Get the peak ID by name
+    const { data: peak, error: peakError } = await supabase
+      .from('peaks')
+      .select('id')
+      .eq('name', peakName)
+      .single();
+    
+    if (peakError || !peak) {
+      console.log('createOrUpdateHikeLog: Peak not found:', peakName);
+      return;
+    }
+    
+    const peakId = peak.id;
+    
+    // Check if a hike log already exists for this date
+    const { data: existing } = await supabase
+      .from('user_hike_logs')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .eq('peak_id', peakId)
+      .eq('hike_date', dateStr)
+      .maybeSingle();
+    
+    if (existing) {
+      // Already exists for this date, no need to create
+      console.log('createOrUpdateHikeLog: Log already exists for', peakName, dateStr);
+      return;
+    }
+    
+    // Create a new basic hike log entry
+    const { error: insertError } = await supabase
+      .from('user_hike_logs')
+      .insert({
+        user_id: currentUser.id,
+        peak_id: peakId,
+        hike_date: dateStr,
+        notes: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    
+    if (insertError) {
+      console.error('createOrUpdateHikeLog: Insert error:', insertError);
+    } else {
+      console.log('createOrUpdateHikeLog: Created log for', peakName, dateStr);
+    }
+  } catch (e) {
+    console.error('createOrUpdateHikeLog error:', e);
+  }
 }
 
 function toggleComplete(peakName) {
@@ -2512,6 +2571,9 @@ function toggleComplete(peakName) {
     const gridRec = ensureGridRecord(currentList, peakName);
     gridRec[String(month)] = rec.date;
     saveGridToSupabase(peakName, month, rec.date);
+    
+    // SYNC TO HIKE LOG: Also create a hike log entry
+    createOrUpdateHikeLog(peakName, rec.date);
   }
   completions[currentList][peakName] = rec;
   
