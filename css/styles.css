@@ -66,7 +66,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 .list-title{flex:1;text-align:center;font-size:38px;font-weight:700;letter-spacing:.3px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- Controls row ---------- */
-.controls{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--ctrl-gap);align-items:center}
+.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center}
+.controls .ctrl,.controls .ctrl-btn{flex:1 1 auto;min-width:120px;max-width:280px}
 .ctrl,.ctrl-btn{height:var(--ctrl-h);display:flex;align-items:center;gap:10px;background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:0 14px;color:var(--ink)}
 .ctrl input[type="search"]{flex:1;min-width:0;border:none;outline:none;background:transparent;color:inherit;height:calc(var(--ctrl-h) - 2px)}
 .ctrl-btn{cursor:pointer;justify-content:center;transition:all 0.2s ease}
