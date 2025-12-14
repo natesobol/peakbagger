@@ -7,8 +7,13 @@
 const supabaseUrl = 'https://uobvavnsstrgyezcklib.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvYnZhdm5zc3RyZ3llemNrbGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODEzNTksImV4cCI6MjA4MTA1NzM1OX0.KL32AFytJcOC5RPEPlWlCzBDiA8N_Su9qb0yXT2n2ZI';
 
+// Check if Supabase is loaded
+if (!window.supabase) {
+  console.error('Supabase client library not loaded!');
+}
+
 // Create Supabase client with persistent session storage
-const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+const supabase = window.supabase?.createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true, // Keep user logged in across browser sessions
     autoRefreshToken: true, // Automatically refresh the token before it expires
@@ -796,6 +801,12 @@ const LIST_TO_JSON_MAP = {
 const NH48_API_REPO_URL = 'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data';
 
 async function fetchAllLists() {
+  // If Supabase isn't available, use static fallback immediately
+  if (!supabase) {
+    console.warn('Supabase not available, using static list');
+    return Object.keys(LIST_TO_JSON_MAP);
+  }
+  
   try {
     // Load lists from Supabase
     const { data: lists, error } = await supabase
@@ -997,7 +1008,7 @@ function writePrefs(p) {
 
 // Save user settings to Supabase
 async function saveUserSettingsToSupabase(prefs) {
-  if (!currentUser) return;
+  if (!currentUser || !supabase) return;
   
   try {
     await supabase.from('user_settings').upsert({
@@ -1464,6 +1475,8 @@ async function signUp(firstName, lastName, email, pass, opts = {}) {
   // Construct full name
   const fullName = lastName ? `${firstName} ${lastName.trim()}` : firstName;
   
+  if (!supabase) throw new Error('Authentication service not available');
+  
   const { data, error } = await supabase.auth.signUp({
     email: email,
     password: pass,
@@ -1481,7 +1494,7 @@ async function signUp(firstName, lastName, email, pass, opts = {}) {
   if (error) throw new Error(error.message);
   
   // Also create user_settings record with default settings
-  if (data.user) {
+  if (data.user && supabase) {
     await supabase.from('user_settings').upsert({
       user_id: data.user.id,
       theme: 'dark',
@@ -1497,6 +1510,8 @@ async function signUp(firstName, lastName, email, pass, opts = {}) {
 
 async function signIn(email, pass, rememberSession = true) {
   email = (email || '').trim().toLowerCase();
+  
+  if (!supabase) throw new Error('Authentication service not available');
   
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email,
@@ -1516,11 +1531,13 @@ async function signIn(email, pass, rememberSession = true) {
 }
 
 async function signOut() {
+  if (!supabase) return;
   await supabase.auth.signOut();
   currentUser = null;
 }
 
 async function getCurrentUserData() {
+  if (!supabase) return null;
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) {
     console.error('Error getting current user:', error);
@@ -1600,20 +1617,22 @@ async function reflectAuthUI() {
 }
 
 // Listen for auth state changes
-supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Auth state changed:', event, session?.user?.email);
-  if (event === 'SIGNED_IN') {
-    currentUser = session.user;
-    reflectAuthUI();
-  } else if (event === 'SIGNED_OUT') {
-    currentUser = null;
-    completions = {};
-    completionsGrid = {};
-    favorites.clear();
-    wishlist.clear();
-    reflectAuthUI();
-  }
-});
+if (supabase) {
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth state changed:', event, session?.user?.email);
+    if (event === 'SIGNED_IN') {
+      currentUser = session.user;
+      reflectAuthUI();
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      completions = {};
+      completionsGrid = {};
+      favorites.clear();
+      wishlist.clear();
+      reflectAuthUI();
+    }
+  });
+}
 
 // =====================================================
 // Modal Helpers
