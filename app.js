@@ -801,28 +801,10 @@ const LIST_TO_JSON_MAP = {
 const NH48_API_REPO_URL = 'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data';
 
 async function fetchAllLists() {
-  // If Supabase isn't available, use static fallback immediately
-  if (!supabase) {
-    console.warn('Supabase not available, using static list');
-    return Object.keys(LIST_TO_JSON_MAP);
-  }
-  
-  try {
-    // Load lists from Supabase
-    const { data: lists, error } = await supabase
-      .from('lists')
-      .select('slug, name')
-      .order('name');
-    
-    if (error) throw error;
-    
-    // Return array of list names (to match existing API)
-    return lists.map(l => l.name);
-  } catch (e) {
-    console.error('Failed to load lists from Supabase:', e);
-    // Fallback to static list
-    return Object.keys(LIST_TO_JSON_MAP);
-  }
+  // Always use the static list from LIST_TO_JSON_MAP for reliability
+  // This ensures the app works even if Supabase is unavailable
+  console.log('📋 Loading lists from static LIST_TO_JSON_MAP');
+  return Object.keys(LIST_TO_JSON_MAP);
 }
 
 async function fetchListItems(name) {
