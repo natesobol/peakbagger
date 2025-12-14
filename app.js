@@ -3268,20 +3268,20 @@ exportBtn.onclick = async () => {
   }
 };
 
-unitToggle.onclick = () => applyUnitsFlag(!meters);
-metersToggle.onchange = () => applyUnitsFlag(metersToggle.checked);
+if (unitToggle) unitToggle.onclick = () => applyUnitsFlag(!meters);
+if (metersToggle) metersToggle.onchange = () => applyUnitsFlag(metersToggle.checked);
 if (themeSelect) themeSelect.onchange = () => applyTheme(themeSelect.value);
 
-densityToggle.onchange = () => applyDensity(densityToggle.checked);
-stickyToggle.onchange = () => applyStickyHeader(stickyToggle.checked);
-gridTrackingToggle.onchange = () => applyGridTracking(gridTrackingToggle.checked);
+if (densityToggle) densityToggle.onchange = () => applyDensity(densityToggle.checked);
+if (stickyToggle) stickyToggle.onchange = () => applyStickyHeader(stickyToggle.checked);
+if (gridTrackingToggle) gridTrackingToggle.onchange = () => applyGridTracking(gridTrackingToggle.checked);
 
-tosTextEl.innerHTML = TERMS_TEXT;
-tosToggle.onclick = () => {
+if (tosTextEl) tosTextEl.innerHTML = TERMS_TEXT;
+if (tosToggle) tosToggle.onclick = () => {
   tosBox.classList.toggle('open');
   tosToggle.textContent = tosBox.classList.contains('open') ? '📄 Hide Terms & Conditions' : '📄 View Terms & Conditions';
 };
-tosAgree.addEventListener('change', () => { doSignupBtn.disabled = !tosAgree.checked; });
+if (tosAgree) tosAgree.addEventListener('change', () => { if (doSignupBtn) doSignupBtn.disabled = !tosAgree.checked; });
 
 const modeBtn = document.getElementById('modeBtn');
 const modeLabel = document.getElementById('modeLabel');
