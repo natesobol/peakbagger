@@ -191,7 +191,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 /* ---------- Grid view (cards layout) ---------- */
 .grid-view{
   display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
   gap:16px;
   padding:12px 0;
 }
@@ -214,8 +214,8 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 
 /* Card color states for favorites/wishlist */
 .peak-card.card-complete{
-  border:2px solid #22c55e;
-  box-shadow:0 0 12px rgba(34,197,94,0.3);
+  border:3px solid #22c55e;
+  box-shadow:0 0 16px rgba(34,197,94,0.4);
 }
 
 .peak-card.card-favorite{
@@ -236,6 +236,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   background:var(--panel);
   overflow:hidden;
   position:relative;
+  cursor:pointer;
 }
 
 .peak-card-thumb img{
@@ -258,6 +259,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   font-size:1.1rem;
   font-weight:700;
   color:var(--ink);
+  cursor:pointer;
 }
 
 .peak-card-meta{
@@ -357,7 +359,20 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   width: 100%;
   box-sizing: border-box;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Green border for filled date inputs */
+.month-date-input:not([value=""]):not(:placeholder-shown),
+.month-date-input.has-date {
+  border: 2px solid #22c55e;
+  box-shadow: 0 0 4px rgba(34,197,94,0.3);
+}
+
+/* Also style card-date-input (regular view) when filled */
+.card-date-input:not([value=""]) {
+  border: 2px solid #22c55e !important;
+  box-shadow: 0 0 4px rgba(34,197,94,0.3) !important;
 }
 
 .month-date-input:hover {

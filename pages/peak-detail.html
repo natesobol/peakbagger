@@ -28,6 +28,7 @@
   <script>
   if (window.location.pathname.includes('/pages/')) {
     const params = window.location.search; // preserve ?peak=xxx
+    // Clean URL without /pages/ subfolder
     history.replaceState(null, '', '/peak-detail' + params);
   }
   </script>

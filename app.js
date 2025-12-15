@@ -2057,11 +2057,12 @@ async function openPeakDetailOLD(it) {
     ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach((month, idx) => {
       const monthNum = idx + 1;
       const dateValue = gridData[String(monthNum)] || '';
+      const hasDateClass = dateValue ? 'has-date' : '';
       const cell = document.createElement('div');
       cell.className = 'detail-month-cell';
       cell.innerHTML = `
         <label class="month-label">${month}</label>
-        <input type="date" class="month-date-input" data-month="${monthNum}" data-name="${it.name}" value="${dateValue}">
+        <input type="date" class="month-date-input ${hasDateClass}" data-month="${monthNum}" data-name="${it.name}" value="${dateValue}">
       `;
       
       const input = cell.querySelector('.month-date-input');
@@ -2069,6 +2070,8 @@ async function openPeakDetailOLD(it) {
         const monthNum = parseInt(input.dataset.month, 10);
         const peakName = input.dataset.name;
         const dateValue = input.value;
+        // Update has-date class based on whether input has value
+        input.classList.toggle('has-date', !!dateValue);
         await setGridDate(currentList, peakName, monthNum, dateValue);
       });
       
@@ -3029,12 +3032,12 @@ async function renderGrid() {
     const expStr = nhData['Exposure Level'] || nhData['Weather Exposure Rating'] || '—';
 
     card.innerHTML = `
-      <div class="peak-card-thumb img-loading">
+      <div class="peak-card-thumb img-loading" data-clickable="true">
         <img class="img-blur" data-full-src="${imgSrc || placeholderFor(it.name, 800, 480)}" src="${lowResPlaceholder()}" alt="${it.name}" loading="lazy" decoding="async">
       </div>
-      <div class="peak-card-body ${it.completed ? 'completed' : ''}">
+      <div class="peak-card-body ${it.completed ? 'completed' : ''}" data-clickable="true">
         <h3>${it.name}</h3>
-        <div class="peak-card-meta">
+        <div class="peak-card-meta" data-clickable="true">
           <div class="peak-card-meta-row">
             <span class="peak-card-meta-label">${t('Rank')}</span>
             <span class="peak-card-meta-value">${it.rank}</span>
@@ -3056,10 +3059,11 @@ async function renderGrid() {
                 // Use ensureGridRecord to sync classic dates to grid and get/create grid data
                 const gridData = ensureGridRecord(currentList, it.name);
                 const dateValue = gridData[String(monthNum)] || '';
+                const hasDateClass = dateValue ? 'has-date' : '';
                 return `
                   <div class="month-cell">
                     <label class="month-label">${t(month)}</label>
-                    <input type="date" class="month-date-input" data-month="${monthNum}" data-name="${it.name}" value="${dateValue}">
+                    <input type="date" class="month-date-input ${hasDateClass}" data-month="${monthNum}" data-name="${it.name}" value="${dateValue}">
                   </div>
                 `;
               }).join('')}
@@ -3068,7 +3072,7 @@ async function renderGrid() {
           ` : `
           <div class="peak-card-meta-row">
             <span class="peak-card-meta-label">${t('Date')}</span>
-            <span class="peak-card-meta-value"><input type="date" class="card-date-input" value="${it.date || ''}" data-name="${it.name}" placeholder="mm/dd/yyyy" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--ink);font-size:0.85rem;width:100%;min-width:120px;box-sizing:border-box;"></span>
+            <span class="peak-card-meta-value"><input type="date" class="card-date-input ${it.date ? 'has-date' : ''}" value="${it.date || ''}" data-name="${it.name}" placeholder="mm/dd/yyyy" style="background:var(--input-bg);border-radius:6px;padding:4px 8px;color:var(--ink);font-size:0.85rem;width:100%;min-width:120px;box-sizing:border-box;"></span>
           </div>
           `}
           <div class="peak-card-meta-row">
@@ -3079,8 +3083,21 @@ async function renderGrid() {
       </div>
     `;
 
-    // Event handlers
-    card.addEventListener('click', () => openPeakDetail(it));
+    // Event handlers - only open detail when clicking on image or text info area (not month grid)
+    const clickableThumb = card.querySelector('.peak-card-thumb');
+    const clickableBody = card.querySelector('.peak-card-body');
+    
+    // Click handler for image
+    clickableThumb?.addEventListener('click', () => openPeakDetail(it));
+    
+    // Click handler for body - but stop propagation from month grid container
+    clickableBody?.addEventListener('click', (e) => {
+      // Don't open detail if clicking inside month grid container
+      if (e.target.closest('.peak-card-month-grid-container')) {
+        return;
+      }
+      openPeakDetail(it);
+    });
     
     if (gridTrackingEnabled) {
       // Wire up all month date inputs
@@ -3091,6 +3108,8 @@ async function renderGrid() {
           const monthNum = parseInt(input.dataset.month, 10);
           const peakName = input.dataset.name;
           const dateValue = input.value;
+          // Update has-date class based on whether input has value
+          input.classList.toggle('has-date', !!dateValue);
           await setGridDate(currentList, peakName, monthNum, dateValue);
         });
       });
@@ -3099,6 +3118,8 @@ async function renderGrid() {
       const dateInput = card.querySelector('.card-date-input');
       dateInput?.addEventListener('click', e => e.stopPropagation());
       dateInput?.addEventListener('change', () => {
+        // Update has-date class based on whether input has value
+        dateInput.classList.toggle('has-date', !!dateInput.value);
         // Always sync date and completion - setting date marks complete, clearing date marks incomplete
         setDateFor(it.name, dateInput.value || '');
       });
