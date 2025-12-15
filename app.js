@@ -1064,21 +1064,32 @@ async function loadStateFromSupabase() {
     completions[currentList] = {};
     
     if (hikeLogs) {
-      // Group by peak - first occurrence (most recent) determines the date shown
+      // Group by peak - first occurrence (most recent) determines the date shown for classic mode
+      // But we also store ALL hike dates for grid mode sync
       const peaksSeen = new Set();
       hikeLogs.forEach(log => {
         const peakName = log.peaks?.name;
-        if (!peakName || peaksSeen.has(peakName)) return;
+        if (!peakName) return;
         
         // Only include logs that match this list or have no list_id
         if (log.list_id && log.list_id !== listId) return;
         
+        // Initialize completion record if not exists
+        if (!completions[currentList][peakName]) {
+          completions[currentList][peakName] = {
+            done: true,
+            date: log.hike_date || '',
+            logId: log.id,
+            allDates: []  // Store ALL hike dates for grid mode sync
+          };
+        }
+        
+        // Add this date to allDates array for grid sync
+        if (log.hike_date) {
+          completions[currentList][peakName].allDates.push(log.hike_date);
+        }
+        
         peaksSeen.add(peakName);
-        completions[currentList][peakName] = {
-          done: true,
-          date: log.hike_date || '',
-          logId: log.id  // Store log ID for potential updates
-        };
       });
     }
     
@@ -1162,20 +1173,54 @@ async function loadGridFromSupabase() {
     
     const listId = lists.id;
     
-    // Load grid cells for this list
+    // Initialize grid for this list
+    completionsGrid[currentList] = {};
+    
+    // FIRST: Load ALL hike logs from user_hike_logs - this is the primary source of truth
+    const { data: hikeLogs } = await supabase
+      .from('user_hike_logs')
+      .select('peak_id, hike_date, list_id, peaks(name)')
+      .eq('user_id', currentUser.id)
+      .order('hike_date', { ascending: false });
+    
+    if (hikeLogs) {
+      hikeLogs.forEach(log => {
+        const peakName = log.peaks?.name;
+        if (!peakName || !log.hike_date) return;
+        
+        // Only include logs that match this list or have no list_id
+        if (log.list_id && log.list_id !== listId) return;
+        
+        // Initialize grid record for this peak if needed
+        if (!completionsGrid[currentList][peakName]) {
+          completionsGrid[currentList][peakName] = { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "", "9": "", "10": "", "11": "", "12": "" };
+        }
+        
+        // Get the month from the hike date and populate the grid cell
+        const m = new Date(log.hike_date).getMonth() + 1;
+        const k = String(m);
+        // Only set if not already set (use first/most recent date for duplicate months)
+        if (!completionsGrid[currentList][peakName][k]) {
+          completionsGrid[currentList][peakName][k] = log.hike_date;
+        }
+      });
+    }
+    
+    // SECOND: Load grid cells from user_peak_grid_cells (these are grid-specific entries)
+    // These override hike_logs entries since they're explicitly set in grid mode
     const { data: gridCells } = await supabase
       .from('user_peak_grid_cells')
       .select('peak_id, month, completed_at, peaks(name)')
       .eq('user_id', currentUser.id)
       .eq('list_id', listId);
     
-    completionsGrid[currentList] = {};
     if (gridCells) {
       gridCells.forEach(cell => {
         const peakName = cell.peaks?.name || `peak-${cell.peak_id}`;
         if (!completionsGrid[currentList][peakName]) {
           completionsGrid[currentList][peakName] = { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "", "9": "", "10": "", "11": "", "12": "" };
         }
+        // Grid cells override hike log entries (explicit grid mode entries take precedence)
         completionsGrid[currentList][peakName][String(cell.month)] = cell.completed_at || '';
       });
     }
@@ -1423,12 +1468,23 @@ function saveGrid() {
 function ensureGridRecord(list, peak) {
   completionsGrid[list] ??= {};
   completionsGrid[list][peak] ??= { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "", "9": "", "10": "", "11": "", "12": "" };
-  const one = completions[list]?.[peak]?.date || "";
-  if (one) {
-    const m = new Date(one).getMonth() + 1;
+  
+  // Sync ALL hike dates from completions to grid (not just the most recent)
+  const peakData = completions[list]?.[peak];
+  const allDates = peakData?.allDates || (peakData?.date ? [peakData.date] : []);
+  
+  // For each hike date, populate the corresponding month in the grid
+  // If multiple dates exist for same month, use the first one encountered (most recent since sorted desc)
+  allDates.forEach(dateStr => {
+    if (!dateStr) return;
+    const m = new Date(dateStr).getMonth() + 1;
     const k = String(m);
-    if (!completionsGrid[list][peak][k]) completionsGrid[list][peak][k] = one;
-  }
+    // Only set if not already set (preserves grid-specific entries and uses first/most recent for duplicates)
+    if (!completionsGrid[list][peak][k]) {
+      completionsGrid[list][peak][k] = dateStr;
+    }
+  });
+  
   return completionsGrid[list][peak];
 }
 
@@ -1988,7 +2044,8 @@ async function openPeakDetailOLD(it) {
     const monthGridEl = monthGridContainer?.querySelector('.detail-month-grid');
     if (monthGridEl && gridTrackingEnabled) {
     monthGridEl.innerHTML = '';
-    const gridData = completionsGrid[currentList]?.[it.name] || {};
+    // Use ensureGridRecord to sync classic dates to grid and get/create grid data
+    const gridData = ensureGridRecord(currentList, it.name);
     ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach((month, idx) => {
       const monthNum = idx + 1;
       const dateValue = gridData[String(monthNum)] || '';
@@ -2988,7 +3045,8 @@ async function renderGrid() {
             <div class="peak-card-month-grid">
               ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
                 const monthNum = idx + 1;
-                const gridData = completionsGrid[currentList]?.[it.name] || {};
+                // Use ensureGridRecord to sync classic dates to grid and get/create grid data
+                const gridData = ensureGridRecord(currentList, it.name);
                 const dateValue = gridData[String(monthNum)] || '';
                 return `
                   <div class="month-cell">
