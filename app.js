@@ -1991,7 +1991,7 @@ async function openPeakDetailOLD(it) {
     const gridData = completionsGrid[currentList]?.[it.name] || {};
     ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].forEach((month, idx) => {
       const monthNum = idx + 1;
-      const dateValue = gridData[monthNum] || '';
+      const dateValue = gridData[String(monthNum)] || '';
       const cell = document.createElement('div');
       cell.className = 'detail-month-cell';
       cell.innerHTML = `
@@ -2989,7 +2989,7 @@ async function renderGrid() {
               ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => {
                 const monthNum = idx + 1;
                 const gridData = completionsGrid[currentList]?.[it.name] || {};
-                const dateValue = gridData[monthNum] || '';
+                const dateValue = gridData[String(monthNum)] || '';
                 return `
                   <div class="month-cell">
                     <label class="month-label">${t(month)}</label>
