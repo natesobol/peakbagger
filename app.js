@@ -1176,7 +1176,7 @@ async function loadGridFromSupabase() {
     // Initialize grid for this list
     completionsGrid[currentList] = {};
     
-    // FIRST: Load ALL hike logs from user_hike_logs - this is the primary source of truth
+    // Load ALL hike logs from user_hike_logs - this is the ONLY source of truth
     const { data: hikeLogs } = await supabase
       .from('user_hike_logs')
       .select('peak_id, hike_date, list_id, peaks(name)')
@@ -1206,31 +1206,14 @@ async function loadGridFromSupabase() {
       });
     }
     
-    // SECOND: Load grid cells from user_peak_grid_cells (these are grid-specific entries)
-    // These override hike_logs entries since they're explicitly set in grid mode
-    const { data: gridCells } = await supabase
-      .from('user_peak_grid_cells')
-      .select('peak_id, month, completed_at, peaks(name)')
-      .eq('user_id', currentUser.id)
-      .eq('list_id', listId);
-    
-    if (gridCells) {
-      gridCells.forEach(cell => {
-        const peakName = cell.peaks?.name || `peak-${cell.peak_id}`;
-        if (!completionsGrid[currentList][peakName]) {
-          completionsGrid[currentList][peakName] = { "1": "", "2": "", "3": "", "4": "", "5": "", "6": "", "7": "", "8": "", "9": "", "10": "", "11": "", "12": "" };
-        }
-        // Grid cells override hike log entries (explicit grid mode entries take precedence)
-        completionsGrid[currentList][peakName][String(cell.month)] = cell.completed_at || '';
-      });
-    }
+    console.log('loadGridFromSupabase: Loaded grid data from user_hike_logs for', Object.keys(completionsGrid[currentList] || {}).length, 'peaks');
   } catch (e) {
     console.error('Failed to load grid from Supabase:', e);
     completionsGrid = {};
   }
 }
 
-// Save grid to Supabase
+// Save grid to Supabase - saves to user_hike_logs table
 async function saveGridToSupabase(peakName, month, date) {
   if (!currentUser || !currentList) return;
   
@@ -1256,24 +1239,49 @@ async function saveGridToSupabase(peakName, month, date) {
     const peakId = peaks.id;
     
     if (date) {
-      await supabase
-        .from('user_peak_grid_cells')
-        .upsert({
-          user_id: currentUser.id,
-          list_id: listId,
-          peak_id: peakId,
-          month: parseInt(month),
-          completed_at: date
-        }, { onConflict: 'user_id,list_id,peak_id,month' });
-    } else {
-      // Delete the cell if date is empty
-      await supabase
-        .from('user_peak_grid_cells')
-        .delete()
+      // Check if a hike log already exists for this peak on this exact date
+      const { data: existingLog } = await supabase
+        .from('user_hike_logs')
+        .select('id')
         .eq('user_id', currentUser.id)
-        .eq('list_id', listId)
         .eq('peak_id', peakId)
-        .eq('month', parseInt(month));
+        .eq('hike_date', date)
+        .single();
+      
+      if (!existingLog) {
+        // Create a new hike log entry
+        await supabase
+          .from('user_hike_logs')
+          .insert({
+            user_id: currentUser.id,
+            list_id: listId,
+            peak_id: peakId,
+            hike_date: date
+          });
+      }
+    } else {
+      // When clearing a date from grid, we need to find and delete hike logs for this month
+      // Get all hike logs for this peak
+      const { data: hikeLogs } = await supabase
+        .from('user_hike_logs')
+        .select('id, hike_date')
+        .eq('user_id', currentUser.id)
+        .eq('peak_id', peakId);
+      
+      if (hikeLogs) {
+        // Delete logs that match this month
+        const logsToDelete = hikeLogs.filter(log => {
+          const logMonth = new Date(log.hike_date).getMonth() + 1;
+          return logMonth === parseInt(month);
+        });
+        
+        for (const log of logsToDelete) {
+          await supabase
+            .from('user_hike_logs')
+            .delete()
+            .eq('id', log.id);
+        }
+      }
     }
   } catch (e) {
     console.error('Failed to save grid to Supabase:', e);
