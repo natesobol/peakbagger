@@ -164,14 +164,14 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 /* ---------- Grid view (cards layout) ---------- */
 .grid-view{
   display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(380px, 1fr));
-  gap:16px;
-  padding:12px 0;
+  grid-template-columns:repeat(4, 1fr);
+  gap:20px;
+  padding:20px 0;
 }
 
 .peak-card{
   background:var(--card);
-  border:3px solid transparent;
+  border:3px solid #fff;
   border-radius:12px;
   overflow:hidden;
   transition:transform .12s ease, box-shadow .12s ease, border-color .15s ease;
