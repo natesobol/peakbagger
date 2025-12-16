@@ -2848,9 +2848,9 @@ function updateMiniPulsePreview() {
   }
 
     const totalLogs = weekBuckets.reduce((sum, n) => sum + n, 0);
-    const visiblePeaks = window._filteredPeaks || window._allPeaks || [];
-    const totalPeaks = visiblePeaks.length;
-    const donePeaks = visiblePeaks.filter(it => completions[currentList]?.[it.name]?.done).length;
+    const basePeaks = currentList ? (cache.get(currentList) || []) : [];
+    const totalPeaks = basePeaks.length;
+    const donePeaks = basePeaks.filter(it => completions[currentList]?.[it.name]?.done).length;
     const pctComplete = totalPeaks ? Math.round(donePeaks / totalPeaks * 100) : 0;
 
   miniPulseGraph.innerHTML = '';
