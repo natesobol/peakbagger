@@ -45,6 +45,7 @@ const translations = {
     'All Peaks': 'All Peaks',
     'Hide completed': 'Hide completed',
     'Advanced Filters': 'Advanced Filters',
+    'All Filters': 'All Filters',
     'Units: Feet': 'Units: Feet',
     'Units: Meters': 'Units: Meters',
     
@@ -173,6 +174,7 @@ const translations = {
     'All Peaks': 'Todos los Picos',
     'Hide completed': 'Ocultar completados',
     'Advanced Filters': 'Filtros Avanzados',
+    'All Filters': 'Todos los Filtros',
     'Units: Feet': 'Unidades: Pies',
     'Units: Meters': 'Unidades: Metros',
     
@@ -287,6 +289,7 @@ const translations = {
     'All Peaks': 'Tous les Sommets',
     'Hide completed': 'Masquer complétés',
     'Advanced Filters': 'Filtres Avancés',
+    'All Filters': 'Tous les Filtres',
     
     'Rank': 'Rang',
     'Name': 'Nom',
@@ -364,6 +367,7 @@ const translations = {
     'All Peaks': 'Alle Gipfel',
     'Hide completed': 'Abgeschlossene ausblenden',
     'Advanced Filters': 'Erweiterte Filter',
+    'All Filters': 'Alle Filter',
     
     'Rank': 'Rang',
     'Name': 'Name',
@@ -441,6 +445,7 @@ const translations = {
     'All Peaks': '所有山峰',
     'Hide completed': '隐藏已完成',
     'Advanced Filters': '高级筛选',
+    'All Filters': '全部筛选',
     
     'Rank': '排名',
     'Name': '名称',
@@ -518,6 +523,7 @@ const translations = {
     'All Peaks': 'すべての山',
     'Hide completed': '完了を非表示',
     'Advanced Filters': '高度なフィルター',
+    'All Filters': 'すべてのフィルター',
     
     'Rank': 'ランク',
     'Name': '名前',
@@ -639,11 +645,9 @@ function translatePage() {
       option.textContent = translated;
     }
   });
-  
+
   // Update unit toggle
-  if (unitLabel) {
-    unitLabel.textContent = meters ? t('Units: Meters') : t('Units: Feet');
-  }
+  renderUnitLabel();
   
   // Update sort label
   if (sortLabel) {
@@ -894,8 +898,12 @@ const searchEl = document.getElementById('search');
 const sortBtn = document.getElementById('sortBtn');
 const sortLabel = document.getElementById('sortLabel');
 const showBtn = document.getElementById('showComplete');
+const showCompleteIcon = document.getElementById('showCompleteIcon');
+const completedPrefix = document.getElementById('completedPrefix');
+const completedState = document.getElementById('completedState');
 const exportBtn = document.getElementById('exportBtn');
 const unitToggle = document.getElementById('unitToggle');
+const unitPrefix = document.getElementById('unitPrefix');
 const unitLabel = document.getElementById('unitLabel');
 const metersToggle = document.getElementById('metersToggle');
 const themeSelect = document.getElementById('themeSelect');
@@ -926,6 +934,7 @@ const miniPulseGraph = document.getElementById('miniPulseGraph');
 const miniPulseMeta = document.getElementById('miniPulseMeta');
 const mainLoadingEl = document.getElementById('main-loading');
 const mainLoadingLabel = document.getElementById('main-loading-label');
+const mobileFiltersPanel = document.getElementById('mobileFiltersPanel');
 const contentEl = document.querySelector('.content');
 const mainPanel = document.querySelector('main.panel');
 const signedOutBox = document.getElementById('authSignedOut');
@@ -967,12 +976,51 @@ window.addEventListener('orientationchange', updateLayoutCenterOffset);
 window.addEventListener('load', updateLayoutCenterOffset);
 requestAnimationFrame(updateLayoutCenterOffset);
 
+function syncMobileFiltersState() {
+  if (!mobileFiltersPanel) return;
+
+  const isMobile = window.matchMedia('(max-width: 960px)').matches;
+
+  if (syncMobileFiltersState.isMobile === isMobile) return;
+
+  syncMobileFiltersState.isMobile = isMobile;
+  mobileFiltersPanel.open = !isMobile;
+}
+
+syncMobileFiltersState.isMobile = null;
+window.addEventListener('resize', syncMobileFiltersState);
+window.addEventListener('orientationchange', syncMobileFiltersState);
+window.addEventListener('load', syncMobileFiltersState);
+requestAnimationFrame(syncMobileFiltersState);
+
+function renderUnitLabel() {
+  if (!unitLabel || !unitPrefix) return;
+
+  const label = meters ? t('Units: Meters') : t('Units: Feet');
+  const [prefix, value] = label.split(':');
+
+  unitPrefix.textContent = `${(prefix || 'Units').trim()}:`;
+  unitLabel.textContent = (value || '').trim() || label;
+}
+
 function renderCompletedButtonState() {
   if (!showBtn) return;
 
   const icon = hideCompleted ? '🚫' : '✅';
-  const label = hideCompleted ? 'Completed: Hidden' : 'Completed: Showing';
-  showBtn.innerHTML = `<span class="ico">${icon}</span> <span>${t(label)}</span>`;
+  const label = hideCompleted ? t('Completed: Hidden') : t('Completed: Showing');
+  const [prefix, value] = label.split(':');
+
+  if (showCompleteIcon) {
+    showCompleteIcon.textContent = icon;
+  }
+
+  if (completedPrefix) {
+    completedPrefix.textContent = `${(prefix || t('Completed')).trim()}:`;
+  }
+
+  if (completedState) {
+    completedState.textContent = (value || '').trim() || label;
+  }
 }
 
 // Old detail close button (from side panel) - removed in favor of peakDetailBackBtn
@@ -2428,7 +2476,7 @@ function fmtElevation(ft) {
 function applyUnitsFlag(flag) {
   meters = flag;
   metersToggle.checked = meters;
-  unitLabel.textContent = meters ? 'Units: Meters' : 'Units: Feet';
+  renderUnitLabel();
   renderView();
   const prefs = readPrefs();
   prefs.meters = meters;

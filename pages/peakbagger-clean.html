@@ -246,59 +246,80 @@
         <div class="progress" aria-label="progress"><div class="bar" id="bar"></div></div>
       </div>
       <div class="controls-container">
-        <div class="controls">
-          <div class="ctrl"><span class="ico">🔍</span><input id="search" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." /></div>
-          <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">↕️</span> <span><span data-i18n="Sort">Sort:</span> <strong id="sortLabel">Rank</strong></span></div>
-          <div class="ctrl-btn" id="showComplete"><span class="ico">✅</span> <span data-i18n="Completed: Showing">Completed: Showing</span></div>
-          <!-- Advanced Filters (collapsible) -->
-          <details class="ctrl-advanced-filters" style="position:relative">
-            <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
-              <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-                <span class="ico">⏬</span>
-                <span data-i18n="Filters">Filters</span>
-              </div>
-              <span class="ctrl-chevron" aria-hidden="true"></span>
-            </summary>
-            <div class="advanced-filters-panel">
-              <div class="filter-row">
-                <label data-i18n="Status">Status:</label>
-                <select id="statusFilter" class="select">
-                  <option value="all" data-i18n-option="All Peaks">All Peaks</option>
-                  <option value="completed" data-i18n-option="Completed">Completed</option>
-                  <option value="favorites" data-i18n-option="Favorites">Favorites</option>
-                  <option value="wishlist" data-i18n-option="Wishlist">Wishlist</option>
-                  <option value="incomplete" data-i18n-option="Incomplete">Incomplete</option>
-                </select>
-              </div>
-              <div class="filter-row">
-                <label data-i18n="Range">Range:</label>
-                <select id="rangeFilter" class="select">
-                  <option value="all">All Ranges</option>
-                  <option value="Presidential">Presidential</option>
-                  <option value="Franconia">Franconia</option>
-                  <option value="Carter-Moriah">Carter-Moriah</option>
-                  <option value="Twin">Twin</option>
-                  <option value="Bond">Bond</option>
-                  <option value="Sandwich">Sandwich</option>
-                  <option value="Kinsman">Kinsman</option>
-                </select>
-              </div>
-              <div class="filter-row">
-                <label>Min Elevation (ft):</label>
-                <input type="number" id="elevationMin" class="filter-input" placeholder="4000" min="0" max="10000">
-              </div>
-              <div class="filter-row">
-                <label>Max Elevation (ft):</label>
-                <input type="number" id="elevationMax" class="filter-input" placeholder="6288" min="0" max="10000">
-              </div>
-              <button id="clearFilters" class="btn btn-ghost btn-small" style="width:100%;margin-top:8px" data-i18n="Clear All Filters">Clear All Filters</button>
+        <details id="mobileFiltersPanel" class="mobile-filters" open>
+          <summary class="mobile-filters-summary">
+            <div class="mobile-filters-summary-left">
+              <span class="ico">⏬</span>
+              <span data-i18n="All Filters">All Filters</span>
             </div>
-          </details>
-          <!-- NEW: Mode toggle (Checklist / Grid) -->
-          <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🗂️</span> <span><span data-i18n="Mode">Mode:</span> <strong id="modeLabel">Checklist</strong></span></div>
-          <div id="unitToggle" class="ctrl-btn" title="Toggle units"><span class="ico">📏</span><span id="unitLabel">Units: Feet</span></div>
-          <div class="ctrl-btn" id="exportBtn"><span class="ico">📤</span> <span data-i18n="Export XLSX">Export XLSX</span></div>
-        </div>
+            <span class="ctrl-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="controls">
+            <div class="ctrl"><span class="ico">🔍</span><input id="search" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." /></div>
+            <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">↕️</span> <span><span data-i18n="Sort">Sort:</span> <strong id="sortLabel">Rank</strong></span></div>
+            <div class="ctrl-btn" id="showComplete">
+              <span class="ico" id="showCompleteIcon">✅</span>
+              <span class="ctrl-label">
+                <span id="completedPrefix" data-i18n="Completed">Completed</span>:
+                <strong id="completedState" data-i18n="Showing">Showing</strong>
+              </span>
+            </div>
+            <!-- Advanced Filters (collapsible) -->
+            <details class="ctrl-advanced-filters" style="position:relative">
+              <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
+                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;justify-content:center">
+                  <span class="ico">⏬</span>
+                  <span data-i18n="Filters">Filters</span>
+                </div>
+                <span class="ctrl-chevron" aria-hidden="true"></span>
+              </summary>
+              <div class="advanced-filters-panel">
+                <div class="filter-row">
+                  <label data-i18n="Status">Status:</label>
+                  <select id="statusFilter" class="select">
+                    <option value="all" data-i18n-option="All Peaks">All Peaks</option>
+                    <option value="completed" data-i18n-option="Completed">Completed</option>
+                    <option value="favorites" data-i18n-option="Favorites">Favorites</option>
+                    <option value="wishlist" data-i18n-option="Wishlist">Wishlist</option>
+                    <option value="incomplete" data-i18n-option="Incomplete">Incomplete</option>
+                  </select>
+                </div>
+                <div class="filter-row">
+                  <label data-i18n="Range">Range:</label>
+                  <select id="rangeFilter" class="select">
+                    <option value="all">All Ranges</option>
+                    <option value="Presidential">Presidential</option>
+                    <option value="Franconia">Franconia</option>
+                    <option value="Carter-Moriah">Carter-Moriah</option>
+                    <option value="Twin">Twin</option>
+                    <option value="Bond">Bond</option>
+                    <option value="Sandwich">Sandwich</option>
+                    <option value="Kinsman">Kinsman</option>
+                  </select>
+                </div>
+                <div class="filter-row">
+                  <label>Min Elevation (ft):</label>
+                  <input type="number" id="elevationMin" class="filter-input" placeholder="4000" min="0" max="10000">
+                </div>
+                <div class="filter-row">
+                  <label>Max Elevation (ft):</label>
+                  <input type="number" id="elevationMax" class="filter-input" placeholder="6288" min="0" max="10000">
+                </div>
+                <button id="clearFilters" class="btn btn-ghost btn-small" style="width:100%;margin-top:8px" data-i18n="Clear All Filters">Clear All Filters</button>
+              </div>
+            </details>
+            <!-- NEW: Mode toggle (Checklist / Grid) -->
+            <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🗂️</span> <span><span data-i18n="Mode">Mode:</span> <strong id="modeLabel">Checklist</strong></span></div>
+            <div id="unitToggle" class="ctrl-btn" title="Toggle units">
+              <span class="ico">📏</span>
+              <span class="ctrl-label">
+                <span id="unitPrefix">Units:</span>
+                <strong id="unitLabel">Feet</strong>
+              </span>
+            </div>
+            <div class="ctrl-btn" id="exportBtn"><span class="ico">📤</span> <span data-i18n="Export XLSX">Export XLSX</span></div>
+          </div>
+        </details>
       </div>
     </div>
   </div>
