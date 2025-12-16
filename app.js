@@ -3004,15 +3004,17 @@ async function renderGrid() {
     
     // Determine card color based on completion/favorite status
     // Priority: favorite > complete > wishlist > incomplete
+    const isFavorite = it.peak_id && favorites.has(it.peak_id);
+    const isWishlist = it.peak_id && wishlist.has(it.peak_id);
+    const isComplete = Boolean(it.completed);
+
     let statusClass = 'card-incomplete';
-    if (it.peak_id) {
-      if (favorites.has(it.peak_id)) {
-        statusClass = 'card-favorite';
-      } else if (it.completed) {
-        statusClass = 'card-complete';
-      } else if (wishlist.has(it.peak_id)) {
-        statusClass = 'card-wishlist';
-      }
+    if (isFavorite) {
+      statusClass = 'card-favorite';
+    } else if (isComplete) {
+      statusClass = 'card-complete';
+    } else if (isWishlist) {
+      statusClass = 'card-wishlist';
     }
     card.classList.add(statusClass);
 
