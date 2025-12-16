@@ -24,7 +24,7 @@
   --col-rank:64px; --col-elev:140px; --col-date:160px; --col-done:120px; --col-arrow:48px;
 }
 .theme-light{
-  --bg:#f8f8fb; --panel:#ffffff; --card:#ffffff; --ink:#111111; --ink-weak:#666666;
+  --bg:#f8f8fb; --panel:#ffffff; --card:#ffffff; --ink:#000000; --ink-weak:#000000;
   --border:#dadde6; --border-strong:#000000; --accent:#2a6bff; --good:#1dbf73; --warn:#e6a100;
   --input-bg:#ffffff; --input-bg-hover:#f3f4f8; --chip-bg:#ffffff; --chip-border:#dadde6;
   --shadow:0 10px 35px rgba(0,0,0,.10);
@@ -38,10 +38,18 @@
 }
 /* Sky blue theme */
 .theme-sky{
-  --bg:#eaf6ff; --panel:#dff3ff; --card:#ffffff; --ink:#0b2340; --ink-weak:#4a6b86;
-  --border:#bcdcf0; --border-strong:#0b2340; --accent:#3a96ff; --good:#1dbf73; --warn:#ffb74d;
+  --bg:#eaf6ff; --panel:#dff3ff; --card:#ffffff; --ink:#000000; --ink-weak:#000000;
+  --border:#bcdcf0; --border-strong:#000000; --accent:#3a96ff; --good:#1dbf73; --warn:#ffb74d;
   --input-bg:#ffffff; --input-bg-hover:#f3fbff; --chip-bg:#ffffff; --chip-border:#bcdcf0;
   --shadow:0 10px 35px rgba(0,0,0,.06);
+}
+
+/* Light mode (eye saver) theme */
+.theme-eye-saver{
+  --bg:#f7f1d5; --panel:#f1e2a8; --card:#f8e8b8; --ink:#000000; --ink-weak:#000000;
+  --border:#e0c982; --border-strong:#000000; --accent:#d4a017; --good:#c28700; --warn:#c28700;
+  --input-bg:#f8e8b8; --input-bg-hover:#f3df9f; --chip-bg:#f8e8b8; --chip-border:#e0c982;
+  --shadow:0 10px 35px rgba(0,0,0,.10);
 }
 
 /* ---------- Base / app frame ---------- */
@@ -223,6 +231,12 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 
 .peak-card.card-incomplete {
   --card-border-color: #fff;
+}
+
+.theme-light .peak-card,
+.theme-sky .peak-card,
+.theme-eye-saver .peak-card{
+  --card-border-color:#000;
 }
 
 .peak-card:hover{

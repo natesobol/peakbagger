@@ -136,6 +136,7 @@ const translations = {
     'Choose theme': 'Choose theme',
     'Dark (default)': 'Dark (default)',
     'Light (white & black)': 'Light (white & black)',
+    'Light Mode (Eye Saver)': 'Light Mode (Eye Saver)',
     'Forest Green': 'Forest Green',
     'Sky Blue': 'Sky Blue',
     
@@ -252,6 +253,7 @@ const translations = {
     'Choose theme': 'Elegir tema',
     'Dark (default)': 'Oscuro (predeterminado)',
     'Light (white & black)': 'Claro (blanco y negro)',
+    'Light Mode (Eye Saver)': 'Modo claro (protector de ojos)',
     'Forest Green': 'Verde Bosque',
     'Sky Blue': 'Azul Cielo',
     
@@ -328,6 +330,7 @@ const translations = {
     'Choose theme': 'Choisir un thème',
     'Dark (default)': 'Sombre (par défaut)',
     'Light (white & black)': 'Clair (blanc et noir)',
+    'Light Mode (Eye Saver)': 'Mode clair (repos des yeux)',
     'Forest Green': 'Vert Forêt',
     'Sky Blue': 'Bleu Ciel',
     
@@ -404,6 +407,7 @@ const translations = {
     'Choose theme': 'Thema wählen',
     'Dark (default)': 'Dunkel (Standard)',
     'Light (white & black)': 'Hell (weiß und schwarz)',
+    'Light Mode (Eye Saver)': 'Heller Modus (augenfreundlich)',
     'Forest Green': 'Waldgrün',
     'Sky Blue': 'Himmelblau',
     
@@ -480,6 +484,7 @@ const translations = {
     'Choose theme': '选择主题',
     'Dark (default)': '深色（默认）',
     'Light (white & black)': '浅色（黑白）',
+    'Light Mode (Eye Saver)': '护眼浅色模式',
     'Forest Green': '森林绿',
     'Sky Blue': '天空蓝',
     
@@ -556,6 +561,7 @@ const translations = {
     'Choose theme': 'テーマを選択',
     'Dark (default)': 'ダーク（デフォルト）',
     'Light (white & black)': 'ライト（白と黒）',
+    'Light Mode (Eye Saver)': 'ライトモード（目に優しい）',
     'Forest Green': 'フォレストグリーン',
     'Sky Blue': 'スカイブルー',
     
@@ -2429,7 +2435,7 @@ function applyUnitsFlag(flag) {
 }
 
 function applyTheme(theme) {
-  document.body.classList.remove('theme-light', 'theme-forest', 'theme-sky');
+  document.body.classList.remove('theme-light', 'theme-forest', 'theme-sky', 'theme-eye-saver');
   if (!theme || theme === 'dark') {
     // dark = default
   } else if (theme === 'light') {
@@ -2438,6 +2444,8 @@ function applyTheme(theme) {
     document.body.classList.add('theme-forest');
   } else if (theme === 'sky') {
     document.body.classList.add('theme-sky');
+  } else if (theme === 'eye-saver') {
+    document.body.classList.add('theme-eye-saver');
   }
   if (themeSelect) themeSelect.value = theme || 'dark';
   const prefs = readPrefs();
