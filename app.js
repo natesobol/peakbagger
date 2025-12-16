@@ -3035,7 +3035,7 @@ async function renderGrid() {
       <div class="peak-card-thumb img-loading" data-clickable="true">
         <img class="img-blur" data-full-src="${imgSrc || placeholderFor(it.name, 800, 480)}" src="${lowResPlaceholder()}" alt="${it.name}" loading="lazy" decoding="async">
       </div>
-      <div class="peak-card-body ${it.completed ? 'completed' : ''}" data-clickable="true">
+      <div class="peak-card-body" data-clickable="true">
         <h3>${it.name}</h3>
         <div class="peak-card-meta" data-clickable="true">
           <div class="peak-card-meta-row">
