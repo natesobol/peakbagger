@@ -4,10 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Peakbagger – Peak stats, photos & routes</title>
+  <meta name="author" content="Nathan Sobol" />
   <meta name="description" content="Elevation, prominence, difficulty, weather links and route info for White Mountain peaks in the NH 48, 52 With a View and other lists." />
   <meta name="keywords" content="NH 48 peaks, White Mountain hiking app, New Hampshire 4000 footers, summit stats, peak photos, hiking routes, peakbagger detail" />
   <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="alternate" hreflang="en" href="https://nh48.app/pages/peak-detail.html" />
   <link rel="canonical" href="https://nh48.app/pages/peak-detail.html" id="canonicalLink">
+  <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png">
+  <link rel="apple-touch-icon" href="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -16,12 +20,72 @@
   <meta property="og:url" content="https://nh48.app/pages/peak-detail.html" />
   <meta property="og:image" content="https://nh48pics.com/images/peakbagger-og.jpg" />
   <meta property="og:image:alt" content="White Mountain peak collage" />
+  <meta property="og:site_name" content="Peakbagger's Journal" />
+  <meta property="og:locale" content="en_US" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Peakbagger – Peak stats, photos & routes" />
   <meta name="twitter:description" content="Elevation, prominence, difficulty, weather links and route info for White Mountain peaks in the NH 48, 52 With a View and other lists." />
   <meta name="twitter:image" content="https://nh48pics.com/images/peakbagger-og.jpg" />
+  <meta name="twitter:site" content="@nh48app" />
+  <meta name="twitter:creator" content="@nh48app" />
+
+  <!-- JSON-LD: WebApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Peakbagger's Journal – Peak detail",
+    "operatingSystem": "Web",
+    "applicationCategory": "SportsApplication",
+    "description": "Browse individual White Mountain peaks with elevations, routes, weather links, photos, and personal hike logs.",
+    "url": "https://nh48.app/pages/peak-detail.html",
+    "image": "https://nh48pics.com/images/peakbagger-og.jpg",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "publisher": {
+      "@type": "Person",
+      "name": "Nathan Sobol",
+      "url": "https://www.nh48pics.com/"
+    }
+  }
+  </script>
+
+  <!-- JSON-LD: WebSite & Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Peakbagger's Journal",
+    "url": "https://nh48.app/",
+    "alternateName": "NH48.app",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Peakbagger",
+      "url": "https://nh48.app/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://nh48.app/images/peakbagger-preview.png",
+        "width": 1200,
+        "height": 630
+      },
+      "sameAs": [
+        "https://nh48pics.com",
+        "https://nh48.info"
+      ]
+    },
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://nh48.app/pages/peak-detail.html?slug={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
   <link rel="stylesheet" href="../css/peak-detail.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- URL Masking: hide /pages/ from URL bar -->

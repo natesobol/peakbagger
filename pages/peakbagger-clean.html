@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Peakbagger’s Journal – Track the NH 48 and other 4K peaks</title>
+<meta name="author" content="Nathan Sobol" />
 
 <!-- Favicon -->
 <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png">
@@ -13,6 +14,7 @@
 <meta name="description" content="A free, offline-friendly web app for hikers to log ascents of New Hampshire 4000 footers, 52 With a View and other peak lists. Search, sort, filter and export your progress." />
 <meta name="keywords" content="NH 48 peak list, White Mountain 4000 footers, peakbagging app, hiking log, New England 4000 footers, 52 with a View, hiking progress, peak tracking, summit log, Appalachian Mountains, White Mountain hiking app" />
 <link rel="canonical" href="https://nh48.app/" />
+<link rel="alternate" hreflang="en" href="https://nh48.app/" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 
 <!-- Open Graph -->
@@ -24,12 +26,16 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="Peakbagger's Journal app showing NH 48 mountain cards with photos, elevations, and completion tracking" />
+<meta property="og:site_name" content="Peakbagger's Journal" />
+<meta property="og:locale" content="en_US" />
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Peakbagger's Journal – Track your NH 48 progress" />
 <meta name="twitter:description" content="Log your hikes of the NH 48, 52 With a View and other peak lists. Free, offline and community-driven." />
 <meta name="twitter:image" content="https://nh48.app/images/peakbagger-preview.png" />
+<meta name="twitter:site" content="@nh48app" />
+<meta name="twitter:creator" content="@nh48app" />
 
 <!-- JSON-LD: SoftwareApplication -->
 <script type="application/ld+json">
@@ -51,6 +57,37 @@
     "@type": "Person",
     "name": "Nathan Sobol",
     "url": "https://www.nh48pics.com/"
+  }
+}
+</script>
+
+<!-- JSON-LD: WebSite & Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Peakbagger's Journal",
+  "url": "https://nh48.app/",
+  "alternateName": "NH48.app",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Peakbagger",
+    "url": "https://nh48.app/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://nh48.app/images/peakbagger-preview.png",
+      "width": 1200,
+      "height": 630
+    },
+    "sameAs": [
+      "https://nh48pics.com",
+      "https://nh48.info"
+    ]
+  },
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://nh48.app/pages/peakbagger-clean.html?search={search_term_string}",
+    "query-input": "required name=search_term_string"
   }
 }
 </script>
@@ -270,14 +307,30 @@
               <div style="color:var(--ink-weak);font-size:20px;flex-shrink:0">›</div>
             </div>
           </a>
+          <div id="miniPulseCard" class="mini-pulse-card" style="display:none">
+            <a href="/profile" class="mini-pulse-link" title="View your profile activity pulse">
+              <div class="mini-pulse-header">
+                <div class="mini-pulse-title">
+                  <span class="mini-pulse-icon">📈</span>
+                  <span>Hiking Pulse</span>
+                </div>
+                <span class="mini-pulse-cta">Profile ›</span>
+              </div>
+              <div class="mini-pulse-graph" id="miniPulseGraph" aria-label="Recent hiking activity preview"></div>
+              <div class="mini-pulse-meta" id="miniPulseMeta">Log hikes to see your activity pulse</div>
+            </a>
+          </div>
         </div>
       </div>
 
       <!-- About Peakbagger Info Panel -->
       <details class="collapsible-section" id="introPanelDetails">
         <summary>
-          <span data-i18n="About Peakbagger">ℹ️ About Peakbagger</span>
-          <span id="introPanelToggle" style="font-size:12px;color:var(--ink-weak)">▼</span>
+          <div class="summary-title">
+            <span class="summary-icon">ℹ️</span>
+            <span data-i18n="About Peakbagger">About Peakbagger</span>
+          </div>
+          <span class="summary-chevron" aria-hidden="true"></span>
         </summary>
         <div class="panel" style="font-size:14px;line-height:1.5;color:var(--ink)">
           <p>Peakbagger is a tool to track your summits of peaks in the White Mountains. Use it to log your ascents, track your progress through peak lists, and discover which peaks you've conquered.</p>
@@ -306,7 +359,13 @@
         <input id="mobileSearch" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." style="width:100%;margin-top:6px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--input-bg);color:var(--ink);font-size:14px;" />
       </div>
 
-      <details id="settingsDetails" class="collapsible-section"><summary data-i18n="Settings">Settings</summary><div class="settings">
+      <details id="settingsDetails" class="collapsible-section"><summary>
+          <div class="summary-title">
+            <span class="summary-icon">⚙️</span>
+            <span data-i18n="Settings">Settings</span>
+          </div>
+          <span class="summary-chevron" aria-hidden="true"></span>
+        </summary><div class="settings">
         <div class="row">
           <label data-i18n="Units: Meters">Units: meters</label>
           <label class="switch"><input id="metersToggle" type="checkbox"><span class="slider"></span></label>
@@ -354,7 +413,13 @@
       </div></details>
 
       <!-- Themes dropdown (pre-collapsed) -->
-      <details id="themeDetails" class="collapsible-section"><summary data-i18n="Themes">Themes</summary>
+      <details id="themeDetails" class="collapsible-section"><summary>
+          <div class="summary-title">
+            <span class="summary-icon">🎨</span>
+            <span data-i18n="Themes">Themes</span>
+          </div>
+          <span class="summary-chevron" aria-hidden="true"></span>
+        </summary>
         <div class="panel" style="margin-top:8px">
           <label for="themeSelect" class="subtle" data-i18n="Choose theme">Choose theme</label>
           <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
@@ -367,7 +432,13 @@
       </details>
 
       <!-- NEW: Resources panel -->
-      <details id="resourcesDetails" class="collapsible-section"><summary data-i18n="Resources">Resources</summary><div class="panel" style="margin-top:14px">
+      <details id="resourcesDetails" class="collapsible-section"><summary>
+          <div class="summary-title">
+            <span class="summary-icon">🌐</span>
+            <span data-i18n="Resources">Resources</span>
+          </div>
+          <span class="summary-chevron" aria-hidden="true"></span>
+        </summary><div class="panel" style="margin-top:14px">
         <div class="links-col">
           <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH (trip reports)</a>
           <a class="btn-link" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Weather</a>

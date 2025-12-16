@@ -915,6 +915,9 @@ const closeAuthBtn = document.getElementById('closeAuth');
 const authMsg = document.getElementById('authMsg');
 const meNameEl = document.getElementById('meName');
 const meEmailEl = document.getElementById('meEmail');
+const miniPulseCard = document.getElementById('miniPulseCard');
+const miniPulseGraph = document.getElementById('miniPulseGraph');
+const miniPulseMeta = document.getElementById('miniPulseMeta');
 const signedOutBox = document.getElementById('authSignedOut');
 const signedInBox = document.getElementById('authSignedIn');
 const detail = document.getElementById('detail');
@@ -1680,11 +1683,14 @@ async function reflectAuthUI() {
     if (navUserInitials) {
       navUserInitials.textContent = initials || me.email.charAt(0).toUpperCase();
     }
+    updateMiniPulsePreview();
   } else {
     if (signedOutBox) signedOutBox.style.display = '';
     if (signedInBox) signedInBox.style.display = 'none';
     if (meNameEl) meNameEl.textContent = '';
     if (meEmailEl) meEmailEl.textContent = '';
+
+    if (miniPulseCard) miniPulseCard.style.display = 'none';
     
     // Mobile auth state
     if (mobileSignedOutBox) mobileSignedOutBox.style.display = '';
@@ -2773,12 +2779,71 @@ function playPingSound() {
   osc.stop(now + 0.15);
 }
 
+function updateMiniPulsePreview() {
+  if (!miniPulseCard || !miniPulseGraph || !miniPulseMeta) return;
+
+  if (!currentUser) {
+    miniPulseCard.style.display = 'none';
+    miniPulseGraph.innerHTML = '';
+    return;
+  }
+
+  const weeks = 16;
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() - (weeks * 7 - 1));
+
+  const weekBuckets = Array.from({ length: weeks }, () => 0);
+
+  if (currentList && completions[currentList]) {
+    Object.values(completions[currentList]).forEach(rec => {
+      const dateStrings = rec.allDates?.length ? rec.allDates : (rec.date ? [rec.date] : []);
+      dateStrings.forEach(d => {
+        if (!d) return;
+        const dt = new Date(d);
+        if (isNaN(dt)) return;
+        if (dt < start || dt > now) return;
+        const diffDays = Math.floor((now - dt) / (1000 * 60 * 60 * 24));
+        const weekIndex = weeks - 1 - Math.floor(diffDays / 7);
+        if (weekIndex >= 0 && weekIndex < weeks) weekBuckets[weekIndex] += 1;
+      });
+    });
+  }
+
+  const totalLogs = weekBuckets.reduce((sum, n) => sum + n, 0);
+
+  miniPulseGraph.innerHTML = '';
+  weekBuckets.forEach(count => {
+    const cell = document.createElement('div');
+    cell.classList.add('mini-pulse-cell');
+    if (count > 0) {
+      const level = Math.min(4, Math.max(1, Math.ceil(count)));
+      cell.classList.add('active', `level-${level}`);
+      cell.title = `${count} hike${count === 1 ? '' : 's'} this week`;
+    } else {
+      cell.title = 'No hikes this week';
+    }
+    miniPulseGraph.appendChild(cell);
+  });
+
+  if (!currentList) {
+    miniPulseMeta.textContent = 'Choose a list to see recent hikes';
+  } else if (totalLogs) {
+    miniPulseMeta.textContent = `${totalLogs} hike${totalLogs === 1 ? '' : 's'} in the last ${weeks} weeks`;
+  } else {
+    miniPulseMeta.textContent = 'Log hikes to see your activity pulse';
+  }
+
+  miniPulseCard.style.display = '';
+}
+
 function renderProgressBase(allItems) {
   const done = allItems.filter(it => completions[currentList]?.[it.name]?.done).length;
   const total = allItems.length;
   const pct = total ? Math.round(done / total * 100) : 0;
   bar.style.width = pct + '%';
   progressText.textContent = `${done}/${total} • ${pct}%`;
+  updateMiniPulsePreview();
 }
 
 /* ======= Render View Router ======= */
