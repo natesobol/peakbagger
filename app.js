@@ -45,6 +45,7 @@ const translations = {
     'All Peaks': 'All Peaks',
     'Hide completed': 'Hide completed',
     'Advanced Filters': 'Advanced Filters',
+    'All Filters': 'All Filters',
     'Units: Feet': 'Units: Feet',
     'Units: Meters': 'Units: Meters',
     
@@ -136,6 +137,7 @@ const translations = {
     'Choose theme': 'Choose theme',
     'Dark (default)': 'Dark (default)',
     'Light (white & black)': 'Light (white & black)',
+    'Light Mode (Eye Saver)': 'Light Mode (Eye Saver)',
     'Forest Green': 'Forest Green',
     'Sky Blue': 'Sky Blue',
     
@@ -172,6 +174,7 @@ const translations = {
     'All Peaks': 'Todos los Picos',
     'Hide completed': 'Ocultar completados',
     'Advanced Filters': 'Filtros Avanzados',
+    'All Filters': 'Todos los Filtros',
     'Units: Feet': 'Unidades: Pies',
     'Units: Meters': 'Unidades: Metros',
     
@@ -252,6 +255,7 @@ const translations = {
     'Choose theme': 'Elegir tema',
     'Dark (default)': 'Oscuro (predeterminado)',
     'Light (white & black)': 'Claro (blanco y negro)',
+    'Light Mode (Eye Saver)': 'Modo claro (protector de ojos)',
     'Forest Green': 'Verde Bosque',
     'Sky Blue': 'Azul Cielo',
     
@@ -285,6 +289,7 @@ const translations = {
     'All Peaks': 'Tous les Sommets',
     'Hide completed': 'Masquer complétés',
     'Advanced Filters': 'Filtres Avancés',
+    'All Filters': 'Tous les Filtres',
     
     'Rank': 'Rang',
     'Name': 'Nom',
@@ -328,6 +333,7 @@ const translations = {
     'Choose theme': 'Choisir un thème',
     'Dark (default)': 'Sombre (par défaut)',
     'Light (white & black)': 'Clair (blanc et noir)',
+    'Light Mode (Eye Saver)': 'Mode clair (repos des yeux)',
     'Forest Green': 'Vert Forêt',
     'Sky Blue': 'Bleu Ciel',
     
@@ -361,6 +367,7 @@ const translations = {
     'All Peaks': 'Alle Gipfel',
     'Hide completed': 'Abgeschlossene ausblenden',
     'Advanced Filters': 'Erweiterte Filter',
+    'All Filters': 'Alle Filter',
     
     'Rank': 'Rang',
     'Name': 'Name',
@@ -404,6 +411,7 @@ const translations = {
     'Choose theme': 'Thema wählen',
     'Dark (default)': 'Dunkel (Standard)',
     'Light (white & black)': 'Hell (weiß und schwarz)',
+    'Light Mode (Eye Saver)': 'Heller Modus (augenfreundlich)',
     'Forest Green': 'Waldgrün',
     'Sky Blue': 'Himmelblau',
     
@@ -437,6 +445,7 @@ const translations = {
     'All Peaks': '所有山峰',
     'Hide completed': '隐藏已完成',
     'Advanced Filters': '高级筛选',
+    'All Filters': '全部筛选',
     
     'Rank': '排名',
     'Name': '名称',
@@ -480,6 +489,7 @@ const translations = {
     'Choose theme': '选择主题',
     'Dark (default)': '深色（默认）',
     'Light (white & black)': '浅色（黑白）',
+    'Light Mode (Eye Saver)': '护眼浅色模式',
     'Forest Green': '森林绿',
     'Sky Blue': '天空蓝',
     
@@ -513,6 +523,7 @@ const translations = {
     'All Peaks': 'すべての山',
     'Hide completed': '完了を非表示',
     'Advanced Filters': '高度なフィルター',
+    'All Filters': 'すべてのフィルター',
     
     'Rank': 'ランク',
     'Name': '名前',
@@ -556,6 +567,7 @@ const translations = {
     'Choose theme': 'テーマを選択',
     'Dark (default)': 'ダーク（デフォルト）',
     'Light (white & black)': 'ライト（白と黒）',
+    'Light Mode (Eye Saver)': 'ライトモード（目に優しい）',
     'Forest Green': 'フォレストグリーン',
     'Sky Blue': 'スカイブルー',
     
@@ -633,11 +645,9 @@ function translatePage() {
       option.textContent = translated;
     }
   });
-  
+
   // Update unit toggle
-  if (unitLabel) {
-    unitLabel.textContent = meters ? t('Units: Meters') : t('Units: Feet');
-  }
+  renderUnitLabel();
   
   // Update sort label
   if (sortLabel) {
@@ -888,8 +898,12 @@ const searchEl = document.getElementById('search');
 const sortBtn = document.getElementById('sortBtn');
 const sortLabel = document.getElementById('sortLabel');
 const showBtn = document.getElementById('showComplete');
+const showCompleteIcon = document.getElementById('showCompleteIcon');
+const completedPrefix = document.getElementById('completedPrefix');
+const completedState = document.getElementById('completedState');
 const exportBtn = document.getElementById('exportBtn');
 const unitToggle = document.getElementById('unitToggle');
+const unitPrefix = document.getElementById('unitPrefix');
 const unitLabel = document.getElementById('unitLabel');
 const metersToggle = document.getElementById('metersToggle');
 const themeSelect = document.getElementById('themeSelect');
@@ -920,6 +934,9 @@ const miniPulseGraph = document.getElementById('miniPulseGraph');
 const miniPulseMeta = document.getElementById('miniPulseMeta');
 const mainLoadingEl = document.getElementById('main-loading');
 const mainLoadingLabel = document.getElementById('main-loading-label');
+const mobileFiltersPanel = document.getElementById('mobileFiltersPanel');
+const contentEl = document.querySelector('.content');
+const mainPanel = document.querySelector('main.panel');
 const signedOutBox = document.getElementById('authSignedOut');
 const signedInBox = document.getElementById('authSignedIn');
 const detail = document.getElementById('detail');
@@ -939,12 +956,71 @@ const tosToggle = document.getElementById('tosToggle');
 const tosBox = document.getElementById('tosBox');
 const tosAgree = document.getElementById('tosAgree');
 const tosTextEl = document.getElementById('tosText');
+
+function updateLayoutCenterOffset() {
+  if (!contentEl || !mainPanel || window.innerWidth < 881) {
+    document.documentElement.style.setProperty('--layout-center-offset', '0px');
+    return;
+  }
+
+  const rect = mainPanel.getBoundingClientRect();
+  const viewportCenter = window.innerWidth / 2;
+  const mainCenter = rect.left + rect.width / 2;
+  const offset = mainCenter - viewportCenter;
+
+  document.documentElement.style.setProperty('--layout-center-offset', `${offset}px`);
+}
+
+window.addEventListener('resize', updateLayoutCenterOffset);
+window.addEventListener('orientationchange', updateLayoutCenterOffset);
+window.addEventListener('load', updateLayoutCenterOffset);
+requestAnimationFrame(updateLayoutCenterOffset);
+
+function syncMobileFiltersState() {
+  if (!mobileFiltersPanel) return;
+
+  const isMobile = window.matchMedia('(max-width: 960px)').matches;
+
+  if (syncMobileFiltersState.isMobile === isMobile) return;
+
+  syncMobileFiltersState.isMobile = isMobile;
+  mobileFiltersPanel.open = !isMobile;
+}
+
+syncMobileFiltersState.isMobile = null;
+window.addEventListener('resize', syncMobileFiltersState);
+window.addEventListener('orientationchange', syncMobileFiltersState);
+window.addEventListener('load', syncMobileFiltersState);
+requestAnimationFrame(syncMobileFiltersState);
+
+function renderUnitLabel() {
+  if (!unitLabel || !unitPrefix) return;
+
+  const label = meters ? t('Units: Meters') : t('Units: Feet');
+  const [prefix, value] = label.split(':');
+
+  unitPrefix.textContent = `${(prefix || 'Units').trim()}:`;
+  unitLabel.textContent = (value || '').trim() || label;
+}
+
 function renderCompletedButtonState() {
   if (!showBtn) return;
 
   const icon = hideCompleted ? '🚫' : '✅';
-  const label = hideCompleted ? 'Completed: Hidden' : 'Completed: Showing';
-  showBtn.innerHTML = `<span class="ico">${icon}</span> <span>${t(label)}</span>`;
+  const label = hideCompleted ? t('Completed: Hidden') : t('Completed: Showing');
+  const [prefix, value] = label.split(':');
+
+  if (showCompleteIcon) {
+    showCompleteIcon.textContent = icon;
+  }
+
+  if (completedPrefix) {
+    completedPrefix.textContent = `${(prefix || t('Completed')).trim()}:`;
+  }
+
+  if (completedState) {
+    completedState.textContent = (value || '').trim() || label;
+  }
 }
 
 // Old detail close button (from side panel) - removed in favor of peakDetailBackBtn
@@ -1793,6 +1869,7 @@ function showLoginForm() {
   if (signupForm) signupForm.style.display = 'none';
   if (authTitle) authTitle.textContent = 'Log in';
   authMsg.textContent = '';
+  if (loginEmail) loginEmail.focus();
 }
 
 function showSignupForm() {
@@ -1800,6 +1877,7 @@ function showSignupForm() {
   if (signupForm) signupForm.style.display = 'block';
   if (authTitle) authTitle.textContent = 'Create Account';
   authMsg.textContent = '';
+  if (signupFirstName) signupFirstName.focus();
 }
 
 function validatePasswordMatch() {
@@ -2400,7 +2478,7 @@ function fmtElevation(ft) {
 function applyUnitsFlag(flag) {
   meters = flag;
   metersToggle.checked = meters;
-  unitLabel.textContent = meters ? 'Units: Meters' : 'Units: Feet';
+  renderUnitLabel();
   renderView();
   const prefs = readPrefs();
   prefs.meters = meters;
@@ -2408,7 +2486,7 @@ function applyUnitsFlag(flag) {
 }
 
 function applyTheme(theme) {
-  document.body.classList.remove('theme-light', 'theme-forest', 'theme-sky');
+  document.body.classList.remove('theme-light', 'theme-forest', 'theme-sky', 'theme-eye-saver');
   if (!theme || theme === 'dark') {
     // dark = default
   } else if (theme === 'light') {
@@ -2417,6 +2495,8 @@ function applyTheme(theme) {
     document.body.classList.add('theme-forest');
   } else if (theme === 'sky') {
     document.body.classList.add('theme-sky');
+  } else if (theme === 'eye-saver') {
+    document.body.classList.add('theme-eye-saver');
   }
   if (themeSelect) themeSelect.value = theme || 'dark';
   const prefs = readPrefs();
@@ -3790,14 +3870,16 @@ if (openAuthNavBtn) openAuthNavBtn.onclick = () => openModal();
 if (showSignup) showSignup.onclick = (e) => {
   e.preventDefault();
   showSignupForm();
+  if (signupFirstName) signupFirstName.focus();
 };
 if (showLogin) showLogin.onclick = (e) => {
   e.preventDefault();
   showLoginForm();
+  if (loginEmail) loginEmail.focus();
 };
 
-// Login handler
-if (doLoginBtn) doLoginBtn.onclick = async () => {
+const submitLogin = async () => {
+  if (!doLoginBtn) return;
   authMsg.textContent = '';
   try {
     const remember = rememberMe ? rememberMe.checked : true;
@@ -3814,22 +3896,25 @@ if (doLoginBtn) doLoginBtn.onclick = async () => {
   }
 };
 
-// Signup handler
-if (doSignupBtn) doSignupBtn.onclick = async () => {
+// Login handler
+if (doLoginBtn) doLoginBtn.onclick = submitLogin;
+
+const submitSignup = async () => {
+  if (!doSignupBtn || doSignupBtn.disabled) return;
   authMsg.textContent = '';
-  
+
   // Bot prevention check
   if (!checkBotPrevention()) {
     authMsg.textContent = 'Invalid submission';
     authMsg.className = 'err';
     return;
   }
-  
+
   // Validate password match
   if (!validatePasswordMatch()) {
     return; // Error message already set in validatePasswordMatch
   }
-  
+
   try {
     await signUp(
       signupFirstName.value,
@@ -3849,6 +3934,30 @@ if (doSignupBtn) doSignupBtn.onclick = async () => {
     authMsg.className = 'err';
   }
 };
+
+// Signup handler
+if (doSignupBtn) doSignupBtn.onclick = submitSignup;
+
+const loginEnterHandler = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitLogin();
+  }
+};
+if (loginEmail) loginEmail.addEventListener('keydown', loginEnterHandler);
+if (loginPass) loginPass.addEventListener('keydown', loginEnterHandler);
+
+const signupEnterHandler = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitSignup();
+  }
+};
+if (signupFirstName) signupFirstName.addEventListener('keydown', signupEnterHandler);
+if (signupLastName) signupLastName.addEventListener('keydown', signupEnterHandler);
+if (signupEmail) signupEmail.addEventListener('keydown', signupEnterHandler);
+if (signupPass) signupPass.addEventListener('keydown', signupEnterHandler);
+if (signupPassConfirm) signupPassConfirm.addEventListener('keydown', signupEnterHandler);
 
 // Real-time password match validation
 if (signupPassConfirm) {
