@@ -130,9 +130,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 .select,select,.input{background:var(--input-bg);color:var(--ink);border:1px solid var(--border-strong);border-radius:10px;padding:8px 10px;outline:none}
 select:focus,.input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(156,200,255,.15)}
 select{width:100%}
+.choose-list-label{font-size:15px;color:var(--ink);font-weight:700}
+.choose-list-select{font-size:15px;padding:10px 12px;border-radius:12px}
 
 /* ---------- iOS app promo card ---------- */
-.sidebar .app-promo{display:flex;align-items:center;gap:10px;margin:8px 0 14px;padding:10px 12px;background:var(--card);color:var(--ink);text-decoration:none;border:1px solid var(--border);border-radius:12px;box-shadow:none}
+.sidebar .app-promo{display:flex;align-items:center;gap:10px;margin:12px 0 14px;padding:10px 12px;background:var(--card);color:var(--ink);text-decoration:none;border:1px solid #ffffff;border-radius:12px;box-shadow:none}
 .sidebar .app-promo:hover{ background:var(--input-bg-hover); }
 .app-promo__icon{width:32px; height:32px; border-radius:8px;border:1px solid var(--border-strong); flex:0 0 auto;}
 .app-promo__meta{ flex:1; min-width:0; }

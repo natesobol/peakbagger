@@ -927,7 +927,7 @@ const miniPulseMeta = document.getElementById('miniPulseMeta');
 const mainLoadingEl = document.getElementById('main-loading');
 const mainLoadingLabel = document.getElementById('main-loading-label');
 const contentEl = document.querySelector('.content');
-const mainPanel = document.querySelector('.content .panel');
+const mainPanel = document.querySelector('main.panel');
 const signedOutBox = document.getElementById('authSignedOut');
 const signedInBox = document.getElementById('authSignedIn');
 const detail = document.getElementById('detail');
@@ -964,6 +964,7 @@ function updateLayoutCenterOffset() {
 
 window.addEventListener('resize', updateLayoutCenterOffset);
 window.addEventListener('orientationchange', updateLayoutCenterOffset);
+window.addEventListener('load', updateLayoutCenterOffset);
 requestAnimationFrame(updateLayoutCenterOffset);
 
 function renderCompletedButtonState() {
