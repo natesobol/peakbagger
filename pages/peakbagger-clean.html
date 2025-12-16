@@ -235,8 +235,11 @@
           <!-- Advanced Filters (collapsible) -->
           <details class="ctrl-advanced-filters" style="position:relative">
             <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
-              <span class="ico">⏬</span>
-              <span data-i18n="Filters">Filters</span>
+              <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+                <span class="ico">⏬</span>
+                <span data-i18n="Filters">Filters</span>
+              </div>
+              <span class="ctrl-chevron" aria-hidden="true"></span>
             </summary>
             <div class="advanced-filters-panel">
               <div class="filter-row">
@@ -332,9 +335,11 @@
           </div>
           <span class="summary-chevron" aria-hidden="true"></span>
         </summary>
-        <div class="panel" style="font-size:14px;line-height:1.5;color:var(--ink)">
-          <p>Peakbagger is a tool to track your summits of peaks in the White Mountains. Use it to log your ascents, track your progress through peak lists, and discover which peaks you've conquered.</p>
-          <p style="margin-top:10px">Whether you're working toward the NH 48, the 52 with a View, or other peak bagging challenges, Peakbagger helps you stay organized and motivated on your peak-hunting adventures.</p>
+        <div class="collapsible-content">
+          <div class="panel" style="font-size:14px;line-height:1.5;color:var(--ink)">
+            <p>Peakbagger is a tool to track your summits of peaks in the White Mountains. Use it to log your ascents, track your progress through peak lists, and discover which peaks you've conquered.</p>
+            <p style="margin-top:10px">Whether you're working toward the NH 48, the 52 with a View, or other peak bagging challenges, Peakbagger helps you stay organized and motivated on your peak-hunting adventures.</p>
+          </div>
         </div>
       </details>
 
@@ -365,52 +370,56 @@
             <span data-i18n="Settings">Settings</span>
           </div>
           <span class="summary-chevron" aria-hidden="true"></span>
-        </summary><div class="settings">
-        <div class="row">
-          <label data-i18n="Units: Meters">Units: meters</label>
-          <label class="switch"><input id="metersToggle" type="checkbox"><span class="slider"></span></label>
-        </div>
+        </summary>
+        <div class="collapsible-content">
+          <div class="settings">
+            <div class="row">
+              <label data-i18n="Units: Meters">Units: meters</label>
+              <label class="switch"><input id="metersToggle" type="checkbox"><span class="slider"></span></label>
+            </div>
 
-        <!-- Grid Tracking Mode -->
-        <div class="row">
-          <label data-i18n="Grid tracking (12 months/peak)">Grid tracking (12 months/peak)</label>
-          <label class="switch"><input id="gridTrackingToggle" type="checkbox"><span class="slider"></span></label>
-        </div>
-        <!-- Language selector -->
-        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
-          <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="Language">Language</div>
-          <div class="language-selector">
-            <button class="lang-btn active" data-lang="en" title="English"><img src="https://flagcdn.com/w20/us.png" srcset="https://flagcdn.com/w40/us.png 2x" width="20" height="15" alt="EN"></button>
-            <button class="lang-btn" data-lang="es" title="Español"><img src="https://flagcdn.com/w20/es.png" srcset="https://flagcdn.com/w40/es.png 2x" width="20" height="15" alt="ES"></button>
-            <button class="lang-btn" data-lang="fr" title="Français"><img src="https://flagcdn.com/w20/fr.png" srcset="https://flagcdn.com/w40/fr.png 2x" width="20" height="15" alt="FR"></button>
-            <button class="lang-btn" data-lang="de" title="Deutsch"><img src="https://flagcdn.com/w20/de.png" srcset="https://flagcdn.com/w40/de.png 2x" width="20" height="15" alt="DE"></button>
-            <button class="lang-btn" data-lang="zh" title="中文"><img src="https://flagcdn.com/w20/cn.png" srcset="https://flagcdn.com/w40/cn.png 2x" width="20" height="15" alt="ZH"></button>
-            <button class="lang-btn" data-lang="ja" title="日本語"><img src="https://flagcdn.com/w20/jp.png" srcset="https://flagcdn.com/w40/jp.png 2x" width="20" height="15" alt="JA"></button>
+            <!-- Grid Tracking Mode -->
+            <div class="row">
+              <label data-i18n="Grid tracking (12 months/peak)">Grid tracking (12 months/peak)</label>
+              <label class="switch"><input id="gridTrackingToggle" type="checkbox"><span class="slider"></span></label>
+            </div>
+            <!-- Language selector -->
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+              <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="Language">Language</div>
+              <div class="language-selector">
+                <button class="lang-btn active" data-lang="en" title="English"><img src="https://flagcdn.com/w20/us.png" srcset="https://flagcdn.com/w40/us.png 2x" width="20" height="15" alt="EN"></button>
+                <button class="lang-btn" data-lang="es" title="Español"><img src="https://flagcdn.com/w20/es.png" srcset="https://flagcdn.com/w40/es.png 2x" width="20" height="15" alt="ES"></button>
+                <button class="lang-btn" data-lang="fr" title="Français"><img src="https://flagcdn.com/w20/fr.png" srcset="https://flagcdn.com/w40/fr.png 2x" width="20" height="15" alt="FR"></button>
+                <button class="lang-btn" data-lang="de" title="Deutsch"><img src="https://flagcdn.com/w20/de.png" srcset="https://flagcdn.com/w40/de.png 2x" width="20" height="15" alt="DE"></button>
+                <button class="lang-btn" data-lang="zh" title="中文"><img src="https://flagcdn.com/w20/cn.png" srcset="https://flagcdn.com/w40/cn.png 2x" width="20" height="15" alt="ZH"></button>
+                <button class="lang-btn" data-lang="ja" title="日本語"><img src="https://flagcdn.com/w20/jp.png" srcset="https://flagcdn.com/w40/jp.png 2x" width="20" height="15" alt="JA"></button>
+              </div>
+            </div>
+            <!-- Color Legend -->
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+              <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="Card Color Legend">Card Color Legend</div>
+              <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:4px;height:16px;background:#3ddc84;border-radius:2px"></div>
+                  <span data-i18n="Completed">Completed</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:4px;height:16px;background:#d4af37;border-radius:2px"></div>
+                  <span data-i18n="Favorite">Favorite</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:4px;height:16px;background:#800000;border-radius:2px"></div>
+                  <span data-i18n="Wishlist">Wishlist</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:4px;height:16px;background:#646464;border-radius:2px"></div>
+                  <span data-i18n="Incomplete">Incomplete</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <!-- Color Legend -->
-        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
-          <div class="subtle" style="font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="Card Color Legend">Card Color Legend</div>
-          <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:4px;height:16px;background:#3ddc84;border-radius:2px"></div>
-              <span data-i18n="Completed">Completed</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:4px;height:16px;background:#d4af37;border-radius:2px"></div>
-              <span data-i18n="Favorite">Favorite</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:4px;height:16px;background:#800000;border-radius:2px"></div>
-              <span data-i18n="Wishlist">Wishlist</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:4px;height:16px;background:#646464;border-radius:2px"></div>
-              <span data-i18n="Incomplete">Incomplete</span>
-            </div>
-          </div>
-        </div>
-      </div></details>
+      </details>
 
       <!-- Themes dropdown (pre-collapsed) -->
       <details id="themeDetails" class="collapsible-section"><summary>
@@ -420,14 +429,16 @@
           </div>
           <span class="summary-chevron" aria-hidden="true"></span>
         </summary>
-        <div class="panel" style="margin-top:8px">
-          <label for="themeSelect" class="subtle" data-i18n="Choose theme">Choose theme</label>
-          <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
-            <option value="dark" data-i18n-option="Dark (default)">Dark (default)</option>
-            <option value="light" data-i18n-option="Light (white & black)">Light (white & black)</option>
-            <option value="forest" data-i18n-option="Forest Green">Forest Green</option>
-            <option value="sky" data-i18n-option="Sky Blue">Sky Blue</option>
-          </select>
+        <div class="collapsible-content">
+          <div class="panel" style="margin-top:8px">
+            <label for="themeSelect" class="subtle" data-i18n="Choose theme">Choose theme</label>
+            <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
+              <option value="dark" data-i18n-option="Dark (default)">Dark (default)</option>
+              <option value="light" data-i18n-option="Light (white & black)">Light (white & black)</option>
+              <option value="forest" data-i18n-option="Forest Green">Forest Green</option>
+              <option value="sky" data-i18n-option="Sky Blue">Sky Blue</option>
+            </select>
+          </div>
         </div>
       </details>
 
@@ -438,16 +449,20 @@
             <span data-i18n="Resources">Resources</span>
           </div>
           <span class="summary-chevron" aria-hidden="true"></span>
-        </summary><div class="panel" style="margin-top:14px">
-        <div class="links-col">
-          <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH (trip reports)</a>
-          <a class="btn-link" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Weather</a>
-          <a class="btn-link" href="https://www.peakbagger.com/" target="_blank" rel="noopener">Peakbagger (lists & facts)</a>
-          <a class="btn-link" href="https://www.mountwashington.org/" target="_blank" rel="noopener">Mount Washington Observatory</a>
-          <a class="btn-link" href="https://www.fs.usda.gov/whitemountain" target="_blank" rel="noopener">WMNF Alerts/Notices</a>
+        </summary>
+        <div class="collapsible-content">
+          <div class="panel" style="margin-top:14px">
+            <div class="links-col">
+              <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH (trip reports)</a>
+              <a class="btn-link" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Weather</a>
+              <a class="btn-link" href="https://www.peakbagger.com/" target="_blank" rel="noopener">Peakbagger (lists & facts)</a>
+              <a class="btn-link" href="https://www.mountwashington.org/" target="_blank" rel="noopener">Mount Washington Observatory</a>
+              <a class="btn-link" href="https://www.fs.usda.gov/whitemountain" target="_blank" rel="noopener">WMNF Alerts/Notices</a>
+            </div>
+            <p class="subtle xsmall" style="margin-top:8px">External links open in a new tab.</p>
+          </div>
         </div>
-        <p class="subtle xsmall" style="margin-top:8px">External links open in a new tab.</p>
-        </div></details>
+      </details>
 
       <!-- NEW: Copyright -->
       <div class="copyright">© <span id="copyrightYear"></span> Nathan Sobol</div>
