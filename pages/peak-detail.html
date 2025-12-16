@@ -390,7 +390,7 @@
                 peak.lon = apiPeak.longitude;
               }
             }
-            renderPeak(peak);
+            await renderPeak(peak);
             return;
           }
         }
@@ -411,7 +411,7 @@
             lat: apiPeak.latitude, lon: apiPeak.longitude,
             photos: apiPeak.photos || []
           };
-          renderPeak(peak);
+          await renderPeak(peak);
           return;
         }
         document.getElementById('peakName').textContent = 'Peak not found';
@@ -421,7 +421,7 @@
       }
     }
     
-    function renderPeak(peak) {
+    async function renderPeak(peak) {
       currentPeakName = peak.name;  // Store for summit log panel
       document.getElementById('peakName').textContent = peak.name;
       updateMetaTags(peak);
@@ -447,10 +447,7 @@
         await handleQuickLogDateChange(newDate);
       });
       
-      const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
-      const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
-      updateFavBtn(favorites.includes(peak.slug));
-      updateWishBtn(wishlist.includes(peak.slug));
+      await refreshFavoriteState(peak.slug);
       
       // Set up Log Hike button link
       document.querySelectorAll('.log-hike-link').forEach(link => {
@@ -592,27 +589,118 @@
     document.getElementById('media').addEventListener('mouseenter', stopCarousel);
     document.getElementById('media').addEventListener('mouseleave', () => { if (carouselImgs.length > 1) startCarousel(); });
     
-    function toggleFavorite(slug) {
-      const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
-      const idx = favorites.indexOf(slug);
-      if (idx > -1) favorites.splice(idx, 1); else favorites.push(slug);
+    function persistFavoriteWishlist(favorites, wishlist) {
       localStorage.setItem('peakbagger_favorites', JSON.stringify(favorites));
+      localStorage.setItem('peakbagger_wishlist', JSON.stringify(wishlist));
+    }
+
+    async function refreshFavoriteState(slug) {
+      let favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
+      let wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
+
+      if (currentUser) {
+        try {
+          const { data: favRows, error: favError } = await supabase
+            .from('user_favorite_peaks')
+            .select('peak_id, peaks(slug)')
+            .eq('user_id', currentUser.id);
+
+          const { data: wishRows, error: wishError } = await supabase
+            .from('user_wishlist_hikes')
+            .select('peak_id, peaks(slug)')
+            .eq('user_id', currentUser.id);
+
+          if (!favError && favRows) {
+            favorites = favRows.map(f => f?.peaks?.slug).filter(Boolean);
+          }
+          if (!wishError && wishRows) {
+            wishlist = wishRows.map(w => w?.peaks?.slug).filter(Boolean);
+          }
+        } catch (e) {
+          console.warn('refreshFavoriteState: fallback to local cache', e);
+        }
+      }
+
+      persistFavoriteWishlist(favorites, wishlist);
+      updateFavBtn(favorites.includes(slug));
+      updateWishBtn(wishlist.includes(slug));
+    }
+
+    async function toggleFavorite(slug) {
+      let favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
+      const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
+      const isFavorite = favorites.includes(slug);
+
+      if (currentUser && currentPeakId) {
+        try {
+          if (isFavorite) {
+            await supabase
+              .from('user_favorite_peaks')
+              .delete()
+              .eq('user_id', currentUser.id)
+              .eq('peak_id', currentPeakId);
+            favorites = favorites.filter(s => s !== slug);
+          } else {
+            await supabase
+              .from('user_favorite_peaks')
+              .insert({ user_id: currentUser.id, peak_id: currentPeakId });
+            favorites.push(slug);
+          }
+        } catch (e) {
+          console.error('toggleFavorite error:', e);
+        }
+      } else {
+        if (isFavorite) {
+          favorites = favorites.filter(s => s !== slug);
+        } else {
+          favorites.push(slug);
+        }
+      }
+
+      persistFavoriteWishlist(favorites, wishlist);
       updateFavBtn(favorites.includes(slug));
     }
-    
+
     function updateFavBtn(isFavorite) {
       document.getElementById('favIcon').textContent = isFavorite ? '⭐' : '☆';
       document.getElementById('favText').textContent = isFavorite ? 'Favorited' : 'Favorite';
     }
-    
-    function toggleWishlist(slug) {
-      const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
-      const idx = wishlist.indexOf(slug);
-      if (idx > -1) wishlist.splice(idx, 1); else wishlist.push(slug);
-      localStorage.setItem('peakbagger_wishlist', JSON.stringify(wishlist));
+
+    async function toggleWishlist(slug) {
+      const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
+      let wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
+      const isWishlist = wishlist.includes(slug);
+
+      if (currentUser && currentPeakId) {
+        try {
+          if (isWishlist) {
+            await supabase
+              .from('user_wishlist_hikes')
+              .delete()
+              .eq('user_id', currentUser.id)
+              .eq('peak_id', currentPeakId);
+            wishlist = wishlist.filter(s => s !== slug);
+          } else {
+            await supabase
+              .from('user_wishlist_hikes')
+              .insert({ user_id: currentUser.id, peak_id: currentPeakId });
+            wishlist.push(slug);
+          }
+        } catch (e) {
+          console.error('toggleWishlist error:', e);
+        }
+      } else {
+        if (isWishlist) {
+          wishlist = wishlist.filter(s => s !== slug);
+        } else {
+          wishlist.push(slug);
+        }
+      }
+
+      persistFavoriteWishlist(favorites, wishlist);
       updateWishBtn(wishlist.includes(slug));
     }
-    
+
     function updateWishBtn(isWishlist) {
       document.getElementById('wishIcon').textContent = isWishlist ? '❤️' : '🤍';
       document.getElementById('wishText').textContent = isWishlist ? 'Wishlisted' : 'Wishlist';

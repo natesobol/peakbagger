@@ -3789,6 +3789,10 @@ async function changeList(name) {
     await loadStateFromSupabase();
     await loadGridFromSupabase();
     await loadGridTrackingSettings();
+    await loadFavorites();
+  } else {
+    // Refresh guest caches so card colors reflect browser backups
+    await loadFavorites();
   }
 
   try {

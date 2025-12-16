@@ -384,6 +384,7 @@ if (window.location.pathname.includes('/pages/')) {
   let currentListId = null;
   let recentHikesForSocial = [];
   let dashboardProgress = { completed: 0, total: 0 };
+  let dashboardCompletionDates = [];
 
   // DOM elements
   const profileName = document.getElementById('profileName');
@@ -1375,7 +1376,7 @@ if (window.location.pathname.includes('/pages/')) {
   
   // =====================================================
   // Load dashboard stats
-  // DB Load: list_peaks, user_peak_progress, user_favorite_peaks
+  // DB Load: list_peaks, user_hike_logs, user_favorite_peaks
   // =====================================================
   async function loadDashboardStats() {
     console.log('loadDashboardStats: Starting, user:', !!currentUser, 'listId:', currentListId);
@@ -1390,6 +1391,9 @@ if (window.location.pathname.includes('/pages/')) {
     try {
       let completed = 0;
       let totalPeaks = 0;
+      let listPeakIds = new Set();
+      const completionDateByPeak = new Map();
+      const completedPeakIds = new Set();
       
       // If we have a specific list, get stats for that list
       if (currentListId) {
@@ -1398,43 +1402,48 @@ if (window.location.pathname.includes('/pages/')) {
           .from('list_peaks')
           .select('peak_id')
           .eq('list_id', currentListId);
-        
+
         if (listError) {
           console.warn('loadDashboardStats: DB Load list_peaks Error:', listError);
         }
-        
-        totalPeaks = listPeaks?.length || 0;
-        
-        // DB Load: Get completed peaks for this list from user_peak_progress
-        const { data: completedPeaks, error: completedError } = await supabase
-          .from('user_peak_progress')
-          .select('peak_id')
-          .eq('user_id', currentUser.id)
-          .eq('list_id', currentListId)
-          .eq('completed', true);
-        
-        if (completedError) {
-          console.warn('loadDashboardStats: DB Load user_peak_progress Error:', completedError);
-        }
-        
-        completed = completedPeaks?.length || 0;
-      } else {
-        // No list - get all completed peaks across all lists
-        console.log('loadDashboardStats: No list ID, getting all completed peaks');
-        
-        // DB Load: Get all completed peaks from user_peak_progress
-        const { data: allCompleted, error: allError } = await supabase
-          .from('user_peak_progress')
-          .select('peak_id')
-          .eq('user_id', currentUser.id)
-          .eq('completed', true);
-        
-        if (allError) {
-          console.warn('loadDashboardStats: DB Load all completed Error:', allError);
-        }
-        
-        completed = allCompleted?.length || 0;
-        totalPeaks = 48; // Default to NH48
+
+        listPeakIds = new Set((listPeaks || []).map(p => p.peak_id).filter(Boolean));
+        totalPeaks = listPeakIds.size;
+      }
+
+      // DB Load: Get user hike logs and derive unique completed peaks (latest date per peak)
+      const { data: hikeLogs, error: hikeError } = await supabase
+        .from('user_hike_logs')
+        .select('peak_id, list_id, hike_date')
+        .eq('user_id', currentUser.id)
+        .order('hike_date', { ascending: false });
+
+      if (hikeError) {
+        console.warn('loadDashboardStats: DB Load hike logs Error:', hikeError);
+      }
+
+      if (hikeLogs) {
+        hikeLogs.forEach(log => {
+          const pid = log.peak_id;
+          if (!pid) return;
+
+          if (currentListId) {
+            if (log.list_id && log.list_id !== currentListId) return;
+            if (listPeakIds.size && !listPeakIds.has(pid)) return;
+          }
+
+          if (!completionDateByPeak.has(pid) && log.hike_date) {
+            completionDateByPeak.set(pid, log.hike_date);
+          }
+          completedPeakIds.add(pid);
+        });
+      }
+
+      completed = completedPeakIds.size;
+
+      // Default totals for users without a selected list
+      if (!currentListId && totalPeaks === 0) {
+        totalPeaks = completed;
       }
       
       // DB Load: Get favorites from user_favorite_peaks (not list-specific)
@@ -1479,7 +1488,8 @@ if (window.location.pathname.includes('/pages/')) {
       document.getElementById('dashboardStats').style.display = 'block';
 
       dashboardProgress = { completed, total: totalPeaks };
-      
+      dashboardCompletionDates = Array.from(completionDateByPeak.values());
+
       // Load activity graph
       await loadActivityGraph();
     } catch (e) {
@@ -1491,7 +1501,7 @@ if (window.location.pathname.includes('/pages/')) {
   
   // =====================================================
   // Load GitHub-style pulse graph (208 dots / 2 years)
-  // DB Load: user_peak_progress
+  // DB Load: derived from hike logs (unique peaks)
   // =====================================================
   async function loadActivityGraph() {
     // Error handling: Check user authentication
@@ -1511,30 +1521,16 @@ if (window.location.pathname.includes('/pages/')) {
       // Get all completed peaks with dates from past 2 years
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-      
-      console.log('loadActivityGraph: DB Load - Fetching completions since', twoYearsAgo.toISOString());
-      
-      // DB Load: Get completion dates from user_peak_progress
-      let { data: completions, error } = await supabase
-        .from('user_peak_progress')
-        .select('first_completed_at, last_completed_at')
-        .eq('user_id', currentUser.id)
-        .eq('completed', true);
-      
-      if (error) {
-        console.error('loadActivityGraph: DB Load Error:', error);
-        throw error;
-      }
-      
-      // Filter by date in JS (more flexible than SQL date comparison)
+
+      console.log('loadActivityGraph: Using derived completion dates from hike logs');
+
       const twoYearsAgoTime = twoYearsAgo.getTime();
-      completions = (completions || []).filter(c => {
-        const dateStr = c.first_completed_at || c.last_completed_at;
+      const completions = (dashboardCompletionDates || []).filter(dateStr => {
         if (!dateStr) return false;
         return new Date(dateStr).getTime() >= twoYearsAgoTime;
       });
-      
-      console.log('loadActivityGraph: Found', completions?.length || 0, 'completions in date range');
+
+      console.log('loadActivityGraph: Found', completions?.length || 0, 'unique peak completions in date range');
       
       // Build period-by-period activity map (208 periods over 2 years = ~3.5 days each)
       const periodMap = {}; // key: period index -> count
@@ -1543,14 +1539,13 @@ if (window.location.pathname.includes('/pages/')) {
       const msPerPeriod = (2 * 365.25 * 24 * 60 * 60 * 1000) / 208; // ~3.5 days per period
       
       if (completions) {
-        completions.forEach(c => {
-          const dateStr = c.first_completed_at || c.last_completed_at;
+        completions.forEach(dateStr => {
           if (!dateStr) return;
-          
+
           const date = new Date(dateStr);
           const daysAgo = (today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000);
           const periodIndex = Math.floor(207 - (daysAgo / 3.5)); // 0-207, 207 = most recent
-          
+
           if (periodIndex >= 0 && periodIndex < 208) {
             periodMap[periodIndex] = (periodMap[periodIndex] || 0) + 1;
             totalHikes++;
