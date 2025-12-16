@@ -58,18 +58,18 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 
 /* ---------- Topbar ---------- */
 .topbar{padding:16px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;box-shadow:0 2px 0 var(--border)}
-.topbar .row1{display:flex;flex-direction:column;gap:12px;align-items:center}
-.progress-wrap{width:100%;max-width:1180px;margin:0 auto}
-.progress-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:12px}
-.progress-head .list-title{grid-column:1/-1;justify-self:center}
-.progress-head #progressText{justify-self:end}
+.topbar .row1{display:flex;flex-direction:column;gap:12px;align-items:stretch;width:100%}
+.progress-wrap{width:100%;max-width:none;margin:0}
+.progress-head{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:12px;text-align:center}
+.progress-head .list-title{justify-self:center}
+.progress-head #progressText{justify-self:center;width:100%;text-align:center}
 .progress{height:16px;border:1px solid var(--border-strong);border-radius:999px;overflow:hidden;background:#000}
 .bar{height:100%;background:linear-gradient(90deg, #22c55e, #16a34a);width:0}
 .list-title{flex:1;text-align:center;font-size:38px;font-weight:700;letter-spacing:.3px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- Controls row ---------- */
 .controls-container{width:100%;display:flex;justify-content:center}
-.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;max-width:1180px;width:100%}
+.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;max-width:none;width:100%}
 .controls .ctrl,.controls .ctrl-btn{flex:1 1 auto;min-width:120px;max-width:280px}
 .ctrl,.ctrl-btn{height:var(--ctrl-h);display:flex;align-items:center;gap:10px;background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:0 14px;color:var(--ink)}
 .ctrl input[type="search"]{flex:1;min-width:0;border:none;outline:none;background:transparent;color:inherit;height:calc(var(--ctrl-h) - 2px)}
@@ -455,9 +455,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   .topbar{position:static;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.15);border-bottom:2px solid var(--border)}
   .topbar .row1{gap:12px}
   .progress-wrap{order:0;margin-bottom:0;max-width:none}
-  .progress-head{grid-template-columns:1fr;gap:6px;margin-bottom:8px}
-  .progress-head #progressText{justify-self:flex-start}
-  .list-title{font-size:22px;text-align:left;order:1;font-weight:800;letter-spacing:0.3px}
+  .progress-head{gap:6px;margin-bottom:8px;align-items:center;text-align:center}
+  .progress-head #progressText{text-align:center}
+  .list-title{font-size:22px;text-align:center;order:1;font-weight:800;letter-spacing:0.3px}
   #progressText{order:2;font-size:14px;font-weight:600}
 
   /* Controls - make them look like proper buttons */
@@ -902,7 +902,7 @@ html, body{-webkit-transform:translate3d(0, 0, 0);transform:translate3d(0, 0, 0)
 /* ---------- Tablet & down ---------- */
 @media (max-width:880px){
   .content{grid-template-columns:1fr}
-  .progress-head{flex-wrap:wrap;gap:8px 12px}
+  .progress-head{gap:6px;text-align:center;align-items:center}
   .list-title{font-size:20px;order:2;width:100%}
   :root{--ctrl-h:36px}
   .controls{grid-template-columns:1fr 1fr 1fr;gap:10px}
