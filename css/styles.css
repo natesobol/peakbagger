@@ -71,7 +71,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 
 /* ---------- Controls row ---------- */
 .controls-container{width:100%;display:flex;justify-content:center}
-.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:1400px;margin:0 auto}
+.controls{display:flex;flex-wrap:nowrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:none;margin:0 auto}
 .controls .ctrl,.controls .ctrl-btn{flex:0 0 auto;min-width:160px;max-width:none;justify-content:center}
 .controls .ctrl{flex:1 1 340px;min-width:240px;max-width:520px}
 .ctrl,.ctrl-btn{height:var(--ctrl-h);display:flex;align-items:center;gap:10px;background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:0 14px;color:var(--ink)}
@@ -83,6 +83,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 .ctrl .ico,.ctrl-btn .ico{font-size:14px;opacity:.9}
 .ctrl-advanced-filters summary{gap:10px;justify-content:space-between;width:100%}
 .ctrl-advanced-filters[open] summary .ctrl-chevron{transform:rotate(90deg)}
+
+@media (max-width:1200px){
+  .controls{flex-wrap:wrap;max-width:1400px}
+}
 
 @media (max-width:900px){
   .controls .ctrl,.controls .ctrl-btn{flex:1 1 48%;min-width:0}
@@ -493,11 +497,9 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
   .brand{margin-bottom:14px}
   .brand h1{font-size:18px;font-weight:700}
   
-  /* Collapsible sections - make them pop */
-  .collapsible-section{margin-bottom:12px;border-width:2px;border-radius:14px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
-  .collapsible-section summary{padding:14px 16px;font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:0.8px}
-  .collapsible-section summary::after{font-size:12px;opacity:0.8}
-  .collapsible-section summary:hover{background:var(--input-bg-hover)}
+  /* Collapsible sections - keep spacing without changing desktop style */
+  .collapsible-section{margin-bottom:12px}
+  .collapsible-section summary{font-size:15px}
   
   /* Peak cards */
   .peak-card-body{padding:12px}
@@ -730,15 +732,36 @@ body.sticky-header thead th{position:sticky;top:0;background:var(--panel);z-inde
 .grid-hint{color:var(--ink-weak);font-size:12px;margin:6px 0 -2px}
 
 /* ---------- Collapsible sections ---------- */
-details.collapsible-section{margin-top:14px}
-.collapsible-section summary{cursor:pointer;font-weight:600;font-size:14px;margin-bottom:6px;color:var(--ink-weak);list-style:none;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:linear-gradient(90deg,rgba(34,197,94,0.08),transparent)}
+details.collapsible-section{
+  margin-top:14px;
+  border:1px solid var(--border-strong);
+  border-radius:14px;
+  background:var(--panel);
+  overflow:hidden;
+  box-shadow:0 4px 14px rgba(0,0,0,0.12);
+  transition:box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.collapsible-section summary{
+  cursor:pointer;
+  font-weight:700;
+  font-size:15px;
+  margin:0;
+  color:var(--ink);
+  list-style:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 16px;
+  border-bottom:1px solid var(--border-strong);
+  background:linear-gradient(90deg,rgba(34,197,94,0.08),transparent);
+}
 .collapsible-section summary::-webkit-details-marker{display:none}
 .collapsible-section .summary-chevron,.ctrl-chevron{width:16px;height:16px;display:grid;place-items:center;color:var(--ink-weak);transition:transform 0.2s ease}
 .collapsible-section .summary-chevron::before,.ctrl-chevron::before{content:'▸';font-size:13px}
 .collapsible-section[open] .summary-chevron{transform:rotate(90deg)}
-.collapsible-content{overflow:hidden;max-height:0;opacity:0;transition:max-height 0.25s ease, opacity 0.2s ease;padding:0 2px}
-.collapsible-section[open] .collapsible-content{max-height:2000px;opacity:1;margin-top:8px}
-.collapsible-content > .settings,.collapsible-content > .panel{margin-top:0;padding:12px 14px 14px 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
+.collapsible-content{overflow:hidden;max-height:0;opacity:0;padding:0 16px;display:flex;flex-direction:column;gap:12px;transition:max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease}
+.collapsible-section[open] .collapsible-content{max-height:2000px;opacity:1;padding:14px 16px 16px}
+.collapsible-content > .settings,.collapsible-content > .panel{margin:0;padding:0;border:none;border-radius:0;background:transparent;box-shadow:none}
 
 /* ---------- Mini pulse preview ---------- */
 .mini-pulse-card{margin-top:10px;border:1px solid var(--border-strong);border-radius:12px;background:var(--card);padding:10px;box-shadow:0 8px 18px rgba(0,0,0,0.12)}
