@@ -189,7 +189,7 @@
           </div>
         </div>
         <div class="btn-row">
-          <a href="#" class="btn" id="logHikeBtn">📝 Log New Hike</a>
+          <a href="#" class="btn log-hike-link">📝 Log New Hike</a>
         </div>
       </div>
       
@@ -451,7 +451,9 @@
       updateWishBtn(wishlist.includes(peak.slug));
       
       // Set up Log Hike button link
-      document.getElementById('logHikeBtn').href = `/hike-log?peak=${peak.slug}`;
+      document.querySelectorAll('.log-hike-link').forEach(link => {
+        link.href = `/hike-log?peak=${peak.slug}`;
+      });
 
       document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
       document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
@@ -830,61 +832,73 @@
         
         console.log('DB Load Success: user_hike_logs -', logs?.length || 0, 'logs found');
         
+        const logButton = `
+          <div class="log-panel-header">
+            <a href="${currentPeakSlug ? `/hike-log?peak=${currentPeakSlug}` : '#'}" class="btn log-hike-link log-panel-btn">📝 Log New Hike</a>
+          </div>
+        `;
+
         if (!logs || logs.length === 0) {
           container.innerHTML = `
-            <div class="no-logs-message">
-              <div class="empty-icon">📝</div>
-              <div>No hike logs yet</div>
-              <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Log New Hike" above to record your first summit!</p>
+            ${logButton}
+            <div class="hike-log-scroll">
+              <div class="no-logs-message">
+                <div class="empty-icon">📝</div>
+                <div>No hike logs yet</div>
+                <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Log New Hike" above to record your first summit!</p>
+              </div>
             </div>
           `;
           return;
         }
-        
+
         // Render card-based log list with buttons
         const cardsHtml = `
-          <div class="hike-log-cards">
-            ${logs.map(log => {
-              const dateValue = log.hike_date || '';
-              const formattedDate = dateValue ? new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', { 
-                month: 'short', day: 'numeric', year: 'numeric' 
-              }) : 'No date';
-              const notes = log.notes || '';
-              const trailName = log.trail_name || '';
-              const subtitle = trailName || (notes.length > 50 ? notes.substring(0, 50) + '...' : notes) || 'No details';
-              
-              return `
-                <div class="hike-log-card" data-log-id="${log.id}">
-                  <div class="hike-log-card-main">
-                    <div class="hike-log-date-section">
-                      <input type="date" 
-                             class="log-date-input compact" 
-                             value="${dateValue}"
-                             onchange="updateLogDate('${log.id}', this.value)" 
-                             title="Change date" />
-                      <span class="hike-log-date-display">${formattedDate}</span>
+          ${logButton}
+          <div class="hike-log-scroll">
+            <div class="hike-log-cards">
+              ${logs.map(log => {
+                const dateValue = log.hike_date || '';
+                const formattedDate = dateValue ? new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric'
+                }) : 'No date';
+                const notes = log.notes || '';
+                const trailName = log.trail_name || '';
+                const subtitle = trailName || (notes.length > 50 ? notes.substring(0, 50) + '...' : notes) || 'No details';
+
+                return `
+                  <div class="hike-log-card" data-log-id="${log.id}">
+                    <div class="hike-log-card-main">
+                      <div class="hike-log-date-section">
+                        <input type="date"
+                               class="log-date-input compact"
+                               value="${dateValue}"
+                               onchange="updateLogDate('${log.id}', this.value)"
+                               title="Change date" />
+                        <span class="hike-log-date-display">${formattedDate}</span>
+                      </div>
+                      <div class="hike-log-details">
+                        <div class="hike-log-subtitle">${subtitle}</div>
+                      </div>
                     </div>
-                    <div class="hike-log-details">
-                      <div class="hike-log-subtitle">${subtitle}</div>
+                    <div class="hike-log-card-actions">
+                      <button class="log-card-btn" onclick="editLog('${log.id}')" title="Edit hike details">
+                        ✏️ Edit
+                      </button>
+                      <button class="log-card-btn accent" onclick="generateSocialCard('${log.id}')" title="Create social card with this date">
+                        📸 Social Card
+                      </button>
+                      <button class="log-card-btn delete" onclick="deleteLog('${log.id}')" title="Delete this log">
+                        🗑️
+                      </button>
                     </div>
                   </div>
-                  <div class="hike-log-card-actions">
-                    <button class="log-card-btn" onclick="editLog('${log.id}')" title="Edit hike details">
-                      ✏️ Edit
-                    </button>
-                    <button class="log-card-btn accent" onclick="generateSocialCard('${log.id}')" title="Create social card with this date">
-                      📸 Social Card
-                    </button>
-                    <button class="log-card-btn delete" onclick="deleteLog('${log.id}')" title="Delete this log">
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              `;
-            }).join('')}
+                `;
+              }).join('')}
+            </div>
           </div>
         `;
-        
+
         container.innerHTML = cardsHtml;
         
       } catch (e) {
