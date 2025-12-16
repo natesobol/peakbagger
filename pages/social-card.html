@@ -62,8 +62,8 @@
   <!-- Preview Section -->
   <div class="preview-section">
     <div class="preview-label">Preview</div>
-    <div class="preview-container">
-      <div id="socialCard" class="social-card">
+      <div class="preview-container">
+        <div id="socialCard" class="social-card">
         <!-- Background Image -->
         <div class="card-image" id="cardImage">
           <img src="" alt="Peak" id="peakImage" crossorigin="anonymous" />
@@ -71,10 +71,10 @@
         </div>
         
         <!-- Info Panel -->
-        <div class="card-info-panel">
-          <div class="card-user-name" id="cardUserName"></div>
-          
-          <div class="card-badge">
+          <div class="card-info-panel">
+            <div class="card-user-name" id="cardUserName"></div>
+
+          <div class="card-badge" id="cardBadge">
             <span class="badge-icon">🏔️</span>
             <span class="badge-text">SUMMIT ACHIEVED</span>
           </div>
@@ -106,6 +106,14 @@
           </div>
         </div>
       </div>
+    <div class="photo-toolbar" id="photoToolbar" style="display:none;">
+      <div class="photo-toolbar-label">Swap image</div>
+      <div class="photo-toolbar-controls">
+        <button type="button" class="photo-btn" onclick="cyclePhoto(-1)">◀</button>
+        <span class="photo-counter" id="photoCounter">1/1</span>
+        <button type="button" class="photo-btn" onclick="cyclePhoto(1)">▶</button>
+      </div>
+    </div>
     </div>
   </div>
 
@@ -175,6 +183,8 @@
   let currentUser = null;
   let peakData = null;
   let hikeLogData = null;
+  let cardPhotos = [];
+  let currentPhotoIndex = 0;
   let cardStyle = 'dark';
   
   // Parse URL params
@@ -200,6 +210,9 @@
     if (peakSlug) {
       await loadPeakData(peakSlug);
     }
+
+    // Prepare photos once peak data is available
+    buildCardPhotos();
     
     // Load hike log data if provided
     if (logId && currentUser) {
@@ -275,6 +288,15 @@
     } catch (e) {
       console.error('Error loading peak data:', e);
     }
+  }
+
+  function buildCardPhotos() {
+    cardPhotos = Array.isArray(peakData?.photos)
+      ? peakData.photos
+        .map(p => typeof p === 'string' ? p : (p?.url || p?.src || p?.image || null))
+        .filter(Boolean)
+      : [];
+    currentPhotoIndex = 0;
   }
   
   // =====================================================
@@ -352,6 +374,9 @@
     const elevationEl = document.getElementById('cardElevation');
     const locationEl = document.getElementById('cardLocation');
     const secondaryStats = document.getElementById('cardSecondaryStats');
+    const badgeEl = document.getElementById('cardBadge');
+    const badgeIcon = badgeEl?.querySelector('.badge-icon');
+    const badgeText = badgeEl?.querySelector('.badge-text');
     
     // Set user display name
     if (currentUser) {
@@ -362,13 +387,22 @@
     }
     
     // Set peak image
-    let imageUrl = PLACEHOLDER_IMAGE;
-    if (peakData?.photos?.length > 0) {
-      const photo = peakData.photos[0];
-      imageUrl = typeof photo === 'string' ? photo : (photo.url || PLACEHOLDER_IMAGE);
+    if (cardPhotos.length === 0 && peakData?.photos?.length) {
+      buildCardPhotos();
     }
-    peakImage.src = imageUrl;
+
+    const selectedPhoto = cardPhotos[currentPhotoIndex] || PLACEHOLDER_IMAGE;
+    peakImage.src = selectedPhoto;
     peakImage.onerror = () => { peakImage.src = PLACEHOLDER_IMAGE; };
+
+    const photoToolbar = document.getElementById('photoToolbar');
+    const photoCounter = document.getElementById('photoCounter');
+    if (cardPhotos.length > 1) {
+      photoToolbar.style.display = 'flex';
+      photoCounter.textContent = `${currentPhotoIndex + 1}/${cardPhotos.length}`;
+    } else {
+      photoToolbar.style.display = 'none';
+    }
     
     // Set peak name
     peakName.textContent = peakData?.name || 'Unknown Peak';
@@ -386,8 +420,14 @@
       dateEl.textContent = date.toLocaleDateString('en-US', {
         month: 'long', day: 'numeric', year: 'numeric'
       });
+      badgeEl?.classList.remove('todo');
+      if (badgeText) badgeText.textContent = 'SUMMIT ACHIEVED';
+      if (badgeIcon) badgeIcon.textContent = '🏔️';
     } else {
       dateEl.textContent = '—';
+      badgeEl?.classList.add('todo');
+      if (badgeText) badgeText.textContent = 'TO-DO';
+      if (badgeIcon) badgeIcon.textContent = '🗺️';
     }
     
     // Set elevation
@@ -412,6 +452,12 @@
     }
     
     secondaryStats.innerHTML = secondaryHtml;
+  }
+
+  function cyclePhoto(direction) {
+    if (!cardPhotos.length) return;
+    currentPhotoIndex = (currentPhotoIndex + direction + cardPhotos.length) % cardPhotos.length;
+    updateCard();
   }
   
   // =====================================================
