@@ -58,7 +58,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 
 /* ---------- Topbar ---------- */
 .topbar{display:flex;justify-content:center;padding:16px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;box-shadow:0 2px 0 var(--border)}
-.topbar .row1{display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;max-width:1100px;margin:0 auto}
+.topbar .row1{display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;max-width:1400px;margin:0 auto}
 .progress-wrap{width:100%;max-width:860px;margin:0 auto;display:flex;flex-direction:column;align-items:center}
 .progress-head{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:12px;text-align:center}
 .progress-head .list-title{justify-self:center}
@@ -69,8 +69,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 
 /* ---------- Controls row ---------- */
 .controls-container{width:100%;display:flex;justify-content:center}
-.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:1100px;margin:0 auto}
-.controls .ctrl,.controls .ctrl-btn{flex:0 1 220px;min-width:140px;max-width:260px;justify-content:center}
+.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:1400px;margin:0 auto}
+.controls .ctrl,.controls .ctrl-btn{flex:0 1 200px;min-width:140px;max-width:280px;justify-content:center}
 .ctrl,.ctrl-btn{height:var(--ctrl-h);display:flex;align-items:center;gap:10px;background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:0 14px;color:var(--ink)}
 .ctrl input[type="search"]{flex:1;min-width:0;border:none;outline:none;background:transparent;color:inherit;height:calc(var(--ctrl-h) - 2px)}
 .ctrl-btn{cursor:pointer;justify-content:center;transition:all 0.2s ease}
@@ -78,6 +78,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 .ctrl-btn:active{transform:translateY(0);opacity:0.9}
 .ctrl-btn button{all:unset;color:inherit;cursor:pointer}
 .ctrl .ico,.ctrl-btn .ico{font-size:14px;opacity:.9}
+.ctrl-advanced-filters summary{gap:10px;justify-content:space-between;width:100%}
+.ctrl-advanced-filters[open] summary .ctrl-chevron{transform:rotate(90deg)}
 
 /* ---------- Content (sidebar + table) ---------- */
 .content{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:0 16px 16px;min-width:0}
@@ -716,10 +718,14 @@ body.sticky-header thead th{position:sticky;top:0;background:var(--panel);z-inde
 
 /* ---------- Collapsible sections ---------- */
 details.collapsible-section{margin-top:14px}
-.collapsible-section summary{cursor:pointer;font-weight:600;font-size:14px;margin-bottom:6px;color:var(--ink-weak);list-style:none;display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.collapsible-section summary{cursor:pointer;font-weight:600;font-size:14px;margin-bottom:6px;color:var(--ink-weak);list-style:none;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:linear-gradient(90deg,rgba(34,197,94,0.08),transparent)}
 .collapsible-section summary::-webkit-details-marker{display:none}
-.collapsible-section[open] summary{margin-bottom:8px}
-.collapsible-section > .settings, .collapsible-section > .panel{margin-top:8px}
+.collapsible-section .summary-chevron,.ctrl-chevron{width:16px;height:16px;display:grid;place-items:center;color:var(--ink-weak);transition:transform 0.2s ease}
+.collapsible-section .summary-chevron::before,.ctrl-chevron::before{content:'▸';font-size:13px}
+.collapsible-section[open] .summary-chevron{transform:rotate(90deg)}
+.collapsible-content{overflow:hidden;max-height:0;opacity:0;transition:max-height 0.25s ease, opacity 0.2s ease;padding:0 2px}
+.collapsible-section[open] .collapsible-content{max-height:2000px;opacity:1;margin-top:8px}
+.collapsible-content > .settings,.collapsible-content > .panel{margin-top:0;padding:12px 14px 14px 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel)}
 
 /* ---------- Mini pulse preview ---------- */
 .mini-pulse-card{margin-top:10px;border:1px solid var(--border-strong);border-radius:12px;background:var(--card);padding:10px;box-shadow:0 8px 18px rgba(0,0,0,0.12)}
@@ -738,9 +744,9 @@ details.collapsible-section{margin-top:14px}
 .mini-pulse-meta{font-size:12px;color:var(--ink-weak)}
 
 /* ---------- Pager styles ---------- */
-.pager-wrap{position:relative;display:flex;align-items:center;justify-content:center;margin:16px 0;padding:6px 0}
-.pager-stats{position:absolute;left:0;top:50%;transform:translateY(-50%);color:var(--ink-weak);font-size:12px;white-space:nowrap}
-.page-list{display:flex;gap:6px;flex-wrap:nowrap;justify-content:center}
+.pager-wrap{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin:16px 0;padding:6px 0}
+.pager-stats{position:static;color:var(--ink-weak);font-size:12px;white-space:nowrap;text-align:center}
+.page-list{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .page-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:10px;min-width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
 .page-btn[disabled]{opacity:.5;cursor:not-allowed}
 .page-btn[aria-current="page"]{border-color:var(--accent);outline:2px solid #22c55e55;color:#ffffff}
