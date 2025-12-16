@@ -84,9 +84,10 @@
   border: 1px solid rgba(255,255,255,0.2);
 }
 .site-nav-logo span {
-  font-weight: 700;
-  font-size: 14px;
-  color: #a5b4c3;
+  font-weight: 800;
+  font-size: 38px;
+  line-height: 1;
+  color: #fff;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -100,8 +101,10 @@
   text-decoration: none;
   padding: 8px 16px;
   border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
   transition: all 0.2s ease;
 }
 .site-nav-links a:hover {
@@ -189,27 +192,26 @@
       </div>
       <div class="controls-container">
         <div class="controls">
-          <div class="ctrl"><span class="ico">🔎</span><input id="search" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." /></div>
-          <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">⚙️</span> <span><span data-i18n="Sort">Sort:</span> <strong id="sortLabel">Rank</strong></span></div>
-          <div class="ctrl-btn" id="showComplete"><span class="ico">◯</span> <span data-i18n="Hide completed">Hide completed</span></div>
-          <!-- Status Filter -->
-          <div class="ctrl" style="min-width:150px">
-            <span class="ico">🔽</span>
-            <select id="statusFilter" class="select" style="background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--ink);font-size:14px;cursor:pointer">
-              <option value="all" data-i18n-option="All Peaks">All Peaks</option>
-              <option value="completed" data-i18n-option="Completed">Completed</option>
-              <option value="favorites" data-i18n-option="Favorites">Favorites</option>
-              <option value="wishlist" data-i18n-option="Wishlist">Wishlist</option>
-              <option value="incomplete" data-i18n-option="Incomplete">Incomplete</option>
-            </select>
-          </div>
+          <div class="ctrl"><span class="ico">🔍</span><input id="search" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." /></div>
+          <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">↕️</span> <span><span data-i18n="Sort">Sort:</span> <strong id="sortLabel">Rank</strong></span></div>
+          <div class="ctrl-btn" id="showComplete"><span class="ico">✅</span> <span data-i18n="Completed: Showing">Completed: Showing</span></div>
           <!-- Advanced Filters (collapsible) -->
           <details class="ctrl-advanced-filters" style="position:relative">
             <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
-              <span class="ico">⚙️</span>
+              <span class="ico">⏬</span>
               <span data-i18n="Filters">Filters</span>
             </summary>
             <div class="advanced-filters-panel">
+              <div class="filter-row">
+                <label data-i18n="Status">Status:</label>
+                <select id="statusFilter" class="select">
+                  <option value="all" data-i18n-option="All Peaks">All Peaks</option>
+                  <option value="completed" data-i18n-option="Completed">Completed</option>
+                  <option value="favorites" data-i18n-option="Favorites">Favorites</option>
+                  <option value="wishlist" data-i18n-option="Wishlist">Wishlist</option>
+                  <option value="incomplete" data-i18n-option="Incomplete">Incomplete</option>
+                </select>
+              </div>
               <div class="filter-row">
                 <label data-i18n="Range">Range:</label>
                 <select id="rangeFilter" class="select">
@@ -235,9 +237,9 @@
             </div>
           </details>
           <!-- NEW: Mode toggle (Checklist / Grid) -->
-          <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🔁</span> <span><span data-i18n="Mode">Mode:</span> <strong id="modeLabel">Checklist</strong></span></div>
-          <div id="unitToggle" class="ctrl-btn" title="Toggle units"><span class="ico">⚙️</span><span id="unitLabel">Feet (ft)</span></div>
-          <div class="ctrl-btn" id="exportBtn"><span class="ico">🗄️</span> <span data-i18n="Export XLSX">Export XLSX</span></div>
+          <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🗂️</span> <span><span data-i18n="Mode">Mode:</span> <strong id="modeLabel">Checklist</strong></span></div>
+          <div id="unitToggle" class="ctrl-btn" title="Toggle units"><span class="ico">📏</span><span id="unitLabel">Units: Feet</span></div>
+          <div class="ctrl-btn" id="exportBtn"><span class="ico">📤</span> <span data-i18n="Export XLSX">Export XLSX</span></div>
         </div>
       </div>
     </div>
