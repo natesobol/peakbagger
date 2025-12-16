@@ -69,13 +69,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 
 /* ---------- Controls row ---------- */
 .controls-container{width:100%;display:flex;justify-content:center}
-.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:1280px;margin:0 auto}
+.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:1100px;margin:0 auto}
 .controls .ctrl,.controls .ctrl-btn{flex:0 1 220px;min-width:140px;max-width:260px;justify-content:center}
-
-@media (min-width:1200px){
-  .controls{flex-wrap:nowrap;justify-content:center}
-  .controls .ctrl,.controls .ctrl-btn{flex:0 1 180px;max-width:none}
-}
 .ctrl,.ctrl-btn{height:var(--ctrl-h);display:flex;align-items:center;gap:10px;background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:0 14px;color:var(--ink)}
 .ctrl input[type="search"]{flex:1;min-width:0;border:none;outline:none;background:transparent;color:inherit;height:calc(var(--ctrl-h) - 2px)}
 .ctrl-btn{cursor:pointer;justify-content:center;transition:all 0.2s ease}
@@ -743,10 +738,10 @@ details.collapsible-section{margin-top:14px}
 .mini-pulse-meta{font-size:12px;color:var(--ink-weak)}
 
 /* ---------- Pager styles ---------- */
-.pager-wrap{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0;padding:6px 0;min-height:42px}
-.pager-stats{color:var(--ink-weak);font-size:12px;white-space:nowrap;position:absolute;left:0;top:50%;transform:translateY(-50%)}
-.page-list{display:flex;gap:8px;flex-wrap:nowrap;justify-content:center;max-width:calc(100% - 160px)}
-.page-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:11px;min-width:38px;height:38px;display:grid;place-items:center;cursor:pointer;color:var(--ink);font-size:15px;font-weight:600}
+.pager-wrap{position:relative;display:flex;align-items:center;justify-content:center;margin:16px 0;padding:6px 0}
+.pager-stats{position:absolute;left:0;top:50%;transform:translateY(-50%);color:var(--ink-weak);font-size:12px;white-space:nowrap}
+.page-list{display:flex;gap:6px;flex-wrap:nowrap;justify-content:center}
+.page-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:10px;min-width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
 .page-btn[disabled]{opacity:.5;cursor:not-allowed}
 .page-btn[aria-current="page"]{border-color:var(--accent);outline:2px solid #22c55e55;color:#ffffff}
 
@@ -1079,10 +1074,10 @@ html, body{-webkit-transform:translate3d(0, 0, 0);transform:translate3d(0, 0, 0)
 
   .controls{grid-template-columns:1fr 1fr;gap:10px}
   .controls .ctrl{grid-column:1 / -1}
-
-  .pager-wrap{position:static;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:8px 0;padding:4px 0;min-height:unset}
-  .pager-wrap .page-list{position:static;transform:none;order:1;justify-content:center;max-width:100%;width:100%}
-  .pager-wrap .pager-stats{position:static;order:2;text-align:center;font-size:11px;white-space:normal;transform:none}
+  
+  .pager-wrap{position:static;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:8px 0;padding:4px 0}
+  .pager-wrap .page-list{order:1;justify-content:center}
+  .pager-wrap .pager-stats{position:static;transform:none;order:2;text-align:center;font-size:11px;white-space:normal}
 }
 
 /* ---------- Smaller phones (480px) ---------- */
