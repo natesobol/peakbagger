@@ -1869,6 +1869,7 @@ function showLoginForm() {
   if (signupForm) signupForm.style.display = 'none';
   if (authTitle) authTitle.textContent = 'Log in';
   authMsg.textContent = '';
+  if (loginEmail) loginEmail.focus();
 }
 
 function showSignupForm() {
@@ -1876,6 +1877,7 @@ function showSignupForm() {
   if (signupForm) signupForm.style.display = 'block';
   if (authTitle) authTitle.textContent = 'Create Account';
   authMsg.textContent = '';
+  if (signupFirstName) signupFirstName.focus();
 }
 
 function validatePasswordMatch() {
@@ -3868,14 +3870,16 @@ if (openAuthNavBtn) openAuthNavBtn.onclick = () => openModal();
 if (showSignup) showSignup.onclick = (e) => {
   e.preventDefault();
   showSignupForm();
+  if (signupFirstName) signupFirstName.focus();
 };
 if (showLogin) showLogin.onclick = (e) => {
   e.preventDefault();
   showLoginForm();
+  if (loginEmail) loginEmail.focus();
 };
 
-// Login handler
-if (doLoginBtn) doLoginBtn.onclick = async () => {
+const submitLogin = async () => {
+  if (!doLoginBtn) return;
   authMsg.textContent = '';
   try {
     const remember = rememberMe ? rememberMe.checked : true;
@@ -3892,22 +3896,25 @@ if (doLoginBtn) doLoginBtn.onclick = async () => {
   }
 };
 
-// Signup handler
-if (doSignupBtn) doSignupBtn.onclick = async () => {
+// Login handler
+if (doLoginBtn) doLoginBtn.onclick = submitLogin;
+
+const submitSignup = async () => {
+  if (!doSignupBtn || doSignupBtn.disabled) return;
   authMsg.textContent = '';
-  
+
   // Bot prevention check
   if (!checkBotPrevention()) {
     authMsg.textContent = 'Invalid submission';
     authMsg.className = 'err';
     return;
   }
-  
+
   // Validate password match
   if (!validatePasswordMatch()) {
     return; // Error message already set in validatePasswordMatch
   }
-  
+
   try {
     await signUp(
       signupFirstName.value,
@@ -3927,6 +3934,30 @@ if (doSignupBtn) doSignupBtn.onclick = async () => {
     authMsg.className = 'err';
   }
 };
+
+// Signup handler
+if (doSignupBtn) doSignupBtn.onclick = submitSignup;
+
+const loginEnterHandler = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitLogin();
+  }
+};
+if (loginEmail) loginEmail.addEventListener('keydown', loginEnterHandler);
+if (loginPass) loginPass.addEventListener('keydown', loginEnterHandler);
+
+const signupEnterHandler = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitSignup();
+  }
+};
+if (signupFirstName) signupFirstName.addEventListener('keydown', signupEnterHandler);
+if (signupLastName) signupLastName.addEventListener('keydown', signupEnterHandler);
+if (signupEmail) signupEmail.addEventListener('keydown', signupEnterHandler);
+if (signupPass) signupPass.addEventListener('keydown', signupEnterHandler);
+if (signupPassConfirm) signupPassConfirm.addEventListener('keydown', signupEnterHandler);
 
 // Real-time password match validation
 if (signupPassConfirm) {

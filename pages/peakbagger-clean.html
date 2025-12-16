@@ -639,14 +639,14 @@
       </label>
       
       <div class="row-actions" style="margin-top:16px">
-        <button class="btn btn-primary" id="doLogin" data-i18n="Log in">Log in</button>
+        <button class="btn btn-primary" id="doLogin" type="button" data-i18n="Log in">Log in</button>
         <span class="space"></span>
-        <button class="btn btn-ghost" id="closeAuth" data-i18n="Close">Close</button>
+        <button class="btn btn-ghost" id="closeAuth" type="button" data-i18n="Close">Close</button>
       </div>
-      
+
       <div style="margin-top:16px;text-align:center">
         <span class="subtle" data-i18n="Don't have an account?">Don't have an account? </span>
-        <a href="#" id="showSignup" style="color:#4a9eff;text-decoration:none" data-i18n="Create account">Create account</a>
+        <a href="#" id="showSignup" class="auth-switch" data-i18n="Create account">Create account</a>
       </div>
     </div>
     
@@ -675,14 +675,14 @@
       </label>
       
       <div class="row-actions" style="margin-top:16px">
-        <button class="btn btn-primary" id="doSignup" disabled data-i18n="Create account">Create account</button>
+        <button class="btn btn-primary" id="doSignup" type="button" disabled data-i18n="Create account">Create account</button>
         <span class="space"></span>
-        <button class="btn btn-ghost" id="closeAuth" data-i18n="Close">Close</button>
+        <button class="btn btn-ghost" id="closeAuth" type="button" data-i18n="Close">Close</button>
       </div>
-      
+
       <div style="margin-top:16px;text-align:center">
         <span class="subtle">Already have an account? </span>
-        <a href="#" id="showLogin" style="color:#4a9eff;text-decoration:none">Log in</a>
+        <a href="#" id="showLogin" class="auth-switch">Log in</a>
       </div>
     </div>
     
