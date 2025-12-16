@@ -71,7 +71,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 /* ---------- Controls row ---------- */
 .controls-container{width:100%;display:flex;justify-content:center}
 .controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:1400px;margin:0 auto}
-.controls .ctrl,.controls .ctrl-btn{flex:0 1 200px;min-width:140px;max-width:280px;justify-content:center}
+.controls .ctrl,.controls .ctrl-btn{flex:0 0 auto;min-width:160px;max-width:none;justify-content:center}
+.controls .ctrl{flex:1 1 340px;min-width:240px;max-width:520px}
 .ctrl,.ctrl-btn{height:var(--ctrl-h);display:flex;align-items:center;gap:10px;background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:0 14px;color:var(--ink)}
 .ctrl input[type="search"]{flex:1;min-width:0;border:none;outline:none;background:transparent;color:inherit;height:calc(var(--ctrl-h) - 2px)}
 .ctrl-btn{cursor:pointer;justify-content:center;transition:all 0.2s ease}
@@ -81,6 +82,16 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 .ctrl .ico,.ctrl-btn .ico{font-size:14px;opacity:.9}
 .ctrl-advanced-filters summary{gap:10px;justify-content:space-between;width:100%}
 .ctrl-advanced-filters[open] summary .ctrl-chevron{transform:rotate(90deg)}
+
+@media (max-width:900px){
+  .controls .ctrl,.controls .ctrl-btn{flex:1 1 48%;min-width:0}
+  .controls{justify-content:center}
+  .ctrl-btn span{white-space:normal;text-align:center}
+}
+
+@media (max-width:560px){
+  .controls .ctrl,.controls .ctrl-btn{flex:1 1 100%}
+}
 
 /* ---------- Content (sidebar + table) ---------- */
 .content{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:0 16px 16px;min-width:0}
