@@ -383,6 +383,7 @@ if (window.location.pathname.includes('/pages/')) {
   let currentUser = null;
   let currentListId = null;
   let recentHikesForSocial = [];
+  let dashboardProgress = { completed: 0, total: 0 };
 
   // DOM elements
   const profileName = document.getElementById('profileName');
@@ -1468,7 +1469,7 @@ if (window.location.pathname.includes('/pages/')) {
       // Get the current list name for the label
       const currentList = allLists.find(l => l.id === currentListId);
       const listName = currentList ? currentList.name : 'All Lists';
-      
+
       // Update UI
       document.getElementById('statTotalCompleted').textContent = `${completed}/${totalPeaks}`;
       document.getElementById('statFavorites').textContent = favoritesCount;
@@ -1476,6 +1477,8 @@ if (window.location.pathname.includes('/pages/')) {
       document.getElementById('statPercentComplete').textContent = percentage + '%';
       document.getElementById('statListName').textContent = listName;
       document.getElementById('dashboardStats').style.display = 'block';
+
+      dashboardProgress = { completed, total: totalPeaks };
       
       // Load activity graph
       await loadActivityGraph();
@@ -1555,8 +1558,13 @@ if (window.location.pathname.includes('/pages/')) {
         });
       }
       
-      // Update total count
-      pulseHikeCount.textContent = `${totalHikes} peaks in this period`;
+      // Update total count using list-aware progress instead of hike logs
+      const { completed: listCompleted, total: listTotal } = dashboardProgress;
+      if (listTotal > 0) {
+        pulseHikeCount.textContent = `${listCompleted}/${listTotal} peaks complete`;
+      } else {
+        pulseHikeCount.textContent = `${listCompleted} peaks complete`;
+      }
       
       // Generate 208 dots (2 years)
       const periods = [];

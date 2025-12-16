@@ -95,6 +95,57 @@ body {
   background: repeating-conic-gradient(#1a1a24 0% 25%, #12121a 0% 50%) 50% / 20px 20px;
   border-radius: 12px;
   padding: 20px;
+  position: relative;
+}
+
+.photo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  width: max-content;
+  max-width: calc(100% - 40px);
+}
+
+.photo-toolbar-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.photo-toolbar-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.photo-btn {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.photo-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.photo-counter {
+  font-size: 13px;
+  color: var(--ink-weak);
 }
 
 .photo-toolbar {

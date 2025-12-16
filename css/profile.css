@@ -697,6 +697,17 @@
   width: 100%;
 }
 
+.social-section .btn-primary {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
+.social-section .btn-primary:hover {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
 .social-card-select {
   display: flex;
   gap: 10px;

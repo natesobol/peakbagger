@@ -165,6 +165,9 @@
         <button class="btn" id="favBtn"><span id="favIcon">☆</span> <span id="favText">Favorite</span></button>
         <button class="btn" id="wishBtn"><span id="wishIcon">🤍</span> <span id="wishText">Wishlist</span></button>
       </div>
+      <div class="share-btn-row">
+        <button class="btn share-wide-btn" id="sharePeakBtn">Share peak on social media</button>
+      </div>
     </div>
     
     <!-- SUMMIT LOG + LEARN MORE SIDE BY SIDE -->
@@ -189,7 +192,7 @@
           </div>
         </div>
         <div class="btn-row">
-          <a href="#" class="btn log-hike-link">📝 Log New Hike</a>
+          <a href="#" class="btn log-hike-link">📝 Bag Peak</a>
         </div>
       </div>
       
@@ -239,7 +242,6 @@
         <div class="info-label">Weather Forecasts</div>
         <div class="links-col">
           <a class="btn-link" id="wxOpenMeteo" href="#" target="_blank" rel="noopener">Open-Meteo</a>
-          <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
           <a class="btn-link" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
         </div>
       </div>
@@ -457,6 +459,16 @@
 
       document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
       document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
+      const sharePeakBtn = document.getElementById('sharePeakBtn');
+      if (sharePeakBtn) {
+        sharePeakBtn.onclick = () => {
+          if (currentPeakSlug && mostRecentLogId) {
+            window.location.href = `/social-card?peak=${currentPeakSlug}&log=${mostRecentLogId}`;
+          } else if (currentPeakSlug) {
+            window.location.href = `/social-card?peak=${currentPeakSlug}`;
+          }
+        };
+      }
 
       const wxNoaa = document.getElementById('wxNoaa');
       const wxOpenMeteo = document.getElementById('wxOpenMeteo');
@@ -834,7 +846,7 @@
         
         const logButton = `
           <div class="log-panel-header">
-            <a href="${currentPeakSlug ? `/hike-log?peak=${currentPeakSlug}` : '#'}" class="btn log-hike-link log-panel-btn">📝 Log New Hike</a>
+            <a href="${currentPeakSlug ? `/hike-log?peak=${currentPeakSlug}` : '#'}" class="btn log-hike-link log-panel-btn">📝 Bag Peak</a>
           </div>
         `;
 
@@ -845,7 +857,7 @@
               <div class="no-logs-message">
                 <div class="empty-icon">📝</div>
                 <div>No hike logs yet</div>
-                <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Log New Hike" above to record your first summit!</p>
+                <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Bag Peak" above to record your first summit!</p>
               </div>
             </div>
           `;

@@ -410,6 +410,16 @@ h1 {
   border-top: 1px dotted var(--stroke);
 }
 
+.share-btn-row {
+  padding-top: 10px;
+}
+
+.share-wide-btn {
+  width: 100%;
+  justify-content: center;
+  font-weight: 700;
+}
+
 .btn {
   background: var(--input-bg);
   border: 1px solid var(--stroke);

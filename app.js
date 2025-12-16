@@ -2468,7 +2468,6 @@ async function openPeakDetailOLD(it) {
   // Update links
   const wxNoaa = document.getElementById('peakWxNoaa');
   const wxOpenMeteo = document.getElementById('peakWxOpenMeteo');
-  const wxTrailsNH = document.getElementById('peakWxTrailsNH');
   const wxMWOBS = document.getElementById('peakWxMWOBS');
   const lnkWikipedia = document.getElementById('peakLnkWikipedia');
   const lnkPeakbagger = document.getElementById('peakLnkPeakbagger');
@@ -2490,7 +2489,6 @@ async function openPeakDetailOLD(it) {
     if (lnkPeakbagger) lnkPeakbagger.href = `https://www.peakbagger.com/search.aspx?tid=S&ss=${searchName}`;
     if (lnkAllTrails) lnkAllTrails.href = `https://www.alltrails.com/search?q=${searchName}`;
     if (lnkSummitPost) lnkSummitPost.href = `https://www.summitpost.org/search?query=${searchName}`;
-    if (wxTrailsNH) wxTrailsNH.href = `https://trailsnh.com/search?q=${searchName}`;
     if (wxMWOBS) wxMWOBS.href = 'https://www.mountwashington.org/experience-the-weather/';
   }
   
