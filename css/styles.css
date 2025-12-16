@@ -18,6 +18,7 @@
   --input-bg:#1b1b1b; --input-bg-hover:#222; --chip-bg:#1a1a1a; --chip-border:#2a2a2a;
   --shadow:0 10px 35px rgba(0,0,0,.45);
   --ctrl-h:40px; --ctrl-gap:12px;
+  --sidebar-width:360px; --layout-gap:16px;
   /* column widths (desktop) */
   --col-rank:64px; --col-elev:140px; --col-date:160px; --col-done:120px; --col-arrow:48px;
 }
@@ -750,6 +751,15 @@ details.collapsible-section{margin-top:14px}
 .page-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:10px;min-width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
 .page-btn[disabled]{opacity:.5;cursor:not-allowed}
 .page-btn[aria-current="page"]{border-color:var(--accent);outline:2px solid #22c55e55;color:#ffffff}
+
+@media (min-width:881px){
+  /* Center pagination relative to full viewport (sidebar + main) */
+  .pager-wrap{
+    width:calc(100% + var(--sidebar-width) + var(--layout-gap));
+    margin-left:calc((var(--sidebar-width) + var(--layout-gap)) / -2);
+    margin-right:calc((var(--sidebar-width) + var(--layout-gap)) / -2);
+  }
+}
 
 /* ---------- Main loading indicator ---------- */
 .main-loading{display:none;align-items:center;justify-content:center;gap:12px;padding:6px 0 10px;margin-top:4px}
