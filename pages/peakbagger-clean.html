@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Peakbagger’s Journal – Track the NH 48 and other 4K peaks</title>
+<meta name="author" content="Nathan Sobol" />
 
 <!-- Favicon -->
 <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png">
@@ -13,6 +14,7 @@
 <meta name="description" content="A free, offline-friendly web app for hikers to log ascents of New Hampshire 4000 footers, 52 With a View and other peak lists. Search, sort, filter and export your progress." />
 <meta name="keywords" content="NH 48 peak list, White Mountain 4000 footers, peakbagging app, hiking log, New England 4000 footers, 52 with a View, hiking progress, peak tracking, summit log, Appalachian Mountains, White Mountain hiking app" />
 <link rel="canonical" href="https://nh48.app/" />
+<link rel="alternate" hreflang="en" href="https://nh48.app/" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 
 <!-- Open Graph -->
@@ -24,12 +26,16 @@
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="Peakbagger's Journal app showing NH 48 mountain cards with photos, elevations, and completion tracking" />
+<meta property="og:site_name" content="Peakbagger's Journal" />
+<meta property="og:locale" content="en_US" />
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Peakbagger's Journal – Track your NH 48 progress" />
 <meta name="twitter:description" content="Log your hikes of the NH 48, 52 With a View and other peak lists. Free, offline and community-driven." />
 <meta name="twitter:image" content="https://nh48.app/images/peakbagger-preview.png" />
+<meta name="twitter:site" content="@nh48app" />
+<meta name="twitter:creator" content="@nh48app" />
 
 <!-- JSON-LD: SoftwareApplication -->
 <script type="application/ld+json">
@@ -51,6 +57,37 @@
     "@type": "Person",
     "name": "Nathan Sobol",
     "url": "https://www.nh48pics.com/"
+  }
+}
+</script>
+
+<!-- JSON-LD: WebSite & Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Peakbagger's Journal",
+  "url": "https://nh48.app/",
+  "alternateName": "NH48.app",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Peakbagger",
+    "url": "https://nh48.app/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://nh48.app/images/peakbagger-preview.png",
+      "width": 1200,
+      "height": 630
+    },
+    "sameAs": [
+      "https://nh48pics.com",
+      "https://nh48.info"
+    ]
+  },
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://nh48.app/pages/peakbagger-clean.html?search={search_term_string}",
+    "query-input": "required name=search_term_string"
   }
 }
 </script>
