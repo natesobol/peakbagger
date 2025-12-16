@@ -45,6 +45,8 @@ const translations = {
     'All Peaks': 'All Peaks',
     'Hide completed': 'Hide completed',
     'Advanced Filters': 'Advanced Filters',
+    'Units: Feet': 'Units: Feet',
+    'Units: Meters': 'Units: Meters',
     
     // Sort options
     'Rank': 'Rank',
@@ -170,6 +172,8 @@ const translations = {
     'All Peaks': 'Todos los Picos',
     'Hide completed': 'Ocultar completados',
     'Advanced Filters': 'Filtros Avanzados',
+    'Units: Feet': 'Unidades: Pies',
+    'Units: Meters': 'Unidades: Metros',
     
     'Rank': 'Rango',
     'Name': 'Nombre',
@@ -632,7 +636,7 @@ function translatePage() {
   
   // Update unit toggle
   if (unitLabel) {
-    unitLabel.textContent = meters ? t('Meters (m)') : t('Feet (ft)');
+    unitLabel.textContent = meters ? t('Units: Meters') : t('Units: Feet');
   }
   
   // Update sort label
@@ -648,12 +652,7 @@ function translatePage() {
   }
   
   // Update show completed button
-  const showBtn = document.getElementById('showComplete');
-  if (showBtn) {
-    const text = hideCompleted ? 'Show completed' : 'Hide completed';
-    const span = showBtn.querySelector('span:last-child');
-    if (span) span.textContent = t(text);
-  }
+  renderCompletedButtonState();
   
   // Re-render current view to translate dynamic content
   renderView();
@@ -935,6 +934,13 @@ const tosToggle = document.getElementById('tosToggle');
 const tosBox = document.getElementById('tosBox');
 const tosAgree = document.getElementById('tosAgree');
 const tosTextEl = document.getElementById('tosText');
+function renderCompletedButtonState() {
+  if (!showBtn) return;
+
+  const icon = hideCompleted ? '🚫' : '✅';
+  const label = hideCompleted ? 'Completed: Hidden' : 'Completed: Showing';
+  showBtn.innerHTML = `<span class="ico">${icon}</span> <span>${t(label)}</span>`;
+}
 
 // Old detail close button (from side panel) - removed in favor of peakDetailBackBtn
 // document.getElementById('detailClose').onclick = () => detail.classList.remove('open');
@@ -967,6 +973,9 @@ let rangeFilter = 'all';  // Filter by mountain range
 let elevationMin = '';  // Minimum elevation filter
 let elevationMax = '';  // Maximum elevation filter
 let gridTrackingEnabled = false;  // Grid tracking mode (12 months/peak)
+
+// Normalize peak IDs for consistent Set lookups
+const peakKey = (id) => (id === undefined || id === null ? null : String(id));
 
 // Local storage keys and utilities (still used for preferences)
 const PREF_KEY = 'pb_prefs_v1';
@@ -1320,11 +1329,12 @@ async function loadFavorites() {
     
     if (favData && Array.isArray(favData)) {
       favData.forEach(fav => {
-        if (fav && fav.peak_id) {
+        const key = peakKey(fav?.peak_id);
+        if (key) {
           if (fav.favorite_type === 'favorite') {
-            favorites.add(fav.peak_id);
+            favorites.add(key);
           } else if (fav.favorite_type === 'wishlist') {
-            wishlist.add(fav.peak_id);
+            wishlist.add(key);
           }
         }
       });
@@ -1354,8 +1364,14 @@ async function toggleFavorite(peakId, favoriteType) {
     const targetSet = favoriteType === 'favorite' ? favorites : wishlist;
     const otherSet = favoriteType === 'favorite' ? wishlist : favorites;
     const otherType = favoriteType === 'favorite' ? 'wishlist' : 'favorite';
-    
-    if (targetSet.has(peakId)) {
+    const key = peakKey(peakId);
+
+    if (!key) {
+      console.warn('Invalid peak key for favorite toggle');
+      return;
+    }
+
+    if (targetSet.has(key)) {
       // Remove from favorites
       const { error } = await supabase
         .from('user_favorite_peaks')
@@ -1363,22 +1379,22 @@ async function toggleFavorite(peakId, favoriteType) {
         .eq('user_id', currentUser.id)
         .eq('peak_id', peakId)
         .eq('favorite_type', favoriteType);
-      
+
       if (error) throw error;
-      
-      targetSet.delete(peakId);
+
+      targetSet.delete(key);
       console.log(`Removed ${favoriteType} for peak ${peakId}`);
     } else {
       // Add to favorites (and remove from other type if present)
-      if (otherSet.has(peakId)) {
-        await supabase
-          .from('user_favorite_peaks')
-          .delete()
-          .eq('user_id', currentUser.id)
-          .eq('peak_id', peakId)
-          .eq('favorite_type', otherType);
-        otherSet.delete(peakId);
-      }
+        if (otherSet.has(key)) {
+          await supabase
+            .from('user_favorite_peaks')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('peak_id', peakId)
+            .eq('favorite_type', otherType);
+          otherSet.delete(key);
+        }
       
       const { error } = await supabase
         .from('user_favorite_peaks')
@@ -1390,7 +1406,7 @@ async function toggleFavorite(peakId, favoriteType) {
       
       if (error) throw error;
       
-      targetSet.add(peakId);
+      targetSet.add(key);
       console.log(`Added ${favoriteType} for peak ${peakId}`);
     }
     
@@ -1996,10 +2012,12 @@ async function openPeakDetailOLD(it) {
     const favText = document.getElementById('peakDetailFavText');
     const wishText = document.getElementById('peakDetailWishText');
   
-    if (favBtn && wishBtn && it.peak_id) {
+    const peakKeyId = peakKey(it.peak_id);
+
+    if (favBtn && wishBtn && peakKeyId) {
       // Update button states
-      const isFavorite = favorites.has(it.peak_id);
-      const isWishlist = wishlist.has(it.peak_id);
+      const isFavorite = favorites.has(peakKeyId);
+      const isWishlist = wishlist.has(peakKeyId);
     
     if (isFavorite) {
       favIcon.textContent = '⭐';
@@ -2339,7 +2357,7 @@ function fmtElevation(ft) {
 function applyUnitsFlag(flag) {
   meters = flag;
   metersToggle.checked = meters;
-  unitLabel.textContent = meters ? 'Meters (m)' : 'Feet (ft)';
+  unitLabel.textContent = meters ? 'Units: Meters' : 'Units: Feet';
   renderView();
   const prefs = readPrefs();
   prefs.meters = meters;
@@ -2905,9 +2923,15 @@ function applyStatusFilter(items) {
   } else if (statusFilter === 'incomplete') {
     filtered = filtered.filter(it => !it.completed);
   } else if (statusFilter === 'favorites') {
-    filtered = filtered.filter(it => it.peak_id && favorites.has(it.peak_id));
+    filtered = filtered.filter(it => {
+      const key = peakKey(it.peak_id);
+      return key && favorites.has(key);
+    });
   } else if (statusFilter === 'wishlist') {
-    filtered = filtered.filter(it => it.peak_id && wishlist.has(it.peak_id));
+    filtered = filtered.filter(it => {
+      const key = peakKey(it.peak_id);
+      return key && wishlist.has(key);
+    });
   }
   
   // Range filter
@@ -2998,15 +3022,18 @@ async function renderGrid() {
     
     // Determine card color based on completion/favorite status
     // Priority: favorite > complete > wishlist > incomplete
+    const peakIdKey = peakKey(it.peak_id);
+    const isFavorite = peakIdKey && favorites.has(peakIdKey);
+    const isWishlist = peakIdKey && wishlist.has(peakIdKey);
+    const isComplete = Boolean(it.completed);
+
     let statusClass = 'card-incomplete';
-    if (it.peak_id) {
-      if (favorites.has(it.peak_id)) {
-        statusClass = 'card-favorite';
-      } else if (it.completed) {
-        statusClass = 'card-complete';
-      } else if (wishlist.has(it.peak_id)) {
-        statusClass = 'card-wishlist';
-      }
+    if (isFavorite) {
+      statusClass = 'card-favorite';
+    } else if (isComplete) {
+      statusClass = 'card-complete';
+    } else if (isWishlist) {
+      statusClass = 'card-wishlist';
     }
     card.classList.add(statusClass);
 
@@ -3421,7 +3448,7 @@ sortBtn.onclick = () => {
 };
 showBtn.onclick = () => {
   hideCompleted = !hideCompleted;
-  showBtn.innerHTML = hideCompleted ? '<span class="ico">◎</span> <span>Show completed</span>' : '<span class="ico">◯</span> <span>Hide completed</span>';
+  renderCompletedButtonState();
   PAGE = 1;
   renderView();
 };
