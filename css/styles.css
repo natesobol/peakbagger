@@ -19,6 +19,7 @@
   --shadow:0 10px 35px rgba(0,0,0,.45);
   --ctrl-h:40px; --ctrl-gap:12px;
   --sidebar-width:360px; --layout-gap:16px;
+  --layout-center-offset:0px;
   /* column widths (desktop) */
   --col-rank:64px; --col-elev:140px; --col-date:160px; --col-done:120px; --col-arrow:48px;
 }
@@ -764,18 +765,10 @@ details.collapsible-section{margin-top:14px}
 .page-btn[aria-current="page"]{border-color:var(--accent);outline:2px solid #22c55e55;color:#ffffff}
 
 @media (min-width:881px){
-  /* Center pagination relative to full viewport (sidebar + main) */
-  .pager-wrap{
-    width:calc(100% + var(--sidebar-width) + var(--layout-gap));
-    margin-left:calc((var(--sidebar-width) + var(--layout-gap)) / -2);
-    margin-right:calc((var(--sidebar-width) + var(--layout-gap)) / -2);
-  }
-
-  /* Center the loading indicator relative to sidebar + main content */
+  /* Shift pagination and loading to align with overall app center */
+  .pager-wrap,
   .main-loading{
-    width:calc(100% + var(--sidebar-width) + var(--layout-gap));
-    margin-left:calc((var(--sidebar-width) + var(--layout-gap)) / -2);
-    margin-right:calc((var(--sidebar-width) + var(--layout-gap)) / -2);
+    transform:translateX(calc(var(--layout-center-offset) * -1));
   }
 }
 
