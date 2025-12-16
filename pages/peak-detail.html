@@ -87,7 +87,18 @@
   </script>
 
   <link rel="stylesheet" href="../css/peak-detail.css">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-o9N1j7kGStG3cJfWcJPrmnD/jYixQhMqLV+3lZ8Jp2o="
+    crossorigin=""
+  >
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o8EeYJtP0kCZo9zI0zYNbSLrGZM3Rp3yvRsI5u2y+5U="
+    crossorigin=""
+  ></script>
   <!-- URL Masking: hide /pages/ from URL bar -->
   <script>
   if (window.location.pathname.includes('/pages/')) {
@@ -194,7 +205,18 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- MAP PANEL -->
+    <div id="mapPanel" class="metadata-panel full-width map-panel" style="display:none;">
+      <div class="metadata-header">
+        <div class="metadata-title">Trail Map</div>
+        <div class="metadata-subtitle">OpenStreetMap view centered on this peak</div>
+      </div>
+      <div class="map-frame">
+        <div id="peakMap" aria-label="OpenStreetMap preview for this peak"></div>
+      </div>
+    </div>
+
     <!-- HIKE LOG LIST - Full Width -->
     <div id="loggedProgressSection" class="logged-progress-section">
       <div class="section-title">Your Hike Log</div>
@@ -255,9 +277,12 @@
     const PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="#172032"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="22">No photos available</text></svg>'
     );
-    
+
     let carouselImgs = [], carouselIdx = 0, carouselTimer = null, timerInterval = null;
     const BASE_DELAY = 8000;
+    const MAP_DEFAULT_ZOOM = 12;
+    let peakMap = null;
+    let peakMapMarker = null;
 
     function setMetaContent(selector, value, attribute = 'content') {
       const tag = document.querySelector(selector);
@@ -296,7 +321,44 @@
     function cleanJSON(raw) {
       return raw.replace(/:contentReference\[.*?\]\{index=\d+\}/g, '').replace(/\/\*\s*Lines?\s+\d+[\d\-,\s]*omitted\s*\*\//g, '');
     }
-    
+
+    function hideMapPanel() {
+      const mapPanel = document.getElementById('mapPanel');
+      if (mapPanel) {
+        mapPanel.style.display = 'none';
+      }
+    }
+
+    function showPeakMap(lat, lon, peakName) {
+      const mapPanel = document.getElementById('mapPanel');
+      const mapEl = document.getElementById('peakMap');
+      if (!mapPanel || !mapEl || typeof L === 'undefined') return;
+
+      const center = [lat, lon];
+      mapPanel.style.display = 'block';
+
+      if (!peakMap) {
+        peakMap = L.map(mapEl).setView(center, MAP_DEFAULT_ZOOM);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 18
+        }).addTo(peakMap);
+      } else {
+        peakMap.setView(center, MAP_DEFAULT_ZOOM);
+        if (peakMapMarker) {
+          peakMap.removeLayer(peakMapMarker);
+        }
+      }
+
+      peakMapMarker = L.marker(center).addTo(peakMap);
+      if (peakName) {
+        peakMapMarker.bindPopup(peakName).openPopup();
+      }
+
+      // Ensure Leaflet recalculates layout after panel becomes visible
+      setTimeout(() => peakMap.invalidateSize(), 150);
+    }
+
     async function fetchFromNH48API() {
       for (let i = 0; i < API_URLS.length; i++) {
         try {
@@ -317,7 +379,18 @@
         if (stored) {
           const peaks = JSON.parse(stored);
           const peak = peaks.find(p => p.slug === peakSlug);
-          if (peak) { renderPeak(peak); return; }
+          if (peak) {
+            if (!peak.lat || !peak.lon) {
+              const apiFallback = await fetchFromNH48API();
+              const apiPeak = apiFallback?.[peakSlug];
+              if (apiPeak) {
+                peak.lat = apiPeak.latitude;
+                peak.lon = apiPeak.longitude;
+              }
+            }
+            renderPeak(peak);
+            return;
+          }
         }
         
         const data = await fetchFromNH48API();
@@ -350,9 +423,14 @@
       currentPeakName = peak.name;  // Store for summit log panel
       document.getElementById('peakName').textContent = peak.name;
       updateMetaTags(peak);
-      
+      hideMapPanel();
+
+      const lat = peak.lat !== undefined ? parseFloat(peak.lat) : NaN;
+      const lon = peak.lon !== undefined ? parseFloat(peak.lon) : NaN;
+      const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+
       buildCarousel(peak);
-      
+
       document.getElementById('elevation').textContent = peak.elevation ? `${peak.elevation}'` : '—';
       document.getElementById('prominence').textContent = peak.prominence ? `${peak.prominence}'` : '—';
       document.getElementById('location').textContent = peak.location || '—';
@@ -374,15 +452,34 @@
       
       // Set up Log Hike button link
       document.getElementById('logHikeBtn').href = `/hike-log?peak=${peak.slug}`;
-      
+
       document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
       document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
-      
-      if (peak.lat && peak.lon) {
-        document.getElementById('wxNoaa').href = `https://forecast.weather.gov/MapClick.php?lat=${peak.lat}&lon=${peak.lon}`;
-        document.getElementById('wxOpenMeteo').href = `https://open-meteo.com/en/docs#latitude=${peak.lat}&longitude=${peak.lon}`;
+
+      const wxNoaa = document.getElementById('wxNoaa');
+      const wxOpenMeteo = document.getElementById('wxOpenMeteo');
+      const mapsLink = document.getElementById('lnkMaps');
+
+      if (hasCoords) {
+        if (wxNoaa) {
+          wxNoaa.href = `https://forecast.weather.gov/MapClick.php?lat=${lat}&lon=${lon}`;
+          wxNoaa.style.display = '';
+        }
+        if (wxOpenMeteo) {
+          wxOpenMeteo.href = `https://open-meteo.com/en/docs#latitude=${lat}&longitude=${lon}`;
+          wxOpenMeteo.style.display = '';
+        }
+        if (mapsLink) {
+          mapsLink.href = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=14`;
+          mapsLink.style.display = '';
+        }
+        showPeakMap(lat, lon, peak.name);
+      } else {
+        if (wxNoaa) wxNoaa.style.display = 'none';
+        if (wxOpenMeteo) wxOpenMeteo.style.display = 'none';
+        if (mapsLink) mapsLink.style.display = 'none';
       }
-      
+
       const searchName = encodeURIComponent(peak.name);
       if (peak.slug) {
         const nh48Link = document.getElementById('lnkNH48');
@@ -394,9 +491,6 @@
       document.getElementById('lnkPeakbagger').href = `https://www.peakbagger.com/search.aspx?name=${searchName}`;
       document.getElementById('lnkAllTrails').href = `https://www.alltrails.com/search?q=${searchName}`;
       document.getElementById('lnkSummitPost').href = `https://www.summitpost.org/search?search=${searchName}`;
-      if (peak.lat && peak.lon) {
-        document.getElementById('lnkMaps').href = `https://www.openstreetmap.org/?mlat=${peak.lat}&mlon=${peak.lon}&zoom=14`;
-      }
     }
     
     function buildCarousel(peak) {
