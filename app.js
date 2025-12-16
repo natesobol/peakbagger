@@ -974,6 +974,9 @@ let elevationMin = '';  // Minimum elevation filter
 let elevationMax = '';  // Maximum elevation filter
 let gridTrackingEnabled = false;  // Grid tracking mode (12 months/peak)
 
+// Normalize peak IDs for consistent Set lookups
+const peakKey = (id) => (id === undefined || id === null ? null : String(id));
+
 // Local storage keys and utilities (still used for preferences)
 const PREF_KEY = 'pb_prefs_v1';
 
@@ -1326,11 +1329,12 @@ async function loadFavorites() {
     
     if (favData && Array.isArray(favData)) {
       favData.forEach(fav => {
-        if (fav && fav.peak_id) {
+        const key = peakKey(fav?.peak_id);
+        if (key) {
           if (fav.favorite_type === 'favorite') {
-            favorites.add(fav.peak_id);
+            favorites.add(key);
           } else if (fav.favorite_type === 'wishlist') {
-            wishlist.add(fav.peak_id);
+            wishlist.add(key);
           }
         }
       });
@@ -1360,8 +1364,14 @@ async function toggleFavorite(peakId, favoriteType) {
     const targetSet = favoriteType === 'favorite' ? favorites : wishlist;
     const otherSet = favoriteType === 'favorite' ? wishlist : favorites;
     const otherType = favoriteType === 'favorite' ? 'wishlist' : 'favorite';
-    
-    if (targetSet.has(peakId)) {
+    const key = peakKey(peakId);
+
+    if (!key) {
+      console.warn('Invalid peak key for favorite toggle');
+      return;
+    }
+
+    if (targetSet.has(key)) {
       // Remove from favorites
       const { error } = await supabase
         .from('user_favorite_peaks')
@@ -1369,22 +1379,22 @@ async function toggleFavorite(peakId, favoriteType) {
         .eq('user_id', currentUser.id)
         .eq('peak_id', peakId)
         .eq('favorite_type', favoriteType);
-      
+
       if (error) throw error;
-      
-      targetSet.delete(peakId);
+
+      targetSet.delete(key);
       console.log(`Removed ${favoriteType} for peak ${peakId}`);
     } else {
       // Add to favorites (and remove from other type if present)
-      if (otherSet.has(peakId)) {
-        await supabase
-          .from('user_favorite_peaks')
-          .delete()
-          .eq('user_id', currentUser.id)
-          .eq('peak_id', peakId)
-          .eq('favorite_type', otherType);
-        otherSet.delete(peakId);
-      }
+        if (otherSet.has(key)) {
+          await supabase
+            .from('user_favorite_peaks')
+            .delete()
+            .eq('user_id', currentUser.id)
+            .eq('peak_id', peakId)
+            .eq('favorite_type', otherType);
+          otherSet.delete(key);
+        }
       
       const { error } = await supabase
         .from('user_favorite_peaks')
@@ -1396,7 +1406,7 @@ async function toggleFavorite(peakId, favoriteType) {
       
       if (error) throw error;
       
-      targetSet.add(peakId);
+      targetSet.add(key);
       console.log(`Added ${favoriteType} for peak ${peakId}`);
     }
     
@@ -2002,10 +2012,12 @@ async function openPeakDetailOLD(it) {
     const favText = document.getElementById('peakDetailFavText');
     const wishText = document.getElementById('peakDetailWishText');
   
-    if (favBtn && wishBtn && it.peak_id) {
+    const peakKeyId = peakKey(it.peak_id);
+
+    if (favBtn && wishBtn && peakKeyId) {
       // Update button states
-      const isFavorite = favorites.has(it.peak_id);
-      const isWishlist = wishlist.has(it.peak_id);
+      const isFavorite = favorites.has(peakKeyId);
+      const isWishlist = wishlist.has(peakKeyId);
     
     if (isFavorite) {
       favIcon.textContent = '⭐';
@@ -2911,9 +2923,15 @@ function applyStatusFilter(items) {
   } else if (statusFilter === 'incomplete') {
     filtered = filtered.filter(it => !it.completed);
   } else if (statusFilter === 'favorites') {
-    filtered = filtered.filter(it => it.peak_id && favorites.has(it.peak_id));
+    filtered = filtered.filter(it => {
+      const key = peakKey(it.peak_id);
+      return key && favorites.has(key);
+    });
   } else if (statusFilter === 'wishlist') {
-    filtered = filtered.filter(it => it.peak_id && wishlist.has(it.peak_id));
+    filtered = filtered.filter(it => {
+      const key = peakKey(it.peak_id);
+      return key && wishlist.has(key);
+    });
   }
   
   // Range filter
@@ -3004,8 +3022,9 @@ async function renderGrid() {
     
     // Determine card color based on completion/favorite status
     // Priority: favorite > complete > wishlist > incomplete
-    const isFavorite = it.peak_id && favorites.has(it.peak_id);
-    const isWishlist = it.peak_id && wishlist.has(it.peak_id);
+    const peakIdKey = peakKey(it.peak_id);
+    const isFavorite = peakIdKey && favorites.has(peakIdKey);
+    const isWishlist = peakIdKey && wishlist.has(peakIdKey);
     const isComplete = Boolean(it.completed);
 
     let statusClass = 'card-incomplete';
