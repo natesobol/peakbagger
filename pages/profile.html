@@ -1440,8 +1440,7 @@ if (window.location.pathname.includes('/pages/')) {
       const { data: favoritePeaks, error: favError } = await supabase
         .from('user_favorite_peaks')
         .select('peak_id')
-        .eq('user_id', currentUser.id)
-        .eq('favorite_type', 'favorite');
+        .eq('user_id', currentUser.id);
       
       if (favError) {
         console.warn('loadDashboardStats: DB Load favorites Error:', favError);
@@ -1449,12 +1448,11 @@ if (window.location.pathname.includes('/pages/')) {
       
       const favoritesCount = favoritePeaks?.length || 0;
       
-      // DB Load: Get wishlist from user_favorite_peaks
+      // DB Load: Get wishlist from user_wishlist_hikes
       const { data: wishlistPeaks, error: wishError } = await supabase
-        .from('user_favorite_peaks')
+        .from('user_wishlist_hikes')
         .select('peak_id')
-        .eq('user_id', currentUser.id)
-        .eq('favorite_type', 'wishlist');
+        .eq('user_id', currentUser.id);
       
       if (wishError) {
         console.warn('loadDashboardStats: DB Load wishlist Error:', wishError);
@@ -1646,6 +1644,11 @@ if (window.location.pathname.includes('/pages/')) {
         .from('user_favorite_peaks')
         .select('*, peaks(name, slug)')
         .eq('user_id', currentUser.id);
+
+      const { data: wishlistData } = await supabase
+        .from('user_wishlist_hikes')
+        .select('*, peaks(name, slug)')
+        .eq('user_id', currentUser.id);
       
       const exportData = {
         exportDate: new Date().toISOString(),
@@ -1660,11 +1663,11 @@ if (window.location.pathname.includes('/pages/')) {
           list: p.lists?.name,
           completedAt: p.first_completed_at
         })) || [],
-        favorites: favorites?.filter(f => f.favorite_type === 'favorite').map(f => ({
+        favorites: favorites?.map(f => ({
           peak: f.peaks?.name,
           slug: f.peaks?.slug
         })) || [],
-        wishlist: favorites?.filter(f => f.favorite_type === 'wishlist').map(f => ({
+        wishlist: wishlistData?.map(f => ({
           peak: f.peaks?.name,
           slug: f.peaks?.slug
         })) || []

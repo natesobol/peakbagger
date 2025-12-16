@@ -1048,6 +1048,35 @@ let lastTotalItems = 0;  // Track total items for pagination
 let gridMode = 'grid';  // 'grid', 'list', 'compact'
 let completionsGrid = {};
 let completions = {};
+
+// Local backup helpers to mirror Supabase data for resilience
+const BROWSER_BACKUP_PREFIX = 'pb_backup_v1';
+const browserUserKey = () => (currentUser?.id ? String(currentUser.id) : 'guest');
+
+function backupKey(type, userId = browserUserKey()) {
+  return `${BROWSER_BACKUP_PREFIX}_${type}_${userId}`;
+}
+
+function writeBrowserBackup(type, payload) {
+  try {
+    localStorage.setItem(backupKey(type), JSON.stringify({
+      savedAt: new Date().toISOString(),
+      data: payload || null
+    }));
+  } catch (e) {
+    console.warn('Unable to persist browser backup for', type, e);
+  }
+}
+
+function readBrowserBackup(type, userId = browserUserKey()) {
+  try {
+    const raw = localStorage.getItem(backupKey(type, userId));
+    return raw ? JSON.parse(raw).data : null;
+  } catch (e) {
+    console.warn('Unable to read browser backup for', type, e);
+    return null;
+  }
+}
 let favorites = new Set();  // Peak IDs that are favorited
 let wishlist = new Set();   // Peak IDs on wishlist
 let statusFilter = 'all';  // Filter: 'all', 'completed', 'favorites', 'wishlist', 'incomplete'
@@ -1147,6 +1176,27 @@ async function loadUserSettingsFromSupabase() {
 
 // Load state from Supabase - reads from user_hike_logs table
 // Each peak's completion status is determined by having at least one hike log entry
+async function refreshHikeLogBackupFromDb() {
+  if (!supabase || !currentUser) return null;
+  const { data, error } = await supabase
+    .from('user_hike_logs')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('hike_date', { ascending: false });
+
+  if (error) {
+    console.warn('refreshHikeLogBackupFromDb: Unable to refresh cache', error);
+    return null;
+  }
+
+  writeBrowserBackup('hike_logs', data || []);
+  return data || [];
+}
+
+function backupCompletionSnapshots() {
+  writeBrowserBackup('completions', { completions, completionsGrid });
+}
+
 async function loadStateFromSupabase() {
   if (!currentUser || !currentList) {
     completions = {};
@@ -1172,7 +1222,7 @@ async function loadStateFromSupabase() {
     // We get the most recent hike date per peak as the "completion date"
     const { data: hikeLogs, error } = await supabase
       .from('user_hike_logs')
-      .select('peak_id, hike_date, list_id, peaks(slug, name)')
+      .select('id, user_id, list_id, peak_id, hike_date, trail_name, route_notes, miles, elevation_gain_ft, duration_minutes, notes, tags, visibility, created_at, updated_at, effort, trail_condition, views, temperature, precipitation, wind, crowds, bugs, peaks(slug, name)')
       .eq('user_id', currentUser.id)
       .order('hike_date', { ascending: false });
     
@@ -1183,6 +1233,7 @@ async function loadStateFromSupabase() {
     }
     
     completions[currentList] = {};
+    writeBrowserBackup('hike_logs', hikeLogs || []);
     
     if (hikeLogs) {
       // Group by peak - first occurrence (most recent) determines the date shown for classic mode
@@ -1213,8 +1264,9 @@ async function loadStateFromSupabase() {
         peaksSeen.add(peakName);
       });
     }
-    
+
     console.log('loadStateFromSupabase: Loaded', Object.keys(completions[currentList] || {}).length, 'completed peaks from hike logs');
+    backupCompletionSnapshots();
   } catch (e) {
     console.error('Failed to load state from Supabase:', e);
     completions = {};
@@ -1379,6 +1431,7 @@ async function saveGridToSupabase(peakName, month, date) {
             peak_id: peakId,
             hike_date: date
           });
+        await refreshHikeLogBackupFromDb();
       }
     } else {
       // When clearing a date from grid, we need to find and delete hike logs for this month
@@ -1402,6 +1455,7 @@ async function saveGridToSupabase(peakName, month, date) {
             .delete()
             .eq('id', log.id);
         }
+        await refreshHikeLogBackupFromDb();
       }
     }
   } catch (e) {
@@ -1409,120 +1463,136 @@ async function saveGridToSupabase(peakName, month, date) {
   }
 }
 
-// Load favorites from Supabase
+function persistFavoriteCaches(favRows = [], wishRows = []) {
+  const favoriteIds = favRows.map(f => peakKey(f?.peak_id)).filter(Boolean);
+  const wishlistIds = wishRows.map(f => peakKey(f?.peak_id)).filter(Boolean);
+
+  writeBrowserBackup('favorites', favoriteIds);
+  writeBrowserBackup('wishlist', wishlistIds);
+
+  const favoriteSlugs = favRows.map(f => f?.peaks?.slug).filter(Boolean);
+  const wishlistSlugs = wishRows.map(f => f?.peaks?.slug).filter(Boolean);
+
+  localStorage.setItem('peakbagger_favorites', JSON.stringify(favoriteSlugs));
+  localStorage.setItem('peakbagger_wishlist', JSON.stringify(wishlistSlugs));
+}
+
+// Load favorites/wishlist from Supabase with a browser backup
 async function loadFavorites() {
-  // Skip if not logged in
+  // Skip if not logged in - fall back to local backup so guests retain data
   if (!currentUser) {
-    favorites.clear();
-    wishlist.clear();
+    favorites = new Set((readBrowserBackup('favorites', 'guest') || []).filter(Boolean));
+    wishlist = new Set((readBrowserBackup('wishlist', 'guest') || []).filter(Boolean));
+    persistFavoriteCaches(
+      Array.from(favorites).map(id => ({ peak_id: id })),
+      Array.from(wishlist).map(id => ({ peak_id: id }))
+    );
     return;
   }
-  
+
   try {
-    const { data: favData, error } = await supabase
+    const { data: favRows, error: favError } = await supabase
       .from('user_favorite_peaks')
-      .select('peak_id, favorite_type')
+      .select('peak_id, peaks(slug)')
       .eq('user_id', currentUser.id);
-    
-    if (error) {
-      // Silently handle missing table/column errors - don't spam console
-      if (error.code === '42703' || error.message?.includes('does not exist')) {
-        console.log('Favorites table not configured - using local storage only');
-      } else {
-        console.error('Error loading favorites:', error);
-      }
+
+    const { data: wishRows, error: wishError } = await supabase
+      .from('user_wishlist_hikes')
+      .select('peak_id, peaks(slug)')
+      .eq('user_id', currentUser.id);
+
+    if (favError || wishError) {
+      console.error('Error loading favorites/wishlist:', favError || wishError);
       favorites.clear();
       wishlist.clear();
+      persistFavoriteCaches();
       return;
     }
-    
-    favorites.clear();
-    wishlist.clear();
-    
-    if (favData && Array.isArray(favData)) {
-      favData.forEach(fav => {
-        const key = peakKey(fav?.peak_id);
-        if (key) {
-          if (fav.favorite_type === 'favorite') {
-            favorites.add(key);
-          } else if (fav.favorite_type === 'wishlist') {
-            wishlist.add(key);
-          }
-        }
-      });
-    }
-    
+
+    favorites = new Set((favRows || []).map(f => peakKey(f?.peak_id)).filter(Boolean));
+    wishlist = new Set((wishRows || []).map(f => peakKey(f?.peak_id)).filter(Boolean));
+
+    persistFavoriteCaches(favRows || [], wishRows || []);
+
     console.log(`Loaded ${favorites.size} favorites and ${wishlist.size} wishlist items`);
   } catch (e) {
     // Silently fail - favorites will just use local storage
     favorites.clear();
     wishlist.clear();
+    persistFavoriteCaches();
   }
 }
 
 // Toggle favorite or wishlist for a peak
 async function toggleFavorite(peakId, favoriteType) {
-  if (!currentUser || !peakId) {
-    console.warn('Cannot toggle favorite: missing user or peak ID');
+  if (!peakId) {
+    console.warn('Cannot toggle favorite: missing peak ID');
     return;
   }
-  
+
   if (favoriteType !== 'favorite' && favoriteType !== 'wishlist') {
     console.error('Invalid favorite type:', favoriteType);
     return;
   }
-  
+
+  const key = peakKey(peakId);
+  if (!key) return;
+
+  // Allow guests to cache intent locally so we can sync later
+  if (!currentUser) {
+    const targetSet = favoriteType === 'favorite' ? favorites : wishlist;
+    targetSet.has(key) ? targetSet.delete(key) : targetSet.add(key);
+    persistFavoriteCaches(
+      Array.from(favorites).map(id => ({ peak_id: id })),
+      Array.from(wishlist).map(id => ({ peak_id: id }))
+    );
+    renderView();
+    return;
+  }
+
   try {
     const targetSet = favoriteType === 'favorite' ? favorites : wishlist;
     const otherSet = favoriteType === 'favorite' ? wishlist : favorites;
-    const otherType = favoriteType === 'favorite' ? 'wishlist' : 'favorite';
-    const key = peakKey(peakId);
-
-    if (!key) {
-      console.warn('Invalid peak key for favorite toggle');
-      return;
-    }
+    const otherTable = favoriteType === 'favorite' ? 'user_wishlist_hikes' : 'user_favorite_peaks';
+    const targetTable = favoriteType === 'favorite' ? 'user_favorite_peaks' : 'user_wishlist_hikes';
 
     if (targetSet.has(key)) {
-      // Remove from favorites
       const { error } = await supabase
-        .from('user_favorite_peaks')
+        .from(targetTable)
         .delete()
         .eq('user_id', currentUser.id)
-        .eq('peak_id', peakId)
-        .eq('favorite_type', favoriteType);
+        .eq('peak_id', peakId);
 
       if (error) throw error;
 
       targetSet.delete(key);
       console.log(`Removed ${favoriteType} for peak ${peakId}`);
     } else {
-      // Add to favorites (and remove from other type if present)
-        if (otherSet.has(key)) {
-          await supabase
-            .from('user_favorite_peaks')
-            .delete()
-            .eq('user_id', currentUser.id)
-            .eq('peak_id', peakId)
-            .eq('favorite_type', otherType);
-          otherSet.delete(key);
-        }
-      
+      // Remove from the opposite table if needed to avoid stale coloring
+      if (otherSet.has(key)) {
+        await supabase
+          .from(otherTable)
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('peak_id', peakId);
+        otherSet.delete(key);
+      }
+
       const { error } = await supabase
-        .from('user_favorite_peaks')
+        .from(targetTable)
         .insert({
           user_id: currentUser.id,
-          peak_id: peakId,
-          favorite_type: favoriteType
+          peak_id: peakId
         });
-      
+
       if (error) throw error;
-      
+
       targetSet.add(key);
       console.log(`Added ${favoriteType} for peak ${peakId}`);
     }
-    
-    // Re-render to update card colors
+
+    // Refresh from DB so browser cache mirrors the source of truth
+    await loadFavorites();
     renderView();
   } catch (e) {
     console.error(`Failed to toggle ${favoriteType}:`, e);
@@ -1583,7 +1653,7 @@ function loadState() {
 }
 
 function saveState() {
-  // No-op for now - we're using Supabase
+  backupCompletionSnapshots();
 }
 
 function loadGrid() {
@@ -1595,7 +1665,7 @@ function loadGrid() {
 }
 
 function saveGrid() {
-  // No-op for now - we're using Supabase
+  backupCompletionSnapshots();
 }
 
 // =====================================================
@@ -1658,6 +1728,104 @@ function getMonthDate(list, peak, month) {
   return ensureGridRecord(list, peak)[String(month)] || "";
 }
 
+async function upsertHikeLogRecord(listId, peakId, dateStr) {
+  if (!currentUser || !supabase || !peakId || !dateStr) return;
+
+  const { data: existing } = await supabase
+    .from('user_hike_logs')
+    .select('id')
+    .eq('user_id', currentUser.id)
+    .eq('peak_id', peakId)
+    .eq('hike_date', dateStr)
+    .maybeSingle();
+
+  if (!existing) {
+    await supabase.from('user_hike_logs').insert({
+      user_id: currentUser.id,
+      list_id: listId || null,
+      peak_id: peakId,
+      hike_date: dateStr
+    });
+  }
+}
+
+async function syncBrowserDataToSupabase() {
+  if (!currentUser || !supabase) return;
+
+  try {
+    const listsResp = await supabase.from('lists').select('id, slug, name');
+    const listIdBySlug = new Map();
+    (listsResp.data || []).forEach(l => {
+      listIdBySlug.set(l.slug, l.id);
+      if (l.name) listIdBySlug.set(slugify(l.name), l.id);
+    });
+
+    const peakCache = JSON.parse(localStorage.getItem('peakbagger_peaks') || '[]');
+    const peakIdByName = new Map();
+    const peakIdBySlug = new Map();
+    peakCache.forEach(p => {
+      const id = p?.id || p?.peak_id;
+      if (!id) return;
+      if (p.name) peakIdByName.set(p.name, id);
+      if (p.slug) peakIdBySlug.set(p.slug, id);
+    });
+
+    const completionSnapshot = readBrowserBackup('completions', 'guest') || readBrowserBackup('completions') || {};
+    const comp = completionSnapshot.completions || completions || {};
+    const grid = completionSnapshot.completionsGrid || completionsGrid || {};
+
+    const pendingHikes = [];
+
+    Object.entries(comp || {}).forEach(([listName, peaks]) => {
+      Object.entries(peaks || {}).forEach(([peakName, rec]) => {
+        const dates = new Set();
+        if (rec?.date) dates.add(rec.date);
+        (rec?.allDates || []).forEach(d => d && dates.add(d));
+        const gridRec = grid?.[listName]?.[peakName] || {};
+        Object.values(gridRec).forEach(d => d && dates.add(d));
+
+        dates.forEach(d => pendingHikes.push({ listName, peakName, dateStr: d }));
+      });
+    });
+
+    const hikeBackup = readBrowserBackup('hike_logs', 'guest') || [];
+    hikeBackup.forEach(row => {
+      if (row?.hike_date && row?.peak_id) {
+        pendingHikes.push({ listId: row.list_id, peakId: row.peak_id, dateStr: row.hike_date });
+      }
+    });
+
+    for (const entry of pendingHikes) {
+      const listId = entry.listId || (entry.listName ? listIdBySlug.get(slugify(entry.listName)) : null) || null;
+      const peakId = entry.peakId || peakIdByName.get(entry.peakName) || peakIdBySlug.get(entry.peakName) || null;
+      if (!peakId || !entry.dateStr) continue;
+      await upsertHikeLogRecord(listId, peakId, entry.dateStr);
+    }
+
+    const guestFavorites = readBrowserBackup('favorites', 'guest') || [];
+    const guestWishlist = readBrowserBackup('wishlist', 'guest') || [];
+
+    await loadFavorites();
+
+    for (const fav of guestFavorites) {
+      const key = peakKey(fav);
+      if (!key || favorites.has(key)) continue;
+      await supabase.from('user_favorite_peaks').insert({ user_id: currentUser.id, peak_id: fav });
+    }
+
+    for (const wish of guestWishlist) {
+      const key = peakKey(wish);
+      if (!key || wishlist.has(key)) continue;
+      await supabase.from('user_wishlist_hikes').insert({ user_id: currentUser.id, peak_id: wish });
+    }
+
+    await refreshHikeLogBackupFromDb();
+    await loadFavorites();
+  } catch (e) {
+    console.error('syncBrowserDataToSupabase failed:', e);
+  }
+}
+
 // =====================================================
 // Authentication with Supabase
 // =====================================================
@@ -1703,8 +1871,9 @@ async function signUp(firstName, lastName, email, pass, opts = {}) {
       default_list_id: null
     }, { onConflict: 'user_id' });
   }
-  
+
   currentUser = data.user;
+  await syncBrowserDataToSupabase();
   return data.user;
 }
 
@@ -2802,8 +2971,9 @@ async function createOrUpdateHikeLog(peakName, dateStr, options = {}) {
         console.error('createOrUpdateHikeLog: Update error:', updateError);
         return null;
       }
-      
+
       console.log('createOrUpdateHikeLog: Updated log date for', peakName, 'to', dateStr);
+      await refreshHikeLogBackupFromDb();
       return existingLog.id;
     }
     
@@ -2827,8 +2997,9 @@ async function createOrUpdateHikeLog(peakName, dateStr, options = {}) {
       console.error('createOrUpdateHikeLog: Insert error:', insertError);
       return null;
     }
-    
+
     console.log('createOrUpdateHikeLog: Created log for', peakName, dateStr, '- ID:', newLog?.id);
+    await refreshHikeLogBackupFromDb();
     return newLog?.id || null;
   } catch (e) {
     console.error('createOrUpdateHikeLog error:', e);
