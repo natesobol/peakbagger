@@ -918,6 +918,8 @@ const meEmailEl = document.getElementById('meEmail');
 const miniPulseCard = document.getElementById('miniPulseCard');
 const miniPulseGraph = document.getElementById('miniPulseGraph');
 const miniPulseMeta = document.getElementById('miniPulseMeta');
+const mainLoadingEl = document.getElementById('main-loading');
+const mainLoadingLabel = document.getElementById('main-loading-label');
 const signedOutBox = document.getElementById('authSignedOut');
 const signedInBox = document.getElementById('authSignedIn');
 const detail = document.getElementById('detail');
@@ -951,10 +953,11 @@ function renderCompletedButtonState() {
 // =====================================================
 // Asset URLs
 // =====================================================
-const CHECKED_IMG = "https://static.wixstatic.com/media/66b1b2_43cfcfcd91f6481694959e1baed6f5cf~mv2.png";
-const UNCHECKED_IMG = "https://static.wixstatic.com/media/66b1b2_bf1066c3b19041c29c150fc56658b841~mv2.png";
+const CHECKED_IMG = "data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1.5' y='1.5' width='25' height='25' rx='6' fill='%231b1b1b' stroke='%23ffffff' stroke-width='3'/%3E%3Cpath d='M8 14.2l4.1 4.3L20 10' fill='none' stroke='%2322c55e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
+const UNCHECKED_IMG = "data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1.5' y='1.5' width='25' height='25' rx='6' fill='%231b1b1b' stroke='%23ffffff' stroke-width='3'/%3E%3C/svg%3E";
 const TOS_VERSION = '1.0';
 const TERMS_TEXT = `<strong>Peakbagger's Journal – Terms & Conditions (v${TOS_VERSION})</strong><br><br>1) Local, offline-first storage. 2) No resale of your data. 3) Outdoor safety is your responsibility. 4) Clearing browser data will remove local progress. 5) Email + hashed password are stored locally for sign-in on this device.`;
+const DATE_PLACEHOLDER = 'YYYY-MM-DD';
 
 // =====================================================
 // State Management
@@ -993,11 +996,41 @@ function readPrefs() {
 
 function writePrefs(p) {
   localStorage.setItem(PREF_KEY, JSON.stringify(p));
-  
+
   // Also save to Supabase if logged in
   if (currentUser) {
     saveUserSettingsToSupabase(p);
   }
+}
+
+function setMainLoading(isLoading, label = 'Loading peaks…') {
+  if (!mainLoadingEl) return;
+  if (label && mainLoadingLabel) mainLoadingLabel.textContent = label;
+  mainLoadingEl.classList.toggle('active', !!isLoading);
+}
+
+function updateDatePlaceholderState(input) {
+  if (!input) return;
+  if (input.value) {
+    input.classList.add('has-value');
+  } else {
+    input.classList.remove('has-value');
+  }
+}
+
+function attachDatePlaceholder(input) {
+  if (!input || input.dataset.placeholderInit === '1') return;
+  input.dataset.placeholderInit = '1';
+  input.classList.add('date-with-placeholder');
+  input.setAttribute('data-placeholder', DATE_PLACEHOLDER);
+  updateDatePlaceholderState(input);
+  input.addEventListener('input', () => updateDatePlaceholderState(input));
+  input.addEventListener('change', () => updateDatePlaceholderState(input));
+}
+
+function enhanceDateInputs(scope = document) {
+  if (!scope) return;
+  scope.querySelectorAll('input[type="date"]').forEach(attachDatePlaceholder);
 }
 
 // Save user settings to Supabase
@@ -2004,6 +2037,7 @@ async function openPeakDetailOLD(it) {
     const dateInput = document.getElementById('peakDetailDateInput');
     if (dateInput) {
       dateInput.value = completions[currentList]?.[it.name]?.date || '';
+      attachDatePlaceholder(dateInput);
       dateInput.onchange = () => {
         const val = document.getElementById('peakDetailDateInput').value;
         if (val) setDateFor(it.name, val);
@@ -2088,8 +2122,9 @@ async function openPeakDetailOLD(it) {
         <label class="month-label">${month}</label>
         <input type="date" class="month-date-input ${hasDateClass}" data-month="${monthNum}" data-name="${it.name}" value="${dateValue}">
       `;
-      
+
       const input = cell.querySelector('.month-date-input');
+      attachDatePlaceholder(input);
       input.addEventListener('change', async () => {
         const monthNum = parseInt(input.dataset.month, 10);
         const peakName = input.dataset.name;
@@ -2110,6 +2145,8 @@ async function openPeakDetailOLD(it) {
     // Hide month grid if tracking is disabled
     monthGridContainer.style.display = 'none';
   }
+
+  enhanceDateInputs(document.getElementById('peakDetailPage'));
 
   // Load and display photos
   const photoContainer = document.getElementById('peakDetailPhotos');
@@ -2810,7 +2847,11 @@ function updateMiniPulsePreview() {
     });
   }
 
-  const totalLogs = weekBuckets.reduce((sum, n) => sum + n, 0);
+    const totalLogs = weekBuckets.reduce((sum, n) => sum + n, 0);
+    const visiblePeaks = window._filteredPeaks || window._allPeaks || [];
+    const totalPeaks = visiblePeaks.length;
+    const donePeaks = visiblePeaks.filter(it => completions[currentList]?.[it.name]?.done).length;
+    const pctComplete = totalPeaks ? Math.round(donePeaks / totalPeaks * 100) : 0;
 
   miniPulseGraph.innerHTML = '';
   weekBuckets.forEach(count => {
@@ -2826,13 +2867,15 @@ function updateMiniPulsePreview() {
     miniPulseGraph.appendChild(cell);
   });
 
-  if (!currentList) {
-    miniPulseMeta.textContent = 'Choose a list to see recent hikes';
-  } else if (totalLogs) {
-    miniPulseMeta.textContent = `${totalLogs} hike${totalLogs === 1 ? '' : 's'} in the last ${weeks} weeks`;
-  } else {
-    miniPulseMeta.textContent = 'Log hikes to see your activity pulse';
-  }
+    if (!currentList) {
+      miniPulseMeta.textContent = 'Choose a list to see recent hikes';
+    } else if (totalLogs) {
+      miniPulseMeta.textContent = `${totalLogs} hike${totalLogs === 1 ? '' : 's'} in the last ${weeks} weeks • ${pctComplete}% complete`;
+    } else if (totalPeaks) {
+      miniPulseMeta.textContent = `${pctComplete}% of ${totalPeaks} peaks complete so far`;
+    } else {
+      miniPulseMeta.textContent = 'Log hikes to see your activity pulse';
+    }
 
   miniPulseCard.style.display = '';
 }
@@ -2850,27 +2893,32 @@ function renderProgressBase(allItems) {
 async function renderView() {
   const gridView = document.getElementById('grid-view');
   const listView = document.getElementById('list-view');
-  
+
   console.log('🎯 renderView() called, gridMode:', gridMode);
-  
-  if (gridMode === 'list') {
-    gridView.innerHTML = '';
-    gridView.style.display = 'none';
-    listView.style.display = 'table';
-    console.log('   → Rendering as LIST');
-    await renderList();
-  } else if (gridMode === 'compact') {
-    listView.style.display = 'none';
-    gridView.style.display = 'grid';
-    gridView.classList.add('compact');
-    console.log('   → Rendering as COMPACT GRID');
-    await renderGrid();
-  } else {
-    listView.style.display = 'none';
-    gridView.style.display = 'grid';
-    gridView.classList.remove('compact');
-    console.log('   → Rendering as GRID');
-    await renderGrid();
+
+  setMainLoading(true);
+  try {
+    if (gridMode === 'list') {
+      gridView.innerHTML = '';
+      gridView.style.display = 'none';
+      listView.style.display = 'table';
+      console.log('   → Rendering as LIST');
+      await renderList();
+    } else if (gridMode === 'compact') {
+      listView.style.display = 'none';
+      gridView.style.display = 'grid';
+      gridView.classList.add('compact');
+      console.log('   → Rendering as COMPACT GRID');
+      await renderGrid();
+    } else {
+      listView.style.display = 'none';
+      gridView.style.display = 'grid';
+      gridView.classList.remove('compact');
+      console.log('   → Rendering as GRID');
+      await renderGrid();
+    }
+  } finally {
+    setMainLoading(false);
   }
 }
 
@@ -2969,6 +3017,7 @@ async function renderList() {
 
     listView.appendChild(row);
   }
+  enhanceDateInputs(listView);
   } catch (e) {
     console.error('Error rendering list:', e);
     listView.innerHTML = '<div style="padding:20px;text-align:center;color:red">Error loading list: ' + e.message + '</div>';
@@ -3197,6 +3246,7 @@ async function renderGrid() {
       const monthInputs = card.querySelectorAll('.month-date-input');
       monthInputs.forEach(input => {
         input.addEventListener('click', e => e.stopPropagation());
+        attachDatePlaceholder(input);
         input.addEventListener('change', async () => {
           const monthNum = parseInt(input.dataset.month, 10);
           const peakName = input.dataset.name;
@@ -3210,6 +3260,7 @@ async function renderGrid() {
       // Wire up single date input
       const dateInput = card.querySelector('.card-date-input');
       dateInput?.addEventListener('click', e => e.stopPropagation());
+      attachDatePlaceholder(dateInput);
       dateInput?.addEventListener('change', () => {
         // Update has-date class based on whether input has value
         dateInput.classList.toggle('has-date', !!dateInput.value);
@@ -3228,7 +3279,9 @@ async function renderGrid() {
   
   // Append all cards at once for better performance
   gridView.appendChild(fragment);
-  
+
+  enhanceDateInputs(gridView);
+
   // Progressive image loading using IntersectionObserver
   observeGridImages();
   
@@ -3383,25 +3436,27 @@ async function renderTable() {
     tr.querySelector('[data-cell="name"]')?.addEventListener('click', () => openPeakDetail(it));
     tr.querySelector('[data-cell="open"]')?.addEventListener('click', () => openPeakDetail(it));
 
-    if (!gridMode) {
-      const dateInput = tr.querySelector('.date-input');
-      dateInput?.addEventListener('click', e => e.stopPropagation());
-      dateInput?.addEventListener('change', () => {
-        // Always sync date and completion
-        setDateFor(it.name, dateInput.value || '');
-      });
-      tr.querySelector('.js-check')?.addEventListener('click', (e) => {
+  if (!gridMode) {
+    const dateInput = tr.querySelector('.date-input');
+    dateInput?.addEventListener('click', e => e.stopPropagation());
+    attachDatePlaceholder(dateInput);
+    dateInput?.addEventListener('change', () => {
+      // Always sync date and completion
+      setDateFor(it.name, dateInput.value || '');
+    });
+    tr.querySelector('.js-check')?.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleComplete(it.name);
       });
-    } else {
-      const picker = tr.querySelector('.month-picker');
-      const dateEl = tr.querySelector('.grid-date');
-      let activeMonth = 0;
-      tr.querySelectorAll('.month-chip').forEach(btn => {
-        btn.addEventListener('click', e => {
-          e.stopPropagation();
-          activeMonth = parseInt(btn.dataset.m, 10);
+  } else {
+    const picker = tr.querySelector('.month-picker');
+    const dateEl = tr.querySelector('.grid-date');
+    attachDatePlaceholder(dateEl);
+    let activeMonth = 0;
+    tr.querySelectorAll('.month-chip').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        activeMonth = parseInt(btn.dataset.m, 10);
           dateEl.value = getMonthDate(currentList, it.name, activeMonth);
           picker.classList.add('open');
           dateEl.focus();
@@ -3419,8 +3474,10 @@ async function renderTable() {
       });
     }
 
-    rows.appendChild(tr);
-  }
+  rows.appendChild(tr);
+}
+
+  enhanceDateInputs(rows);
 
   // Image preview hover handlers
   rows.querySelectorAll('.profile-img').forEach(img => {
