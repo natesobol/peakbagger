@@ -209,32 +209,36 @@ if (window.location.pathname.includes('/pages/')) {
   <!-- Social Features -->
   <div class="profile-card">
     <h2><span class="card-icon">🤝</span> Social</h2>
-    
+
     <div class="social-container">
-      <!-- User Search -->
+      <!-- Friend feature placeholder -->
+      <div class="social-section full-width coming-soon-card">
+        <h3>👥 Friend Feature</h3>
+        <p class="coming-soon-text">Friend feature coming soon! We&apos;re polishing the experience before launch.</p>
+      </div>
+
+      <!-- Share panel -->
       <div class="social-section">
-        <h3>🔍 Find Friends</h3>
-        <div class="search-box">
-          <input type="text" id="userSearchInput" placeholder="Search by name or email...">
-          <button class="btn btn-primary btn-small" id="searchUsersBtn">Search</button>
+        <h3>📣 Share Peakbagger</h3>
+        <p class="social-description">Spread the word! We&apos;ll start your post with a link to the app.</p>
+        <div class="share-buttons" id="shareButtons">
+          <button class="btn btn-primary share-button" data-platform="twitter">Share on Twitter</button>
+          <button class="btn btn-primary share-button" data-platform="facebook">Share on Facebook</button>
+          <button class="btn btn-primary share-button" data-platform="instagram">Share on Instagram</button>
         </div>
-        <ul id="searchResults" class="user-list"></ul>
       </div>
 
-      <!-- Friend Requests -->
+      <!-- Social card generator -->
       <div class="social-section">
-        <h3>📬 Friend Requests</h3>
-        <ul id="friendRequests" class="request-list">
-          <li class="empty-state">No pending requests</li>
-        </ul>
-      </div>
-
-      <!-- Friends List -->
-      <div class="social-section full-width">
-        <h3>👥 My Friends</h3>
-        <ul id="friendsList" class="friend-list">
-          <li class="empty-state">No friends yet. Search for hikers above to connect!</li>
-        </ul>
+        <h3>🖼️ Generate Social Card</h3>
+        <p class="social-description">Pick a recent hike to create a shareable card.</p>
+        <div class="social-card-select">
+          <select id="socialCardSelect">
+            <option value="">Select recent hike</option>
+          </select>
+          <button class="btn btn-primary btn-small" id="generateSocialCardBtn" disabled>Generate</button>
+        </div>
+        <div id="socialCardHelper" class="helper-text">We&apos;ll load your recent hikes automatically.</div>
       </div>
     </div>
   </div>
@@ -378,6 +382,9 @@ if (window.location.pathname.includes('/pages/')) {
 
   let currentUser = null;
   let currentListId = null;
+  let recentHikesForSocial = [];
+  let dashboardProgress = { completed: 0, total: 0 };
+  let dashboardCompletionDates = [];
 
   // DOM elements
   const profileName = document.getElementById('profileName');
@@ -389,11 +396,10 @@ if (window.location.pathname.includes('/pages/')) {
   const changePasswordForm = document.getElementById('changePasswordForm');
   const passwordMessage = document.getElementById('passwordMessage');
   const signOutBtn = document.getElementById('signOutBtn');
-  const userSearchInput = document.getElementById('userSearchInput');
-  const searchUsersBtn = document.getElementById('searchUsersBtn');
-  const searchResults = document.getElementById('searchResults');
-  const friendRequests = document.getElementById('friendRequests');
-  const friendsList = document.getElementById('friendsList');
+  const shareButtons = document.getElementById('shareButtons');
+  const socialCardSelect = document.getElementById('socialCardSelect');
+  const generateSocialCardBtn = document.getElementById('generateSocialCardBtn');
+  const socialCardHelper = document.getElementById('socialCardHelper');
 
   // Load user data
   async function loadUserProfile() {
@@ -556,6 +562,8 @@ if (window.location.pathname.includes('/pages/')) {
       
       // Handle no data case
       if (!completions || completions.length === 0) {
+        recentHikesForSocial = [];
+        populateSocialCardDropdown([]);
         hikesContainer.innerHTML = `
           <div class="no-logs-message">
             <div class="empty-icon">🥾</div>
@@ -611,6 +619,9 @@ if (window.location.pathname.includes('/pages/')) {
           listName
         };
       }));
+
+      recentHikesForSocial = enrichedCompletions;
+      populateSocialCardDropdown(enrichedCompletions);
       
       const tableHtml = `
         <table class="hike-logs-table">
@@ -661,385 +672,85 @@ if (window.location.pathname.includes('/pages/')) {
     }
   }
   
-  // =====================================================
-  // Social Features - User Search
-  // DB Load: profiles, friendships, friend_requests
-  // =====================================================
-  async function searchUsers() {
-    const query = userSearchInput.value.trim().toLowerCase();
-    if (!query || query.length < 2) {
-      searchResults.innerHTML = '<li class="empty-state">Enter at least 2 characters</li>';
+    function populateSocialCardDropdown(hikes = []) {
+    if (!socialCardSelect || !generateSocialCardBtn) return;
+
+    if (!hikes.length) {
+      socialCardSelect.innerHTML = '<option value="">No recent hikes available</option>';
+      socialCardSelect.disabled = true;
+      generateSocialCardBtn.disabled = true;
+      if (socialCardHelper) socialCardHelper.textContent = 'Complete a hike to unlock social cards.';
       return;
     }
-    
-    // Error handling: Check user authentication
-    if (!currentUser) {
-      searchResults.innerHTML = '<li class="empty-state">Please log in to search users</li>';
-      return;
-    }
-    
-    try {
-      // DB Load: Search profiles table
-      const { data: users, error } = await supabase
-        .from('profiles')
-        .select('id, email, display_name')
-        .or(`display_name.ilike.%${query}%,email.ilike.%${query}%`)
-        .neq('id', currentUser.id)
-        .limit(10);
-      
-      if (error) {
-        console.error('searchUsers: DB Load Error:', error);
-        throw error;
-      }
-      
-      // Handle no results
-      if (!users || users.length === 0) {
-        searchResults.innerHTML = '<li class="empty-state">No users found</li>';
-        return;
-      }
-      
-      // DB Load: Check existing friendships
-      const { data: existingFriendships, error: friendError } = await supabase
-        .from('friendships')
-        .select('friend_user_id')
-        .eq('user_id', currentUser.id);
-      
-      if (friendError) {
-        console.warn('searchUsers: DB Load friendships warning:', friendError);
-      }
-      
-      // DB Load: Check sent friend requests
-      const { data: sentRequests, error: reqError } = await supabase
-        .from('friend_requests')
-        .select('to_user_id')
-        .eq('from_user_id', currentUser.id)
-        .eq('status', 'pending');
-      
-      if (reqError) {
-        console.warn('searchUsers: DB Load friend_requests warning:', reqError);
-      }
-      
-      const friendIds = new Set(existingFriendships?.map(f => f.friend_user_id) || []);
-      const requestIds = new Set(sentRequests?.map(r => r.to_user_id) || []);
-      
-      searchResults.innerHTML = users.map(user => {
-        const initials = getInitials(user.display_name || user.email);
-        const isFriend = friendIds.has(user.id);
-        const hasPendingRequest = requestIds.has(user.id);
-        
-        let actionButton = '';
-        if (isFriend) {
-          actionButton = '<span class="badge badge-accepted">Friends</span>';
-        } else if (hasPendingRequest) {
-          actionButton = '<span class="badge badge-pending">Pending</span>';
-        } else {
-          actionButton = `<button class="btn btn-primary btn-icon" onclick="sendFriendRequest('${user.id}')">Add Friend</button>`;
-        }
-        
-        return `
-          <li class="user-item">
-            <div class="user-info">
-              <div class="user-avatar-small">${initials}</div>
-              <div class="user-details">
-                <div class="name">${user.display_name || 'User'}</div>
-                <div class="email">${user.email}</div>
-              </div>
-            </div>
-            <div class="action-buttons">
-              ${actionButton}
-            </div>
-          </li>
-        `;
-      }).join('');
-    } catch (e) {
-      console.error('Error searching users:', e);
-      searchResults.innerHTML = '<li class="empty-state">Error searching users</li>';
-    }
+
+    socialCardSelect.disabled = false;
+    generateSocialCardBtn.disabled = true;
+    socialCardSelect.innerHTML = [
+      '<option value="">Select recent hike</option>',
+      ...hikes.map(hike => {
+        const date = hike.first_completed_at || hike.last_completed_at;
+        const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+        return `<option value="${hike.id}" data-peak="${hike.peakSlug}">${hike.peakName || 'Peak'} • ${formattedDate}</option>`;
+      })
+    ].join('');
+
+    if (socialCardHelper) socialCardHelper.textContent = 'Choose a hike to jump to its social card.';
   }
-  
-  function getInitials(name) {
-    if (!name) return 'U';
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return parts[0][0].toUpperCase() + parts[1][0].toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
+
+  function getShareMessage() {
+    const appUrl = `${window.location.origin}/`;
+    return `${appUrl} Track your hikes with Peakbagger!`;
   }
-  
-  // Make sendFriendRequest globally accessible
-  window.sendFriendRequest = async function(toUserId) {
-    try {
-      const { error } = await supabase
-        .from('friend_requests')
-        .insert({
-          from_user_id: currentUser.id,
-          to_user_id: toUserId,
-          status: 'pending'
-        });
-      
-      if (error) throw error;
-      
-      // Refresh search results
-      await searchUsers();
-      showMessage('Friend request sent!');
-    } catch (e) {
-      console.error('Error sending friend request:', e);
-      showMessage('Error sending friend request', true);
-    }
-  };
-  
-  // =====================================================
-  // Social Features - Friend Requests
-  // DB Load: friend_requests, profiles
-  // DB Save: friend_requests (update status), friendships (create)
-  // =====================================================
-  async function loadFriendRequests() {
-    // Error handling: Check user authentication
-    if (!currentUser) {
-      console.log('loadFriendRequests: No user, skipping');
-      friendRequests.innerHTML = '<li class="empty-state">Please log in</li>';
-      return;
-    }
-    
-    try {
-      // DB Load: Get pending friend requests from friend_requests table
-      const { data: requests, error } = await supabase
-        .from('friend_requests')
-        .select('id, from_user_id, to_user_id, status, created_at')
-        .eq('to_user_id', currentUser.id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.warn('loadFriendRequests: DB Load Error (table may not exist):', error.message);
-        friendRequests.innerHTML = '<li class="empty-state">No pending requests</li>';
+
+  function openShare(platform) {
+    const message = getShareMessage();
+    const encodedMessage = encodeURIComponent(message);
+    const appUrl = encodeURIComponent(`${window.location.origin}/`);
+    let shareUrl = '';
+
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodedMessage}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${appUrl}&quote=${encodedMessage}`;
+        break;
+      case 'instagram':
+        shareUrl = `https://www.instagram.com/?url=${appUrl}`;
+        break;
+      default:
         return;
-      }
-      
-      // Handle no data case
-      if (!requests || requests.length === 0) {
-        friendRequests.innerHTML = '<li class="empty-state">No pending requests</li>';
-        return;
-      }
-      
-      console.log('loadFriendRequests: DB Load successful, found', requests.length, 'requests');
-      
-      // DB Load: Fetch user profiles from profiles table
-      const enrichedRequests = await Promise.all(requests.map(async (req) => {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, email, display_name')
-          .eq('id', req.from_user_id)
-          .single();
-        
-        if (profileError) {
-          console.warn('loadFriendRequests: DB Load profile error:', profileError);
-        }
-        
-        return {
-          ...req,
-          from_user: profile || { id: req.from_user_id, email: 'Unknown', display_name: null }
-        };
-      }));
-      
-      friendRequests.innerHTML = enrichedRequests.map(req => {
-        const user = req.from_user;
-        const initials = getInitials(user.display_name || user.email);
-        
-        return `
-          <li class="request-item">
-            <div class="user-info">
-              <div class="user-avatar-small">${initials}</div>
-              <div class="user-details">
-                <div class="name">${user.display_name || 'User'}</div>
-                <div class="email">${user.email}</div>
-              </div>
-            </div>
-            <div class="action-buttons">
-              <button class="btn btn-primary btn-icon" onclick="acceptFriendRequest('${req.id}', '${req.from_user_id}')">Accept</button>
-              <button class="btn btn-ghost btn-icon" onclick="rejectFriendRequest('${req.id}')">Decline</button>
-            </div>
-          </li>
-        `;
-      }).join('');
-    } catch (e) {
-      console.error('loadFriendRequests: Error:', e);
-      friendRequests.innerHTML = '<li class="empty-state">No pending requests</li>';
     }
+
+    window.open(shareUrl, '_blank', 'noopener');
   }
-  
-  // DB Save: Accept friend request - updates friend_requests and creates friendships
-  window.acceptFriendRequest = async function(requestId, friendUserId) {
-    try {
-      // DB Save: Update request status in friend_requests
-      const { error: updateError } = await supabase
-        .from('friend_requests')
-        .update({ status: 'accepted', updated_at: new Date().toISOString() })
-        .eq('id', requestId);
-      
-      if (updateError) {
-        console.error('acceptFriendRequest: DB Save Error:', updateError);
-        throw updateError;
-      }
-      
-      // DB Save: Create bidirectional friendships in friendships table
-      const { error: friendship1Error } = await supabase
-        .from('friendships')
-        .insert({
-          user_id: currentUser.id,
-          friend_user_id: friendUserId
-        });
-      
-      const { error: friendship2Error } = await supabase
-        .from('friendships')
-        .insert({
-          user_id: friendUserId,
-          friend_user_id: currentUser.id
-        });
-      
-      if (friendship1Error || friendship2Error) throw friendship1Error || friendship2Error;
-      
-      // Refresh lists
-      await loadFriendRequests();
-      await loadFriends();
-      showMessage('Friend request accepted!');
-    } catch (e) {
-      console.error('Error accepting friend request:', e);
-      showMessage('Error accepting request', true);
-    }
-  };
-  
-  // DB Save: Reject friend request - updates friend_requests status
-  window.rejectFriendRequest = async function(requestId) {
-    try {
-      // DB Save: Update request status to rejected
-      const { error } = await supabase
-        .from('friend_requests')
-        .update({ status: 'rejected', updated_at: new Date().toISOString() })
-        .eq('id', requestId);
-      
-      if (error) {
-        console.error('rejectFriendRequest: DB Save Error:', error);
-        throw error;
-      }
-      
-      console.log('rejectFriendRequest: DB Save successful');
-      await loadFriendRequests(); // DB Load: Refresh list
-      showMessage('Friend request declined');
-    } catch (e) {
-      console.error('rejectFriendRequest: Error:', e);
-      showMessage('Error declining request', true);
-    }
-  };
-  
-  // =====================================================
-  // Social Features - Friends List
-  // DB Load: friendships, profiles
-  // DB Save: friendships (delete on remove)
-  // =====================================================
-  async function loadFriends() {
-    // Error handling: Check user authentication
-    if (!currentUser) {
-      console.log('loadFriends: No user, skipping');
-      friendsList.innerHTML = '<li class="empty-state">Please log in</li>';
-      return;
-    }
-    
-    try {
-      // DB Load: Get friendships from friendships table
-      const { data: friendships, error } = await supabase
-        .from('friendships')
-        .select('id, user_id, friend_user_id, created_at')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.warn('loadFriends: DB Load Error (table may not exist):', error.message);
-        friendsList.innerHTML = '<li class="empty-state">No friends yet</li>';
-        return;
-      }
-      
-      // Handle no data case
-      if (!friendships || friendships.length === 0) {
-        friendsList.innerHTML = '<li class="empty-state">No friends yet</li>';
-        return;
-      }
-      
-      console.log('loadFriends: DB Load successful, found', friendships.length, 'friends');
-      
-      // DB Load: Fetch friend profiles from profiles table
-      const enrichedFriendships = await Promise.all(friendships.map(async (friendship) => {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, email, display_name')
-          .eq('id', friendship.friend_user_id)
-          .single();
-        
-        if (profileError) {
-          console.warn('loadFriends: DB Load profile error:', profileError);
-        }
-        
-        return {
-          ...friendship,
-          friend: profile || { id: friendship.friend_user_id, email: 'Unknown', display_name: null }
-        };
-      }));
-      
-      friendsList.innerHTML = enrichedFriendships.map(friendship => {
-        const friend = friendship.friend;
-        const initials = getInitials(friend.display_name || friend.email);
-        
-        return `
-          <li class="friend-item">
-            <div class="user-info">
-              <div class="user-avatar-small">${initials}</div>
-              <div class="user-details">
-                <div class="name">${friend.display_name || 'User'}</div>
-                <div class="email">${friend.email}</div>
-              </div>
-            </div>
-            <div class="action-buttons">
-              <button class="btn btn-ghost btn-icon" onclick="removeFriend('${friendship.id}', '${friend.id}')">Remove</button>
-            </div>
-          </li>
-        `;
-      }).join('');
-    } catch (e) {
-      console.error('Error loading friends:', e);
-      friendsList.innerHTML = '<li class="empty-state">No friends yet</li>';
-    }
-  }
-  
-  window.removeFriend = async function(friendshipId, friendUserId) {
-    if (!confirm('Are you sure you want to remove this friend?')) return;
-    
-    try {
-      // Remove both directions of friendship
-      await supabase
-        .from('friendships')
-        .delete()
-        .eq('id', friendshipId);
-      
-      await supabase
-        .from('friendships')
-        .delete()
-        .eq('user_id', friendUserId)
-        .eq('friend_user_id', currentUser.id);
-      
-      await loadFriends();
-      showMessage('Friend removed');
-    } catch (e) {
-      console.error('Error removing friend:', e);
-      showMessage('Error removing friend', true);
-    }
-  };
-  
+
   // Event listeners
-  searchUsersBtn.addEventListener('click', searchUsers);
-  userSearchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') searchUsers();
-  });
-  
+  if (shareButtons) {
+    shareButtons.addEventListener('click', (event) => {
+      const target = event.target.closest('[data-platform]');
+      if (target?.dataset?.platform) {
+        openShare(target.dataset.platform);
+      }
+    });
+  }
+
+  if (socialCardSelect && generateSocialCardBtn) {
+    socialCardSelect.addEventListener('change', (event) => {
+      generateSocialCardBtn.disabled = !event.target.value;
+    });
+
+    generateSocialCardBtn.addEventListener('click', () => {
+      const selectedOption = socialCardSelect.options[socialCardSelect.selectedIndex];
+      const progressId = socialCardSelect.value;
+      const peakSlug = selectedOption?.dataset?.peak || '';
+
+      if (progressId && peakSlug) {
+        window.location.href = `/social-card?peak=${peakSlug}&progress=${progressId}`;
+      }
+    });
+  }
+
   // All available lists
   let allLists = [];
   
@@ -1167,8 +878,6 @@ if (window.location.pathname.includes('/pages/')) {
     const loadPromises = [
       loadRecentHikes().catch(e => console.error('Failed to load recent hikes:', e)),
       loadAchievements().catch(e => console.error('Failed to load achievements:', e)),
-      loadFriendRequests().catch(e => console.error('Failed to load friend requests:', e)),
-      loadFriends().catch(e => console.error('Failed to load friends:', e)),
     ];
     
     await Promise.all(loadPromises);
@@ -1667,7 +1376,7 @@ if (window.location.pathname.includes('/pages/')) {
   
   // =====================================================
   // Load dashboard stats
-  // DB Load: list_peaks, user_peak_progress, user_favorite_peaks
+  // DB Load: list_peaks, user_hike_logs, user_favorite_peaks
   // =====================================================
   async function loadDashboardStats() {
     console.log('loadDashboardStats: Starting, user:', !!currentUser, 'listId:', currentListId);
@@ -1682,6 +1391,9 @@ if (window.location.pathname.includes('/pages/')) {
     try {
       let completed = 0;
       let totalPeaks = 0;
+      let listPeakIds = new Set();
+      const completionDateByPeak = new Map();
+      const completedPeakIds = new Set();
       
       // If we have a specific list, get stats for that list
       if (currentListId) {
@@ -1690,51 +1402,55 @@ if (window.location.pathname.includes('/pages/')) {
           .from('list_peaks')
           .select('peak_id')
           .eq('list_id', currentListId);
-        
+
         if (listError) {
           console.warn('loadDashboardStats: DB Load list_peaks Error:', listError);
         }
-        
-        totalPeaks = listPeaks?.length || 0;
-        
-        // DB Load: Get completed peaks for this list from user_peak_progress
-        const { data: completedPeaks, error: completedError } = await supabase
-          .from('user_peak_progress')
-          .select('peak_id')
-          .eq('user_id', currentUser.id)
-          .eq('list_id', currentListId)
-          .eq('completed', true);
-        
-        if (completedError) {
-          console.warn('loadDashboardStats: DB Load user_peak_progress Error:', completedError);
-        }
-        
-        completed = completedPeaks?.length || 0;
-      } else {
-        // No list - get all completed peaks across all lists
-        console.log('loadDashboardStats: No list ID, getting all completed peaks');
-        
-        // DB Load: Get all completed peaks from user_peak_progress
-        const { data: allCompleted, error: allError } = await supabase
-          .from('user_peak_progress')
-          .select('peak_id')
-          .eq('user_id', currentUser.id)
-          .eq('completed', true);
-        
-        if (allError) {
-          console.warn('loadDashboardStats: DB Load all completed Error:', allError);
-        }
-        
-        completed = allCompleted?.length || 0;
-        totalPeaks = 48; // Default to NH48
+
+        listPeakIds = new Set((listPeaks || []).map(p => p.peak_id).filter(Boolean));
+        totalPeaks = listPeakIds.size;
+      }
+
+      // DB Load: Get user hike logs and derive unique completed peaks (latest date per peak)
+      const { data: hikeLogs, error: hikeError } = await supabase
+        .from('user_hike_logs')
+        .select('peak_id, list_id, hike_date')
+        .eq('user_id', currentUser.id)
+        .order('hike_date', { ascending: false });
+
+      if (hikeError) {
+        console.warn('loadDashboardStats: DB Load hike logs Error:', hikeError);
+      }
+
+      if (hikeLogs) {
+        hikeLogs.forEach(log => {
+          const pid = log.peak_id;
+          if (!pid) return;
+
+          if (currentListId) {
+            if (log.list_id && log.list_id !== currentListId) return;
+            if (listPeakIds.size && !listPeakIds.has(pid)) return;
+          }
+
+          if (!completionDateByPeak.has(pid) && log.hike_date) {
+            completionDateByPeak.set(pid, log.hike_date);
+          }
+          completedPeakIds.add(pid);
+        });
+      }
+
+      completed = completedPeakIds.size;
+
+      // Default totals for users without a selected list
+      if (!currentListId && totalPeaks === 0) {
+        totalPeaks = completed;
       }
       
       // DB Load: Get favorites from user_favorite_peaks (not list-specific)
       const { data: favoritePeaks, error: favError } = await supabase
         .from('user_favorite_peaks')
         .select('peak_id')
-        .eq('user_id', currentUser.id)
-        .eq('favorite_type', 'favorite');
+        .eq('user_id', currentUser.id);
       
       if (favError) {
         console.warn('loadDashboardStats: DB Load favorites Error:', favError);
@@ -1742,12 +1458,11 @@ if (window.location.pathname.includes('/pages/')) {
       
       const favoritesCount = favoritePeaks?.length || 0;
       
-      // DB Load: Get wishlist from user_favorite_peaks
+      // DB Load: Get wishlist from user_wishlist_hikes
       const { data: wishlistPeaks, error: wishError } = await supabase
-        .from('user_favorite_peaks')
+        .from('user_wishlist_hikes')
         .select('peak_id')
-        .eq('user_id', currentUser.id)
-        .eq('favorite_type', 'wishlist');
+        .eq('user_id', currentUser.id);
       
       if (wishError) {
         console.warn('loadDashboardStats: DB Load wishlist Error:', wishError);
@@ -1763,7 +1478,7 @@ if (window.location.pathname.includes('/pages/')) {
       // Get the current list name for the label
       const currentList = allLists.find(l => l.id === currentListId);
       const listName = currentList ? currentList.name : 'All Lists';
-      
+
       // Update UI
       document.getElementById('statTotalCompleted').textContent = `${completed}/${totalPeaks}`;
       document.getElementById('statFavorites').textContent = favoritesCount;
@@ -1771,7 +1486,10 @@ if (window.location.pathname.includes('/pages/')) {
       document.getElementById('statPercentComplete').textContent = percentage + '%';
       document.getElementById('statListName').textContent = listName;
       document.getElementById('dashboardStats').style.display = 'block';
-      
+
+      dashboardProgress = { completed, total: totalPeaks };
+      dashboardCompletionDates = Array.from(completionDateByPeak.values());
+
       // Load activity graph
       await loadActivityGraph();
     } catch (e) {
@@ -1783,7 +1501,7 @@ if (window.location.pathname.includes('/pages/')) {
   
   // =====================================================
   // Load GitHub-style pulse graph (208 dots / 2 years)
-  // DB Load: user_peak_progress
+  // DB Load: derived from hike logs (unique peaks)
   // =====================================================
   async function loadActivityGraph() {
     // Error handling: Check user authentication
@@ -1803,30 +1521,16 @@ if (window.location.pathname.includes('/pages/')) {
       // Get all completed peaks with dates from past 2 years
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-      
-      console.log('loadActivityGraph: DB Load - Fetching completions since', twoYearsAgo.toISOString());
-      
-      // DB Load: Get completion dates from user_peak_progress
-      let { data: completions, error } = await supabase
-        .from('user_peak_progress')
-        .select('first_completed_at, last_completed_at')
-        .eq('user_id', currentUser.id)
-        .eq('completed', true);
-      
-      if (error) {
-        console.error('loadActivityGraph: DB Load Error:', error);
-        throw error;
-      }
-      
-      // Filter by date in JS (more flexible than SQL date comparison)
+
+      console.log('loadActivityGraph: Using derived completion dates from hike logs');
+
       const twoYearsAgoTime = twoYearsAgo.getTime();
-      completions = (completions || []).filter(c => {
-        const dateStr = c.first_completed_at || c.last_completed_at;
+      const completions = (dashboardCompletionDates || []).filter(dateStr => {
         if (!dateStr) return false;
         return new Date(dateStr).getTime() >= twoYearsAgoTime;
       });
-      
-      console.log('loadActivityGraph: Found', completions?.length || 0, 'completions in date range');
+
+      console.log('loadActivityGraph: Found', completions?.length || 0, 'unique peak completions in date range');
       
       // Build period-by-period activity map (208 periods over 2 years = ~3.5 days each)
       const periodMap = {}; // key: period index -> count
@@ -1835,14 +1539,13 @@ if (window.location.pathname.includes('/pages/')) {
       const msPerPeriod = (2 * 365.25 * 24 * 60 * 60 * 1000) / 208; // ~3.5 days per period
       
       if (completions) {
-        completions.forEach(c => {
-          const dateStr = c.first_completed_at || c.last_completed_at;
+        completions.forEach(dateStr => {
           if (!dateStr) return;
-          
+
           const date = new Date(dateStr);
           const daysAgo = (today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000);
           const periodIndex = Math.floor(207 - (daysAgo / 3.5)); // 0-207, 207 = most recent
-          
+
           if (periodIndex >= 0 && periodIndex < 208) {
             periodMap[periodIndex] = (periodMap[periodIndex] || 0) + 1;
             totalHikes++;
@@ -1850,8 +1553,13 @@ if (window.location.pathname.includes('/pages/')) {
         });
       }
       
-      // Update total count
-      pulseHikeCount.textContent = `${totalHikes} peaks in this period`;
+      // Update total count using list-aware progress instead of hike logs
+      const { completed: listCompleted, total: listTotal } = dashboardProgress;
+      if (listTotal > 0) {
+        pulseHikeCount.textContent = `${listCompleted}/${listTotal} peaks complete`;
+      } else {
+        pulseHikeCount.textContent = `${listCompleted} peaks complete`;
+      }
       
       // Generate 208 dots (2 years)
       const periods = [];
@@ -1939,6 +1647,11 @@ if (window.location.pathname.includes('/pages/')) {
         .from('user_favorite_peaks')
         .select('*, peaks(name, slug)')
         .eq('user_id', currentUser.id);
+
+      const { data: wishlistData } = await supabase
+        .from('user_wishlist_hikes')
+        .select('*, peaks(name, slug)')
+        .eq('user_id', currentUser.id);
       
       const exportData = {
         exportDate: new Date().toISOString(),
@@ -1953,11 +1666,11 @@ if (window.location.pathname.includes('/pages/')) {
           list: p.lists?.name,
           completedAt: p.first_completed_at
         })) || [],
-        favorites: favorites?.filter(f => f.favorite_type === 'favorite').map(f => ({
+        favorites: favorites?.map(f => ({
           peak: f.peaks?.name,
           slug: f.peaks?.slug
         })) || [],
-        wishlist: favorites?.filter(f => f.favorite_type === 'wishlist').map(f => ({
+        wishlist: wishlistData?.map(f => ({
           peak: f.peaks?.name,
           slug: f.peaks?.slug
         })) || []
