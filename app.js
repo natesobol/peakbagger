@@ -648,12 +648,7 @@ function translatePage() {
   }
   
   // Update show completed button
-  const showBtn = document.getElementById('showComplete');
-  if (showBtn) {
-    const text = hideCompleted ? 'Show completed' : 'Hide completed';
-    const span = showBtn.querySelector('span:last-child');
-    if (span) span.textContent = t(text);
-  }
+  renderCompletedButtonState();
   
   // Re-render current view to translate dynamic content
   renderView();
@@ -935,6 +930,13 @@ const tosToggle = document.getElementById('tosToggle');
 const tosBox = document.getElementById('tosBox');
 const tosAgree = document.getElementById('tosAgree');
 const tosTextEl = document.getElementById('tosText');
+function renderCompletedButtonState() {
+  if (!showBtn) return;
+
+  const icon = hideCompleted ? '🚫' : '✅';
+  const label = hideCompleted ? 'Completed: Hidden' : 'Completed: Showing';
+  showBtn.innerHTML = `<span class="ico">${icon}</span> <span>${t(label)}</span>`;
+}
 
 // Old detail close button (from side panel) - removed in favor of peakDetailBackBtn
 // document.getElementById('detailClose').onclick = () => detail.classList.remove('open');
@@ -3421,7 +3423,7 @@ sortBtn.onclick = () => {
 };
 showBtn.onclick = () => {
   hideCompleted = !hideCompleted;
-  showBtn.innerHTML = hideCompleted ? '<span class="ico">◎</span> <span>Show completed</span>' : '<span class="ico">◯</span> <span>Hide completed</span>';
+  renderCompletedButtonState();
   PAGE = 1;
   renderView();
 };
