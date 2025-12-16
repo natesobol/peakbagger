@@ -102,7 +102,7 @@
   justify-content: space-between;
   padding: 12px 24px;
   background: linear-gradient(180deg, #1a1a2e 0%, #16162a 100%);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid #ffffff;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -120,7 +120,14 @@
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.2);
 }
-.site-nav-logo span {
+.site-nav-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.1;
+}
+
+.site-nav-title {
   font-weight: 800;
   font-size: 38px;
   line-height: 1;
@@ -128,13 +135,20 @@
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+
+.site-nav-tagline {
+  font-size: 13px;
+  color: #e5f8ec;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
 .site-nav-links {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .site-nav-links a {
-  color: #a5b4c3;
+  color: #ffffff;
   text-decoration: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -145,8 +159,8 @@
   transition: all 0.2s ease;
 }
 .site-nav-links a:hover {
-  color: #fff;
-  background: rgba(255,255,255,0.1);
+  color: #22c55e;
+  background: rgba(255,255,255,0.08);
 }
 .site-nav-links a.active {
   color: #22c55e;
@@ -169,7 +183,8 @@
   .site-nav {
     padding: 10px 12px;
   }
-  .site-nav-logo span {
+  .site-nav-title,
+  .site-nav-tagline {
     display: none;
   }
   .site-nav-links {
@@ -194,7 +209,10 @@
 <nav class="site-nav">
   <a href="/" class="site-nav-logo">
     <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger Logo" />
-    <span>Peakbagger</span>
+    <div class="site-nav-title-wrap">
+      <span class="site-nav-title">Peakbagger</span>
+      <span class="site-nav-tagline">A comprehensive hike log application.</span>
+    </div>
   </a>
   <div class="site-nav-links">
     <a href="https://nh48.info" target="_blank" rel="noopener">NH48 API</a>
@@ -339,24 +357,22 @@
           <div class="panel" style="font-size:14px;line-height:1.5;color:var(--ink)">
             <p>Peakbagger is a tool to track your summits of peaks in the White Mountains. Use it to log your ascents, track your progress through peak lists, and discover which peaks you've conquered.</p>
             <p style="margin-top:10px">Whether you're working toward the NH 48, the 52 with a View, or other peak bagging challenges, Peakbagger helps you stay organized and motivated on your peak-hunting adventures.</p>
+            <a class="app-promo" href="https://apps.apple.com/us/app/peakbaggers-journal/idXXXXXXXXX" target="_blank" rel="noopener">
+              <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger's Journal iOS icon" loading="lazy">
+              <div class="app-promo__meta">
+                <div class="app-promo__title">Peakbagger's Journal (iOS)</div>
+                <div class="app-promo__sub">Available on the App Store</div>
+              </div>
+              <span class="btn btn-primary btn-small app-promo__cta" style="background:#22c55e;border-color:#22c55e">View</span>
+            </a>
           </div>
         </div>
       </details>
 
       <div style="margin-top:14px">
-        <label for="listSelect" class="subtle" style="font-size:14px" data-i18n="Choose List">Choose List:</label>
-        <select id="listSelect" class="select" style="width:100%;margin-top:6px"></select>
+        <label for="listSelect" class="subtle choose-list-label" data-i18n="Choose List">Choose List:</label>
+        <select id="listSelect" class="select choose-list-select" style="width:100%;margin-top:8px"></select>
       </div>
-
-      <!-- iOS App Promo - Between Choose List and Settings on mobile -->
-      <a class="app-promo" href="https://apps.apple.com/us/app/peakbaggers-journal/idXXXXXXXXX" target="_blank" rel="noopener">
-        <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger's Journal iOS icon" loading="lazy">
-        <div class="app-promo__meta">
-          <div class="app-promo__title">Peakbagger's Journal (iOS)</div>
-          <div class="app-promo__sub">Available on the App Store</div>
-        </div>
-        <span class="btn btn-primary btn-small app-promo__cta" style="background:#22c55e;border-color:#22c55e">View</span>
-      </a>
 
       <!-- Mobile Search -->
       <div id="mobileSidebarSearch" style="display:none">
@@ -435,6 +451,7 @@
             <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
               <option value="dark" data-i18n-option="Dark (default)">Dark (default)</option>
               <option value="light" data-i18n-option="Light (white & black)">Light (white & black)</option>
+              <option value="eye-saver" data-i18n-option="Light Mode (Eye Saver)">Light Mode (Eye Saver)</option>
               <option value="forest" data-i18n-option="Forest Green">Forest Green</option>
               <option value="sky" data-i18n-option="Sky Blue">Sky Blue</option>
             </select>
