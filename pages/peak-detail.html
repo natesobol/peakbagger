@@ -87,7 +87,18 @@
   </script>
 
   <link rel="stylesheet" href="../css/peak-detail.css">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-o9N1j7kGStG3cJfWcJPrmnD/jYixQhMqLV+3lZ8Jp2o="
+    crossorigin=""
+  >
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o8EeYJtP0kCZo9zI0zYNbSLrGZM3Rp3yvRsI5u2y+5U="
+    crossorigin=""
+  ></script>
   <!-- URL Masking: hide /pages/ from URL bar -->
   <script>
   if (window.location.pathname.includes('/pages/')) {
@@ -154,6 +165,9 @@
         <button class="btn" id="favBtn"><span id="favIcon">☆</span> <span id="favText">Favorite</span></button>
         <button class="btn" id="wishBtn"><span id="wishIcon">🤍</span> <span id="wishText">Wishlist</span></button>
       </div>
+      <div class="share-btn-row">
+        <button class="btn share-wide-btn" id="sharePeakBtn">Share peak on social media</button>
+      </div>
     </div>
     
     <!-- SUMMIT LOG + LEARN MORE SIDE BY SIDE -->
@@ -178,7 +192,7 @@
           </div>
         </div>
         <div class="btn-row">
-          <a href="#" class="btn" id="logHikeBtn">📝 Log New Hike</a>
+          <a href="#" class="btn log-hike-link">📝 Bag Peak</a>
         </div>
       </div>
       
@@ -194,7 +208,18 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- MAP PANEL -->
+    <div id="mapPanel" class="metadata-panel full-width map-panel" style="display:none;">
+      <div class="metadata-header">
+        <div class="metadata-title">Trail Map</div>
+        <div class="metadata-subtitle">OpenStreetMap view centered on this peak</div>
+      </div>
+      <div class="map-frame">
+        <div id="peakMap" aria-label="OpenStreetMap preview for this peak"></div>
+      </div>
+    </div>
+
     <!-- HIKE LOG LIST - Full Width -->
     <div id="loggedProgressSection" class="logged-progress-section">
       <div class="section-title">Your Hike Log</div>
@@ -217,7 +242,6 @@
         <div class="info-label">Weather Forecasts</div>
         <div class="links-col">
           <a class="btn-link" id="wxOpenMeteo" href="#" target="_blank" rel="noopener">Open-Meteo</a>
-          <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
           <a class="btn-link" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
         </div>
       </div>
@@ -255,9 +279,12 @@
     const PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="#172032"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="22">No photos available</text></svg>'
     );
-    
+
     let carouselImgs = [], carouselIdx = 0, carouselTimer = null, timerInterval = null;
     const BASE_DELAY = 8000;
+    const MAP_DEFAULT_ZOOM = 12;
+    let peakMap = null;
+    let peakMapMarker = null;
 
     function setMetaContent(selector, value, attribute = 'content') {
       const tag = document.querySelector(selector);
@@ -296,7 +323,44 @@
     function cleanJSON(raw) {
       return raw.replace(/:contentReference\[.*?\]\{index=\d+\}/g, '').replace(/\/\*\s*Lines?\s+\d+[\d\-,\s]*omitted\s*\*\//g, '');
     }
-    
+
+    function hideMapPanel() {
+      const mapPanel = document.getElementById('mapPanel');
+      if (mapPanel) {
+        mapPanel.style.display = 'none';
+      }
+    }
+
+    function showPeakMap(lat, lon, peakName) {
+      const mapPanel = document.getElementById('mapPanel');
+      const mapEl = document.getElementById('peakMap');
+      if (!mapPanel || !mapEl || typeof L === 'undefined') return;
+
+      const center = [lat, lon];
+      mapPanel.style.display = 'block';
+
+      if (!peakMap) {
+        peakMap = L.map(mapEl).setView(center, MAP_DEFAULT_ZOOM);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 18
+        }).addTo(peakMap);
+      } else {
+        peakMap.setView(center, MAP_DEFAULT_ZOOM);
+        if (peakMapMarker) {
+          peakMap.removeLayer(peakMapMarker);
+        }
+      }
+
+      peakMapMarker = L.marker(center).addTo(peakMap);
+      if (peakName) {
+        peakMapMarker.bindPopup(peakName).openPopup();
+      }
+
+      // Ensure Leaflet recalculates layout after panel becomes visible
+      setTimeout(() => peakMap.invalidateSize(), 150);
+    }
+
     async function fetchFromNH48API() {
       for (let i = 0; i < API_URLS.length; i++) {
         try {
@@ -317,7 +381,18 @@
         if (stored) {
           const peaks = JSON.parse(stored);
           const peak = peaks.find(p => p.slug === peakSlug);
-          if (peak) { renderPeak(peak); return; }
+          if (peak) {
+            if (!peak.lat || !peak.lon) {
+              const apiFallback = await fetchFromNH48API();
+              const apiPeak = apiFallback?.[peakSlug];
+              if (apiPeak) {
+                peak.lat = apiPeak.latitude;
+                peak.lon = apiPeak.longitude;
+              }
+            }
+            await renderPeak(peak);
+            return;
+          }
         }
         
         const data = await fetchFromNH48API();
@@ -336,7 +411,7 @@
             lat: apiPeak.latitude, lon: apiPeak.longitude,
             photos: apiPeak.photos || []
           };
-          renderPeak(peak);
+          await renderPeak(peak);
           return;
         }
         document.getElementById('peakName').textContent = 'Peak not found';
@@ -346,13 +421,18 @@
       }
     }
     
-    function renderPeak(peak) {
+    async function renderPeak(peak) {
       currentPeakName = peak.name;  // Store for summit log panel
       document.getElementById('peakName').textContent = peak.name;
       updateMetaTags(peak);
-      
+      hideMapPanel();
+
+      const lat = peak.lat !== undefined ? parseFloat(peak.lat) : NaN;
+      const lon = peak.lon !== undefined ? parseFloat(peak.lon) : NaN;
+      const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+
       buildCarousel(peak);
-      
+
       document.getElementById('elevation').textContent = peak.elevation ? `${peak.elevation}'` : '—';
       document.getElementById('prominence').textContent = peak.prominence ? `${peak.prominence}'` : '—';
       document.getElementById('location').textContent = peak.location || '—';
@@ -367,22 +447,50 @@
         await handleQuickLogDateChange(newDate);
       });
       
-      const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
-      const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
-      updateFavBtn(favorites.includes(peak.slug));
-      updateWishBtn(wishlist.includes(peak.slug));
+      await refreshFavoriteState(peak.slug);
       
       // Set up Log Hike button link
-      document.getElementById('logHikeBtn').href = `/hike-log?peak=${peak.slug}`;
-      
+      document.querySelectorAll('.log-hike-link').forEach(link => {
+        link.href = `/hike-log?peak=${peak.slug}`;
+      });
+
       document.getElementById('favBtn').addEventListener('click', () => toggleFavorite(peak.slug));
       document.getElementById('wishBtn').addEventListener('click', () => toggleWishlist(peak.slug));
-      
-      if (peak.lat && peak.lon) {
-        document.getElementById('wxNoaa').href = `https://forecast.weather.gov/MapClick.php?lat=${peak.lat}&lon=${peak.lon}`;
-        document.getElementById('wxOpenMeteo').href = `https://open-meteo.com/en/docs#latitude=${peak.lat}&longitude=${peak.lon}`;
+      const sharePeakBtn = document.getElementById('sharePeakBtn');
+      if (sharePeakBtn) {
+        sharePeakBtn.onclick = () => {
+          if (currentPeakSlug && mostRecentLogId) {
+            window.location.href = `/social-card?peak=${currentPeakSlug}&log=${mostRecentLogId}`;
+          } else if (currentPeakSlug) {
+            window.location.href = `/social-card?peak=${currentPeakSlug}`;
+          }
+        };
       }
-      
+
+      const wxNoaa = document.getElementById('wxNoaa');
+      const wxOpenMeteo = document.getElementById('wxOpenMeteo');
+      const mapsLink = document.getElementById('lnkMaps');
+
+      if (hasCoords) {
+        if (wxNoaa) {
+          wxNoaa.href = `https://forecast.weather.gov/MapClick.php?lat=${lat}&lon=${lon}`;
+          wxNoaa.style.display = '';
+        }
+        if (wxOpenMeteo) {
+          wxOpenMeteo.href = `https://open-meteo.com/en/docs#latitude=${lat}&longitude=${lon}`;
+          wxOpenMeteo.style.display = '';
+        }
+        if (mapsLink) {
+          mapsLink.href = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}&zoom=14`;
+          mapsLink.style.display = '';
+        }
+        showPeakMap(lat, lon, peak.name);
+      } else {
+        if (wxNoaa) wxNoaa.style.display = 'none';
+        if (wxOpenMeteo) wxOpenMeteo.style.display = 'none';
+        if (mapsLink) mapsLink.style.display = 'none';
+      }
+
       const searchName = encodeURIComponent(peak.name);
       if (peak.slug) {
         const nh48Link = document.getElementById('lnkNH48');
@@ -394,9 +502,6 @@
       document.getElementById('lnkPeakbagger').href = `https://www.peakbagger.com/search.aspx?name=${searchName}`;
       document.getElementById('lnkAllTrails').href = `https://www.alltrails.com/search?q=${searchName}`;
       document.getElementById('lnkSummitPost').href = `https://www.summitpost.org/search?search=${searchName}`;
-      if (peak.lat && peak.lon) {
-        document.getElementById('lnkMaps').href = `https://www.openstreetmap.org/?mlat=${peak.lat}&mlon=${peak.lon}&zoom=14`;
-      }
     }
     
     function buildCarousel(peak) {
@@ -484,27 +589,118 @@
     document.getElementById('media').addEventListener('mouseenter', stopCarousel);
     document.getElementById('media').addEventListener('mouseleave', () => { if (carouselImgs.length > 1) startCarousel(); });
     
-    function toggleFavorite(slug) {
-      const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
-      const idx = favorites.indexOf(slug);
-      if (idx > -1) favorites.splice(idx, 1); else favorites.push(slug);
+    function persistFavoriteWishlist(favorites, wishlist) {
       localStorage.setItem('peakbagger_favorites', JSON.stringify(favorites));
+      localStorage.setItem('peakbagger_wishlist', JSON.stringify(wishlist));
+    }
+
+    async function refreshFavoriteState(slug) {
+      let favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
+      let wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
+
+      if (currentUser) {
+        try {
+          const { data: favRows, error: favError } = await supabase
+            .from('user_favorite_peaks')
+            .select('peak_id, peaks(slug)')
+            .eq('user_id', currentUser.id);
+
+          const { data: wishRows, error: wishError } = await supabase
+            .from('user_wishlist_hikes')
+            .select('peak_id, peaks(slug)')
+            .eq('user_id', currentUser.id);
+
+          if (!favError && favRows) {
+            favorites = favRows.map(f => f?.peaks?.slug).filter(Boolean);
+          }
+          if (!wishError && wishRows) {
+            wishlist = wishRows.map(w => w?.peaks?.slug).filter(Boolean);
+          }
+        } catch (e) {
+          console.warn('refreshFavoriteState: fallback to local cache', e);
+        }
+      }
+
+      persistFavoriteWishlist(favorites, wishlist);
+      updateFavBtn(favorites.includes(slug));
+      updateWishBtn(wishlist.includes(slug));
+    }
+
+    async function toggleFavorite(slug) {
+      let favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
+      const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
+      const isFavorite = favorites.includes(slug);
+
+      if (currentUser && currentPeakId) {
+        try {
+          if (isFavorite) {
+            await supabase
+              .from('user_favorite_peaks')
+              .delete()
+              .eq('user_id', currentUser.id)
+              .eq('peak_id', currentPeakId);
+            favorites = favorites.filter(s => s !== slug);
+          } else {
+            await supabase
+              .from('user_favorite_peaks')
+              .insert({ user_id: currentUser.id, peak_id: currentPeakId });
+            favorites.push(slug);
+          }
+        } catch (e) {
+          console.error('toggleFavorite error:', e);
+        }
+      } else {
+        if (isFavorite) {
+          favorites = favorites.filter(s => s !== slug);
+        } else {
+          favorites.push(slug);
+        }
+      }
+
+      persistFavoriteWishlist(favorites, wishlist);
       updateFavBtn(favorites.includes(slug));
     }
-    
+
     function updateFavBtn(isFavorite) {
       document.getElementById('favIcon').textContent = isFavorite ? '⭐' : '☆';
       document.getElementById('favText').textContent = isFavorite ? 'Favorited' : 'Favorite';
     }
-    
-    function toggleWishlist(slug) {
-      const wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
-      const idx = wishlist.indexOf(slug);
-      if (idx > -1) wishlist.splice(idx, 1); else wishlist.push(slug);
-      localStorage.setItem('peakbagger_wishlist', JSON.stringify(wishlist));
+
+    async function toggleWishlist(slug) {
+      const favorites = JSON.parse(localStorage.getItem('peakbagger_favorites') || '[]');
+      let wishlist = JSON.parse(localStorage.getItem('peakbagger_wishlist') || '[]');
+      const isWishlist = wishlist.includes(slug);
+
+      if (currentUser && currentPeakId) {
+        try {
+          if (isWishlist) {
+            await supabase
+              .from('user_wishlist_hikes')
+              .delete()
+              .eq('user_id', currentUser.id)
+              .eq('peak_id', currentPeakId);
+            wishlist = wishlist.filter(s => s !== slug);
+          } else {
+            await supabase
+              .from('user_wishlist_hikes')
+              .insert({ user_id: currentUser.id, peak_id: currentPeakId });
+            wishlist.push(slug);
+          }
+        } catch (e) {
+          console.error('toggleWishlist error:', e);
+        }
+      } else {
+        if (isWishlist) {
+          wishlist = wishlist.filter(s => s !== slug);
+        } else {
+          wishlist.push(slug);
+        }
+      }
+
+      persistFavoriteWishlist(favorites, wishlist);
       updateWishBtn(wishlist.includes(slug));
     }
-    
+
     function updateWishBtn(isWishlist) {
       document.getElementById('wishIcon').textContent = isWishlist ? '❤️' : '🤍';
       document.getElementById('wishText').textContent = isWishlist ? 'Wishlisted' : 'Wishlist';
@@ -736,61 +932,73 @@
         
         console.log('DB Load Success: user_hike_logs -', logs?.length || 0, 'logs found');
         
+        const logButton = `
+          <div class="log-panel-header">
+            <a href="${currentPeakSlug ? `/hike-log?peak=${currentPeakSlug}` : '#'}" class="btn log-hike-link log-panel-btn">📝 Bag Peak</a>
+          </div>
+        `;
+
         if (!logs || logs.length === 0) {
           container.innerHTML = `
-            <div class="no-logs-message">
-              <div class="empty-icon">📝</div>
-              <div>No hike logs yet</div>
-              <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Log New Hike" above to record your first summit!</p>
+            ${logButton}
+            <div class="hike-log-scroll">
+              <div class="no-logs-message">
+                <div class="empty-icon">📝</div>
+                <div>No hike logs yet</div>
+                <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click "Bag Peak" above to record your first summit!</p>
+              </div>
             </div>
           `;
           return;
         }
-        
+
         // Render card-based log list with buttons
         const cardsHtml = `
-          <div class="hike-log-cards">
-            ${logs.map(log => {
-              const dateValue = log.hike_date || '';
-              const formattedDate = dateValue ? new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', { 
-                month: 'short', day: 'numeric', year: 'numeric' 
-              }) : 'No date';
-              const notes = log.notes || '';
-              const trailName = log.trail_name || '';
-              const subtitle = trailName || (notes.length > 50 ? notes.substring(0, 50) + '...' : notes) || 'No details';
-              
-              return `
-                <div class="hike-log-card" data-log-id="${log.id}">
-                  <div class="hike-log-card-main">
-                    <div class="hike-log-date-section">
-                      <input type="date" 
-                             class="log-date-input compact" 
-                             value="${dateValue}"
-                             onchange="updateLogDate('${log.id}', this.value)" 
-                             title="Change date" />
-                      <span class="hike-log-date-display">${formattedDate}</span>
+          ${logButton}
+          <div class="hike-log-scroll">
+            <div class="hike-log-cards">
+              ${logs.map(log => {
+                const dateValue = log.hike_date || '';
+                const formattedDate = dateValue ? new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric'
+                }) : 'No date';
+                const notes = log.notes || '';
+                const trailName = log.trail_name || '';
+                const subtitle = trailName || (notes.length > 50 ? notes.substring(0, 50) + '...' : notes) || 'No details';
+
+                return `
+                  <div class="hike-log-card" data-log-id="${log.id}">
+                    <div class="hike-log-card-main">
+                      <div class="hike-log-date-section">
+                        <input type="date"
+                               class="log-date-input compact"
+                               value="${dateValue}"
+                               onchange="updateLogDate('${log.id}', this.value)"
+                               title="Change date" />
+                        <span class="hike-log-date-display">${formattedDate}</span>
+                      </div>
+                      <div class="hike-log-details">
+                        <div class="hike-log-subtitle">${subtitle}</div>
+                      </div>
                     </div>
-                    <div class="hike-log-details">
-                      <div class="hike-log-subtitle">${subtitle}</div>
+                    <div class="hike-log-card-actions">
+                      <button class="log-card-btn" onclick="editLog('${log.id}')" title="Edit hike details">
+                        ✏️ Edit
+                      </button>
+                      <button class="log-card-btn accent" onclick="generateSocialCard('${log.id}')" title="Create social card with this date">
+                        📸 Social Card
+                      </button>
+                      <button class="log-card-btn delete" onclick="deleteLog('${log.id}')" title="Delete this log">
+                        🗑️
+                      </button>
                     </div>
                   </div>
-                  <div class="hike-log-card-actions">
-                    <button class="log-card-btn" onclick="editLog('${log.id}')" title="Edit hike details">
-                      ✏️ Edit
-                    </button>
-                    <button class="log-card-btn accent" onclick="generateSocialCard('${log.id}')" title="Create social card with this date">
-                      📸 Social Card
-                    </button>
-                    <button class="log-card-btn delete" onclick="deleteLog('${log.id}')" title="Delete this log">
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              `;
-            }).join('')}
+                `;
+              }).join('')}
+            </div>
           </div>
         `;
-        
+
         container.innerHTML = cardsHtml;
         
       } catch (e) {
