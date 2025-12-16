@@ -69,8 +69,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple
 
 /* ---------- Controls row ---------- */
 .controls-container{width:100%;display:flex;justify-content:center}
-.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:1400px;margin:0 auto}
-.controls .ctrl,.controls .ctrl-btn{flex:0 1 200px;min-width:140px;max-width:280px;justify-content:center}
+.controls{display:flex;flex-wrap:wrap;gap:var(--ctrl-gap);align-items:center;justify-content:center;width:100%;max-width:1600px;margin:0 auto}
+.controls .ctrl,.controls .ctrl-btn{flex:0 1 180px;min-width:120px;max-width:260px;justify-content:center}
+.controls .ctrl:has(#search){flex:1 1 320px;min-width:260px;max-width:520px}
+
+@media (min-width:1200px){
+  .controls{flex-wrap:nowrap}
+  .controls .ctrl,.controls .ctrl-btn{flex:0 1 auto;min-width:auto}
+  .controls .ctrl:has(#search){flex:1 1 360px;min-width:320px;max-width:640px}
+}
 .ctrl,.ctrl-btn{height:var(--ctrl-h);display:flex;align-items:center;gap:10px;background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:0 14px;color:var(--ink)}
 .ctrl input[type="search"]{flex:1;min-width:0;border:none;outline:none;background:transparent;color:inherit;height:calc(var(--ctrl-h) - 2px)}
 .ctrl-btn{cursor:pointer;justify-content:center;transition:all 0.2s ease}

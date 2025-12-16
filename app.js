@@ -3531,19 +3531,24 @@ async function changeList(name) {
   PAGE = 1;
   if (listTitle) listTitle.textContent = currentList || '—';
   console.log('📌 changeList() called with:', name);
-  
+
+  // Show the loading indicator immediately, even while pulling saved state
+  setMainLoading(true, 'Loading peaks…');
+
   // Load data from Supabase BEFORE rendering so completions are available
   if (currentUser) {
     await loadStateFromSupabase();
     await loadGridFromSupabase();
     await loadGridTrackingSettings();
   }
-  
+
   try {
     await renderView();
     console.log('✅ List rendered successfully');
   } catch (e) {
     console.error('❌ Error rendering list:', e);
+  } finally {
+    setMainLoading(false);
   }
 }
 
@@ -3871,6 +3876,8 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
 // =====================================================
 (async function boot() {
   try {
+    setMainLoading(true, 'Loading peaks…');
+
     const prefs = readPrefs();
     applyTheme(prefs.theme || 'dark');
     applyUnitsFlag(!!prefs.meters);
@@ -3900,5 +3907,6 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
   } catch (e) {
     console.error(e);
     rows.innerHTML = `<tr><td colspan="6" class="subtle">Couldn't load data. Please check your connection.</td></tr>`;
+    setMainLoading(false);
   }
 })();
