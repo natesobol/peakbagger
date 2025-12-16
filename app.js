@@ -920,6 +920,8 @@ const miniPulseGraph = document.getElementById('miniPulseGraph');
 const miniPulseMeta = document.getElementById('miniPulseMeta');
 const mainLoadingEl = document.getElementById('main-loading');
 const mainLoadingLabel = document.getElementById('main-loading-label');
+const contentEl = document.querySelector('.content');
+const mainPanel = document.querySelector('.content .panel');
 const signedOutBox = document.getElementById('authSignedOut');
 const signedInBox = document.getElementById('authSignedIn');
 const detail = document.getElementById('detail');
@@ -939,6 +941,25 @@ const tosToggle = document.getElementById('tosToggle');
 const tosBox = document.getElementById('tosBox');
 const tosAgree = document.getElementById('tosAgree');
 const tosTextEl = document.getElementById('tosText');
+
+function updateLayoutCenterOffset() {
+  if (!contentEl || !mainPanel || window.innerWidth < 881) {
+    document.documentElement.style.setProperty('--layout-center-offset', '0px');
+    return;
+  }
+
+  const rect = mainPanel.getBoundingClientRect();
+  const viewportCenter = window.innerWidth / 2;
+  const mainCenter = rect.left + rect.width / 2;
+  const offset = mainCenter - viewportCenter;
+
+  document.documentElement.style.setProperty('--layout-center-offset', `${offset}px`);
+}
+
+window.addEventListener('resize', updateLayoutCenterOffset);
+window.addEventListener('orientationchange', updateLayoutCenterOffset);
+requestAnimationFrame(updateLayoutCenterOffset);
+
 function renderCompletedButtonState() {
   if (!showBtn) return;
 
