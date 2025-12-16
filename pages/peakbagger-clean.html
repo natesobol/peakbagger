@@ -120,13 +120,27 @@
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.2);
 }
-.site-nav-logo span {
+.site-nav-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.1;
+}
+
+.site-nav-title {
   font-weight: 800;
   font-size: 38px;
   line-height: 1;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.site-nav-tagline {
+  font-size: 13px;
+  color: #e5f8ec;
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
 .site-nav-links {
   display: flex;
@@ -169,7 +183,8 @@
   .site-nav {
     padding: 10px 12px;
   }
-  .site-nav-logo span {
+  .site-nav-title,
+  .site-nav-tagline {
     display: none;
   }
   .site-nav-links {
@@ -194,7 +209,10 @@
 <nav class="site-nav">
   <a href="/" class="site-nav-logo">
     <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger Logo" />
-    <span>Peakbagger</span>
+    <div class="site-nav-title-wrap">
+      <span class="site-nav-title">Peakbagger</span>
+      <span class="site-nav-tagline">A comprehensive hike log application.</span>
+    </div>
   </a>
   <div class="site-nav-links">
     <a href="https://nh48.info" target="_blank" rel="noopener">NH48 API</a>
