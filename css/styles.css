@@ -192,45 +192,27 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 }
 
 .peak-card.card-favorite {
-  border-color: #fff;
-  border-left-color: #d4af37;
+  border-color: #f5b7b1;
+  box-shadow: 0 0 12px rgba(245, 183, 177, 0.5);
 }
 
 .peak-card.card-wishlist {
-  border-color: #fff;
-  border-left-color: #800000;
+  border-color: #f6e6a1;
+  box-shadow: 0 0 12px rgba(246, 230, 161, 0.5);
 }
 
 .peak-card.card-incomplete {
-  border-color: #fff;
-  border-left-color: #646464;
+  border-color: #e5e7eb;
 }
 
 .peak-card:hover{
   transform:translateY(-2px);
   box-shadow:0 8px 20px rgba(0,0,0,.3);
-  border-color:var(--accent);
 }
 
 /* Card color states for favorites/wishlist */
-.peak-card.card-complete{
-  border-color:#22c55e;
-  box-shadow:0 0 16px rgba(34,197,94,0.4);
-}
-
-.peak-card.card-favorite{
-  border-color:transparent;
-  border-left-color:#d4af37;
-}
-
-.peak-card.card-wishlist{
-  border-color:transparent;
-  border-left-color:#800000;
-}
-
-.peak-card.card-incomplete{
-  border-color:transparent;
-  border-left-color:#646464;
+.peak-card.card-complete h3{
+  color:var(--good);
 }
 
 .peak-card-thumb{
@@ -456,11 +438,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 }
 
 /* Completed card styling */
-.peak-card-body.completed h3{
-  color:var(--good);
-}
-
-.peak-card-body.completed{
+.peak-card.card-complete .peak-card-body{
   opacity:0.8;
 }
 

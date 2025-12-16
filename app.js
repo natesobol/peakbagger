@@ -2996,18 +2996,19 @@ async function renderGrid() {
     const card = document.createElement('article');
     card.className = 'peak-card';
     
-    // Determine card color based on completion and favorite status
+    // Determine card color based on completion/favorite status
+    // Priority: favorite > complete > wishlist > incomplete
+    let statusClass = 'card-incomplete';
     if (it.peak_id) {
-      if (it.completed) {
-        card.classList.add('card-complete');
-      } else if (favorites.has(it.peak_id)) {
-        card.classList.add('card-favorite');
+      if (favorites.has(it.peak_id)) {
+        statusClass = 'card-favorite';
+      } else if (it.completed) {
+        statusClass = 'card-complete';
       } else if (wishlist.has(it.peak_id)) {
-        card.classList.add('card-wishlist');
-      } else {
-        card.classList.add('card-incomplete');
+        statusClass = 'card-wishlist';
       }
     }
+    card.classList.add(statusClass);
 
     // Get peak image
     const slug = getSlugForName(it.name);
@@ -3035,7 +3036,7 @@ async function renderGrid() {
       <div class="peak-card-thumb img-loading" data-clickable="true">
         <img class="img-blur" data-full-src="${imgSrc || placeholderFor(it.name, 800, 480)}" src="${lowResPlaceholder()}" alt="${it.name}" loading="lazy" decoding="async">
       </div>
-      <div class="peak-card-body ${it.completed ? 'completed' : ''}" data-clickable="true">
+      <div class="peak-card-body" data-clickable="true">
         <h3>${it.name}</h3>
         <div class="peak-card-meta" data-clickable="true">
           <div class="peak-card-meta-row">

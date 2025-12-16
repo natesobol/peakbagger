@@ -213,24 +213,22 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 }
 
 .peak-card.card-favorite {
-  border-color: #fff;
-  border-left-color: #d4af37;
+  border-color: #f5b7b1;
+  box-shadow: 0 0 12px rgba(245, 183, 177, 0.5);
 }
 
 .peak-card.card-wishlist {
-  border-color: #fff;
-  border-left-color: #800000;
+  border-color: #f6e6a1;
+  box-shadow: 0 0 12px rgba(246, 230, 161, 0.5);
 }
 
 .peak-card.card-incomplete {
-  border-color: #fff;
-  border-left-color: #646464;
+  border-color: #e5e7eb;
 }
 
 .peak-card:hover{
   transform:translateY(-2px);
   box-shadow:0 8px 20px rgba(0,0,0,.3);
-  border-color:var(--accent);
 }
 
 /* Card color states for favorites/wishlist */
@@ -240,18 +238,17 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
 }
 
 .peak-card.card-favorite{
-  border-color:transparent;
-  border-left-color:#d4af37;
+  border-color:#f5b7b1;
+  box-shadow:0 0 12px rgba(245,183,177,.5);
 }
 
 .peak-card.card-wishlist{
-  border-color:transparent;
-  border-left-color:#800000;
+  border-color:#f6e6a1;
+  box-shadow:0 0 12px rgba(246,230,161,.5);
 }
 
 .peak-card.card-incomplete{
-  border-color:transparent;
-  border-left-color:#646464;
+  border-color:#e5e7eb;
 }
 
 .peak-card-thumb{
