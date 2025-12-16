@@ -113,13 +113,16 @@ select{width:100%}
 
 /* ---------- Table card ---------- */
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:12px;min-width:0}
-table{width:100%;border-collapse:separate;border-spacing:0 10px;table-layout:fixed}
+table{width:100%;border-collapse:separate;border-spacing:0 14px;table-layout:fixed}
 th,td{padding:12px;vertical-align:middle}
+thead tr{display:grid;grid-template-columns:var(--col-rank) minmax(0,1fr) var(--col-elev) var(--col-date) var(--col-done) var(--col-arrow);align-items:center}
 th{color:var(--ink-weak);text-align:center;border-bottom:1px solid var(--border);font-size:13px;letter-spacing:.2px}
 tr{background:var(--card);border:1px solid var(--border-strong);border-radius:12px;transition:border-color .15s ease, box-shadow .15s ease, transform .02s ease}
 tr td:first-child{border-top-left-radius:12px;border-bottom-left-radius:12px}
 tr td:last-child{border-top-right-radius:12px;border-bottom-right-radius:12px}
 tbody tr{display:grid;grid-template-columns:var(--col-rank) minmax(0,1fr) var(--col-elev) var(--col-date) var(--col-done) var(--col-arrow);align-items:center}
+tbody tr{position:relative}
+tbody tr:not(:last-child)::after{content:"";position:absolute;left:12px;right:12px;bottom:-8px;border-bottom:1px dotted var(--border-strong);opacity:.45}
 tbody tr:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 tbody tr:nth-child(odd){background:color-mix(in oklab, var(--card) 85%, black)}
 .theme-light tbody tr:nth-child(odd){background:color-mix(in oklab, var(--card) 90%, #e9eefc)}
@@ -649,7 +652,7 @@ input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;width:1.6em;heig
     display:none !important;
   }
 }
-.check{width:26px;height:26px;cursor:pointer;filter:drop-shadow(0 0 0 rgba(0,0,0,0));transition:transform .05s ease}
+.check{width:26px;height:26px;cursor:pointer;filter:grayscale(1) brightness(1.15);transition:transform .05s ease;border:none;box-shadow:none;background:transparent}
 .check:active{ transform:scale(.96) }
 
 /* ---------- Detail slide-in ---------- */
