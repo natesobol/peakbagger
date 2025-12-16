@@ -45,6 +45,8 @@ const translations = {
     'All Peaks': 'All Peaks',
     'Hide completed': 'Hide completed',
     'Advanced Filters': 'Advanced Filters',
+    'Units: Feet': 'Units: Feet',
+    'Units: Meters': 'Units: Meters',
     
     // Sort options
     'Rank': 'Rank',
@@ -170,6 +172,8 @@ const translations = {
     'All Peaks': 'Todos los Picos',
     'Hide completed': 'Ocultar completados',
     'Advanced Filters': 'Filtros Avanzados',
+    'Units: Feet': 'Unidades: Pies',
+    'Units: Meters': 'Unidades: Metros',
     
     'Rank': 'Rango',
     'Name': 'Nombre',
@@ -632,7 +636,7 @@ function translatePage() {
   
   // Update unit toggle
   if (unitLabel) {
-    unitLabel.textContent = meters ? t('Meters (m)') : t('Feet (ft)');
+    unitLabel.textContent = meters ? t('Units: Meters') : t('Units: Feet');
   }
   
   // Update sort label
@@ -2341,7 +2345,7 @@ function fmtElevation(ft) {
 function applyUnitsFlag(flag) {
   meters = flag;
   metersToggle.checked = meters;
-  unitLabel.textContent = meters ? 'Meters (m)' : 'Feet (ft)';
+  unitLabel.textContent = meters ? 'Units: Meters' : 'Units: Feet';
   renderView();
   const prefs = readPrefs();
   prefs.meters = meters;
@@ -3000,15 +3004,17 @@ async function renderGrid() {
     
     // Determine card color based on completion/favorite status
     // Priority: favorite > complete > wishlist > incomplete
+    const isFavorite = it.peak_id && favorites.has(it.peak_id);
+    const isWishlist = it.peak_id && wishlist.has(it.peak_id);
+    const isComplete = Boolean(it.completed);
+
     let statusClass = 'card-incomplete';
-    if (it.peak_id) {
-      if (favorites.has(it.peak_id)) {
-        statusClass = 'card-favorite';
-      } else if (it.completed) {
-        statusClass = 'card-complete';
-      } else if (wishlist.has(it.peak_id)) {
-        statusClass = 'card-wishlist';
-      }
+    if (isFavorite) {
+      statusClass = 'card-favorite';
+    } else if (isComplete) {
+      statusClass = 'card-complete';
+    } else if (isWishlist) {
+      statusClass = 'card-wishlist';
     }
     card.classList.add(statusClass);
 

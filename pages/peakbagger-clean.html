@@ -84,9 +84,10 @@
   border: 1px solid rgba(255,255,255,0.2);
 }
 .site-nav-logo span {
-  font-weight: 700;
-  font-size: 14px;
-  color: #a5b4c3;
+  font-weight: 800;
+  font-size: 38px;
+  line-height: 1;
+  color: #fff;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -100,8 +101,10 @@
   text-decoration: none;
   padding: 8px 16px;
   border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
   transition: all 0.2s ease;
 }
 .site-nav-links a:hover {
@@ -195,7 +198,7 @@
           <!-- Advanced Filters (collapsible) -->
           <details class="ctrl-advanced-filters" style="position:relative">
             <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
-              <span class="ico">🎛️</span>
+              <span class="ico">⏬</span>
               <span data-i18n="Filters">Filters</span>
             </summary>
             <div class="advanced-filters-panel">
@@ -235,7 +238,7 @@
           </details>
           <!-- NEW: Mode toggle (Checklist / Grid) -->
           <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🗂️</span> <span><span data-i18n="Mode">Mode:</span> <strong id="modeLabel">Checklist</strong></span></div>
-          <div id="unitToggle" class="ctrl-btn" title="Toggle units"><span class="ico">📏</span><span id="unitLabel">Feet (ft)</span></div>
+          <div id="unitToggle" class="ctrl-btn" title="Toggle units"><span class="ico">📏</span><span id="unitLabel">Units: Feet</span></div>
           <div class="ctrl-btn" id="exportBtn"><span class="ico">📤</span> <span data-i18n="Export XLSX">Export XLSX</span></div>
         </div>
       </div>
