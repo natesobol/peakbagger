@@ -123,7 +123,6 @@ The slide-in detail pane shows:
 - **Weather links**
   - NOAA point forecast
   - Open-Meteo docs
-  - TrailsNH summit forecast
   - MWOBS (Presidentials)  
 
 - **Learn more**

@@ -62,8 +62,8 @@
   <!-- Preview Section -->
   <div class="preview-section">
     <div class="preview-label">Preview</div>
-    <div class="preview-container">
-      <div id="socialCard" class="social-card">
+      <div class="preview-container">
+        <div id="socialCard" class="social-card">
         <!-- Background Image -->
         <div class="card-image" id="cardImage">
           <img src="" alt="Peak" id="peakImage" crossorigin="anonymous" />
@@ -71,10 +71,10 @@
         </div>
         
         <!-- Info Panel -->
-        <div class="card-info-panel">
-          <div class="card-user-name" id="cardUserName"></div>
-          
-          <div class="card-badge">
+          <div class="card-info-panel">
+            <div class="card-user-name" id="cardUserName"></div>
+
+          <div class="card-badge" id="cardBadge">
             <span class="badge-icon">🏔️</span>
             <span class="badge-text">SUMMIT ACHIEVED</span>
           </div>
@@ -103,6 +103,14 @@
           <div class="card-footer">
             <span class="footer-brand">Peakbagger's Journal</span>
             <span class="footer-url">nh48.app</span>
+          </div>
+        </div>
+        <div class="photo-toolbar" id="photoToolbar" style="display:none;">
+          <div class="photo-toolbar-label">Swap image</div>
+          <div class="photo-toolbar-controls">
+            <button type="button" class="photo-btn" onclick="cyclePhoto(-1)">◀</button>
+            <span class="photo-counter" id="photoCounter">1/1</span>
+            <button type="button" class="photo-btn" onclick="cyclePhoto(1)">▶</button>
           </div>
         </div>
       </div>
@@ -175,6 +183,8 @@
   let currentUser = null;
   let peakData = null;
   let hikeLogData = null;
+  let cardPhotos = [];
+  let currentPhotoIndex = 0;
   let cardStyle = 'dark';
   
   // Parse URL params
@@ -182,6 +192,7 @@
   const peakSlug = params.get('peak');
   const logId = params.get('log');
   const progressId = params.get('progress');
+  let peakDbId = null;
   
   // =====================================================
   // Initialize
@@ -200,12 +211,17 @@
     if (peakSlug) {
       await loadPeakData(peakSlug);
     }
+
+    // Prepare photos once peak data is available
+    buildCardPhotos();
     
     // Load hike log data if provided
     if (logId && currentUser) {
       await loadHikeLogData(logId);
     } else if (progressId && currentUser) {
       await loadProgressData(progressId);
+    } else if (currentUser && peakDbId) {
+      await loadLatestLogForPeak();
     }
     
     // Render the card
@@ -217,8 +233,10 @@
   // =====================================================
   async function loadPeakData(slug) {
     console.log('Loading peak data for:', slug);
-    
+
     try {
+      let apiPeakFound = false;
+
       // Try localStorage first
       const stored = localStorage.getItem('peakbagger_peaks');
       if (stored) {
@@ -226,55 +244,99 @@
         const peak = peaks.find(p => p.slug === slug);
         if (peak) {
           peakData = peak;
-          return;
+          apiPeakFound = true;
         }
       }
-      
-      // Fetch from API
-      for (let i = 0; i < API_URLS.length; i++) {
-        try {
-          const res = await fetch(API_URLS[i], { mode: 'cors' });
-          if (!res.ok) continue;
-          const text = await res.text();
-          const data = JSON.parse(text.replace(/:contentReference\[.*?\]\{index=\d+\}/g, ''));
-          const apiPeak = data[slug];
-          
-          if (apiPeak) {
-            peakData = {
-              slug: slug,
-              name: apiPeak.peakName || apiPeak['Peak Name'] || slug,
-              elevation: apiPeak['Elevation (ft)'] || apiPeak.elevation,
-              location: apiPeak['Range / Subrange'] || apiPeak.range,
-              prominence: apiPeak['Prominence (ft)'] || apiPeak.prominence,
-              difficulty: apiPeak['Difficulty'] || apiPeak.difficulty,
-              photos: apiPeak.photos || []
-            };
-            return;
+
+      // Fetch from API if needed
+      if (!apiPeakFound) {
+        for (let i = 0; i < API_URLS.length; i++) {
+          try {
+            const res = await fetch(API_URLS[i], { mode: 'cors' });
+            if (!res.ok) continue;
+            const text = await res.text();
+            const data = JSON.parse(text.replace(/:contentReference\[.*?\]\{index=\d+\}/g, ''));
+            const apiPeak = data[slug];
+
+            if (apiPeak) {
+              peakData = {
+                slug: slug,
+                name: apiPeak.peakName || apiPeak['Peak Name'] || slug,
+                elevation: apiPeak['Elevation (ft)'] || apiPeak.elevation,
+                location: apiPeak['Range / Subrange'] || apiPeak.range,
+                prominence: apiPeak['Prominence (ft)'] || apiPeak.prominence,
+                difficulty: apiPeak['Difficulty'] || apiPeak.difficulty,
+                photos: apiPeak.photos || []
+              };
+              apiPeakFound = true;
+              break;
+            }
+          } catch (err) {
+            console.log('API fetch error:', err);
           }
-        } catch (err) {
-          console.log('API fetch error:', err);
         }
       }
-      
-      // Fallback: try to get from Supabase peaks table
+
+      // Pull ID and any enriched data from Supabase for log lookups
       const { data: dbPeak } = await supabase
         .from('peaks')
-        .select('*')
+        .select('id, slug, name, elevation_ft, range, state, photos')
         .eq('slug', slug)
         .single();
-      
+
       if (dbPeak) {
+        peakDbId = dbPeak.id;
+        if (!peakData) peakData = {};
         peakData = {
-          slug: dbPeak.slug,
-          name: dbPeak.name,
-          elevation: dbPeak.elevation_ft,
-          location: dbPeak.range || dbPeak.state,
-          photos: []
+          ...peakData,
+          slug: dbPeak.slug || peakData.slug || slug,
+          name: dbPeak.name || peakData.name,
+          elevation: dbPeak.elevation_ft || peakData.elevation,
+          location: dbPeak.range || dbPeak.state || peakData.location,
+          photos: Array.isArray(dbPeak.photos) && dbPeak.photos.length ? dbPeak.photos : (peakData.photos || [])
         };
       }
     } catch (e) {
       console.error('Error loading peak data:', e);
     }
+  }
+
+  async function loadLatestLogForPeak() {
+    if (!currentUser || !peakDbId) return;
+
+    try {
+      const { data: logs, error } = await supabase
+        .from('user_hike_logs')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('peak_id', peakDbId)
+        .order('hike_date', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('loadLatestLogForPeak error:', error);
+        return;
+      }
+
+      if (logs && logs.length) {
+        hikeLogData = logs[0];
+        if (logs[0]?.peak_id) {
+          peakDbId = logs[0].peak_id;
+        }
+        setOptionalTogglesFromData();
+      }
+    } catch (e) {
+      console.error('Error fetching latest log for peak:', e);
+    }
+  }
+
+  function buildCardPhotos() {
+    cardPhotos = Array.isArray(peakData?.photos)
+      ? peakData.photos
+        .map(p => typeof p === 'string' ? p : (p?.url || p?.src || p?.image || null))
+        .filter(Boolean)
+      : [];
+    currentPhotoIndex = 0;
   }
   
   // =====================================================
@@ -291,13 +353,18 @@
         .eq('id', id)
         .eq('user_id', currentUser.id)
         .single();
-      
-      if (error) {
-        console.error('DB Load Error:', error);
+
+      if (error || !log) {
+        console.error('DB Load Error:', error || 'No log found');
+        showStatus('Could not load that hike from your account.', true);
         return;
       }
-      
+
       hikeLogData = log;
+      if (log?.peak_id) {
+        peakDbId = log.peak_id;
+      }
+      setOptionalTogglesFromData();
       console.log('DB Load Success: Hike log loaded');
     } catch (e) {
       console.error('Error loading hike log:', e);
@@ -318,9 +385,10 @@
         .eq('id', id)
         .eq('user_id', currentUser.id)
         .single();
-      
-      if (error) {
-        console.error('DB Load Error:', error);
+
+      if (error || !progress) {
+        console.error('DB Load Error:', error || 'Progress not found');
+        showStatus('Could not load that peak progress entry.', true);
         return;
       }
       
@@ -334,10 +402,23 @@
         hike_date: dateValue,
         peak_id: progress.peak_id
       };
+      peakDbId = progress.peak_id;
+      await loadLatestLogForPeak();
       console.log('DB Load Success: Progress loaded, date:', dateValue);
     } catch (e) {
       console.error('Error loading progress:', e);
     }
+  }
+
+  function setOptionalTogglesFromData() {
+    if (!hikeLogData) return;
+    const hasMiles = !!hikeLogData.miles;
+    const hasGain = !!hikeLogData.elevation_gain_ft;
+    const hasTemp = !!hikeLogData.temperature;
+
+    if (hasMiles) document.getElementById('showMiles').checked = true;
+    if (hasGain) document.getElementById('showElevGain').checked = true;
+    if (hasTemp) document.getElementById('showWeather').checked = true;
   }
   
   // =====================================================
@@ -352,6 +433,9 @@
     const elevationEl = document.getElementById('cardElevation');
     const locationEl = document.getElementById('cardLocation');
     const secondaryStats = document.getElementById('cardSecondaryStats');
+    const badgeEl = document.getElementById('cardBadge');
+    const badgeIcon = badgeEl?.querySelector('.badge-icon');
+    const badgeText = badgeEl?.querySelector('.badge-text');
     
     // Set user display name
     if (currentUser) {
@@ -362,13 +446,22 @@
     }
     
     // Set peak image
-    let imageUrl = PLACEHOLDER_IMAGE;
-    if (peakData?.photos?.length > 0) {
-      const photo = peakData.photos[0];
-      imageUrl = typeof photo === 'string' ? photo : (photo.url || PLACEHOLDER_IMAGE);
+    if (cardPhotos.length === 0 && peakData?.photos?.length) {
+      buildCardPhotos();
     }
-    peakImage.src = imageUrl;
+
+    const selectedPhoto = cardPhotos[currentPhotoIndex] || PLACEHOLDER_IMAGE;
+    peakImage.src = selectedPhoto;
     peakImage.onerror = () => { peakImage.src = PLACEHOLDER_IMAGE; };
+
+    const photoToolbar = document.getElementById('photoToolbar');
+    const photoCounter = document.getElementById('photoCounter');
+    if (cardPhotos.length > 1) {
+      photoToolbar.style.display = 'flex';
+      photoCounter.textContent = `${currentPhotoIndex + 1}/${cardPhotos.length}`;
+    } else {
+      photoToolbar.style.display = 'none';
+    }
     
     // Set peak name
     peakName.textContent = peakData?.name || 'Unknown Peak';
@@ -386,8 +479,14 @@
       dateEl.textContent = date.toLocaleDateString('en-US', {
         month: 'long', day: 'numeric', year: 'numeric'
       });
+      badgeEl?.classList.remove('todo');
+      if (badgeText) badgeText.textContent = 'SUMMIT ACHIEVED';
+      if (badgeIcon) badgeIcon.textContent = '🏔️';
     } else {
       dateEl.textContent = '—';
+      badgeEl?.classList.add('todo');
+      if (badgeText) badgeText.textContent = 'TO-DO';
+      if (badgeIcon) badgeIcon.textContent = '🗺️';
     }
     
     // Set elevation
@@ -402,16 +501,26 @@
     if (document.getElementById('showMiles').checked && hikeLogData?.miles) {
       secondaryHtml += `<div class="secondary-stat"><span>🥾</span> ${hikeLogData.miles} miles</div>`;
     }
-    
+
     if (document.getElementById('showElevGain').checked && hikeLogData?.elevation_gain_ft) {
       secondaryHtml += `<div class="secondary-stat"><span>📈</span> ${hikeLogData.elevation_gain_ft.toLocaleString()}' gain</div>`;
     }
-    
-    if (document.getElementById('showWeather').checked && hikeLogData?.temperature) {
-      secondaryHtml += `<div class="secondary-stat"><span>🌤️</span> ${hikeLogData.temperature}</div>`;
+
+    if (document.getElementById('showWeather').checked && (hikeLogData?.temperature || hikeLogData?.precipitation || hikeLogData?.wind)) {
+      const weatherBits = [];
+      if (hikeLogData.temperature) weatherBits.push(hikeLogData.temperature);
+      if (hikeLogData.precipitation) weatherBits.push(hikeLogData.precipitation);
+      if (hikeLogData.wind) weatherBits.push(hikeLogData.wind);
+      secondaryHtml += `<div class="secondary-stat"><span>🌤️</span> ${weatherBits.join(' · ')}</div>`;
     }
     
     secondaryStats.innerHTML = secondaryHtml;
+  }
+
+  function cyclePhoto(direction) {
+    if (!cardPhotos.length) return;
+    currentPhotoIndex = (currentPhotoIndex + direction + cardPhotos.length) % cardPhotos.length;
+    updateCard();
   }
   
   // =====================================================
@@ -512,7 +621,10 @@
   }
   
   // Initialize on load
-  init();
+  init().catch(err => {
+    console.error('Social card init failed:', err);
+    showStatus('Unable to load social card data. Please try again.', true);
+  });
 </script>
 
 </body>

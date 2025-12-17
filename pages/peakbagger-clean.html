@@ -102,7 +102,7 @@
   justify-content: space-between;
   padding: 12px 24px;
   background: linear-gradient(180deg, #1a1a2e 0%, #16162a 100%);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid #ffffff;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -120,7 +120,14 @@
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.2);
 }
-.site-nav-logo span {
+.site-nav-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.1;
+}
+
+.site-nav-title {
   font-weight: 800;
   font-size: 38px;
   line-height: 1;
@@ -128,13 +135,20 @@
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+
+.site-nav-tagline {
+  font-size: 13px;
+  color: #e5f8ec;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
 .site-nav-links {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 .site-nav-links a {
-  color: #a5b4c3;
+  color: #ffffff;
   text-decoration: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -145,8 +159,8 @@
   transition: all 0.2s ease;
 }
 .site-nav-links a:hover {
-  color: #fff;
-  background: rgba(255,255,255,0.1);
+  color: #22c55e;
+  background: rgba(255,255,255,0.08);
 }
 .site-nav-links a.active {
   color: #22c55e;
@@ -169,7 +183,8 @@
   .site-nav {
     padding: 10px 12px;
   }
-  .site-nav-logo span {
+  .site-nav-title,
+  .site-nav-tagline {
     display: none;
   }
   .site-nav-links {
@@ -194,7 +209,10 @@
 <nav class="site-nav">
   <a href="/" class="site-nav-logo">
     <img src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger Logo" />
-    <span>Peakbagger</span>
+    <div class="site-nav-title-wrap">
+      <span class="site-nav-title">Peakbagger</span>
+      <span class="site-nav-tagline">A comprehensive hike log application.</span>
+    </div>
   </a>
   <div class="site-nav-links">
     <a href="https://nh48.info" target="_blank" rel="noopener">NH48 API</a>
@@ -228,59 +246,80 @@
         <div class="progress" aria-label="progress"><div class="bar" id="bar"></div></div>
       </div>
       <div class="controls-container">
-        <div class="controls">
-          <div class="ctrl"><span class="ico">🔍</span><input id="search" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." /></div>
-          <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">↕️</span> <span><span data-i18n="Sort">Sort:</span> <strong id="sortLabel">Rank</strong></span></div>
-          <div class="ctrl-btn" id="showComplete"><span class="ico">✅</span> <span data-i18n="Completed: Showing">Completed: Showing</span></div>
-          <!-- Advanced Filters (collapsible) -->
-          <details class="ctrl-advanced-filters" style="position:relative">
-            <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
-              <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-                <span class="ico">⏬</span>
-                <span data-i18n="Filters">Filters</span>
-              </div>
-              <span class="ctrl-chevron" aria-hidden="true"></span>
-            </summary>
-            <div class="advanced-filters-panel">
-              <div class="filter-row">
-                <label data-i18n="Status">Status:</label>
-                <select id="statusFilter" class="select">
-                  <option value="all" data-i18n-option="All Peaks">All Peaks</option>
-                  <option value="completed" data-i18n-option="Completed">Completed</option>
-                  <option value="favorites" data-i18n-option="Favorites">Favorites</option>
-                  <option value="wishlist" data-i18n-option="Wishlist">Wishlist</option>
-                  <option value="incomplete" data-i18n-option="Incomplete">Incomplete</option>
-                </select>
-              </div>
-              <div class="filter-row">
-                <label data-i18n="Range">Range:</label>
-                <select id="rangeFilter" class="select">
-                  <option value="all">All Ranges</option>
-                  <option value="Presidential">Presidential</option>
-                  <option value="Franconia">Franconia</option>
-                  <option value="Carter-Moriah">Carter-Moriah</option>
-                  <option value="Twin">Twin</option>
-                  <option value="Bond">Bond</option>
-                  <option value="Sandwich">Sandwich</option>
-                  <option value="Kinsman">Kinsman</option>
-                </select>
-              </div>
-              <div class="filter-row">
-                <label>Min Elevation (ft):</label>
-                <input type="number" id="elevationMin" class="filter-input" placeholder="4000" min="0" max="10000">
-              </div>
-              <div class="filter-row">
-                <label>Max Elevation (ft):</label>
-                <input type="number" id="elevationMax" class="filter-input" placeholder="6288" min="0" max="10000">
-              </div>
-              <button id="clearFilters" class="btn btn-ghost btn-small" style="width:100%;margin-top:8px" data-i18n="Clear All Filters">Clear All Filters</button>
+        <details id="mobileFiltersPanel" class="mobile-filters" open>
+          <summary class="mobile-filters-summary">
+            <div class="mobile-filters-summary-left">
+              <span class="ico">⏬</span>
+              <span data-i18n="All Filters">All Filters</span>
             </div>
-          </details>
-          <!-- NEW: Mode toggle (Checklist / Grid) -->
-          <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🗂️</span> <span><span data-i18n="Mode">Mode:</span> <strong id="modeLabel">Checklist</strong></span></div>
-          <div id="unitToggle" class="ctrl-btn" title="Toggle units"><span class="ico">📏</span><span id="unitLabel">Units: Feet</span></div>
-          <div class="ctrl-btn" id="exportBtn"><span class="ico">📤</span> <span data-i18n="Export XLSX">Export XLSX</span></div>
-        </div>
+            <span class="ctrl-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="controls">
+            <div class="ctrl"><span class="ico">🔍</span><input id="search" type="search" placeholder="Search peaks…" data-i18n-placeholder="Search peaks..." /></div>
+            <div class="ctrl-btn" id="sortBtn" title="Toggle sort"><span class="ico">↕️</span> <span><span data-i18n="Sort">Sort:</span> <strong id="sortLabel">Rank</strong></span></div>
+            <div class="ctrl-btn" id="showComplete">
+              <span class="ico" id="showCompleteIcon">✅</span>
+              <span class="ctrl-label">
+                <span id="completedPrefix" data-i18n="Completed">Completed</span>:
+                <strong id="completedState" data-i18n="Showing">Showing</strong>
+              </span>
+            </div>
+            <!-- Advanced Filters (collapsible) -->
+            <details class="ctrl-advanced-filters" style="position:relative">
+              <summary class="ctrl-btn" style="cursor:pointer" title="Advanced filters">
+                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;justify-content:center">
+                  <span class="ico">⏬</span>
+                  <span data-i18n="Filters">Filters</span>
+                </div>
+                <span class="ctrl-chevron" aria-hidden="true"></span>
+              </summary>
+              <div class="advanced-filters-panel">
+                <div class="filter-row">
+                  <label data-i18n="Status">Status:</label>
+                  <select id="statusFilter" class="select">
+                    <option value="all" data-i18n-option="All Peaks">All Peaks</option>
+                    <option value="completed" data-i18n-option="Completed">Completed</option>
+                    <option value="favorites" data-i18n-option="Favorites">Favorites</option>
+                    <option value="wishlist" data-i18n-option="Wishlist">Wishlist</option>
+                    <option value="incomplete" data-i18n-option="Incomplete">Incomplete</option>
+                  </select>
+                </div>
+                <div class="filter-row">
+                  <label data-i18n="Range">Range:</label>
+                  <select id="rangeFilter" class="select">
+                    <option value="all">All Ranges</option>
+                    <option value="Presidential">Presidential</option>
+                    <option value="Franconia">Franconia</option>
+                    <option value="Carter-Moriah">Carter-Moriah</option>
+                    <option value="Twin">Twin</option>
+                    <option value="Bond">Bond</option>
+                    <option value="Sandwich">Sandwich</option>
+                    <option value="Kinsman">Kinsman</option>
+                  </select>
+                </div>
+                <div class="filter-row">
+                  <label>Min Elevation (ft):</label>
+                  <input type="number" id="elevationMin" class="filter-input" placeholder="4000" min="0" max="10000">
+                </div>
+                <div class="filter-row">
+                  <label>Max Elevation (ft):</label>
+                  <input type="number" id="elevationMax" class="filter-input" placeholder="6288" min="0" max="10000">
+                </div>
+                <button id="clearFilters" class="btn btn-ghost btn-small" style="width:100%;margin-top:8px" data-i18n="Clear All Filters">Clear All Filters</button>
+              </div>
+            </details>
+            <!-- NEW: Mode toggle (Checklist / Grid) -->
+            <div class="ctrl-btn" id="modeBtn" title="Switch between checklist and grid"><span class="ico">🗂️</span> <span><span data-i18n="Mode">Mode:</span> <strong id="modeLabel">Checklist</strong></span></div>
+            <div id="unitToggle" class="ctrl-btn" title="Toggle units">
+              <span class="ico">📏</span>
+              <span class="ctrl-label">
+                <span id="unitPrefix">Units:</span>
+                <strong id="unitLabel">Feet</strong>
+              </span>
+            </div>
+            <div class="ctrl-btn" id="exportBtn"><span class="ico">📤</span> <span data-i18n="Export XLSX">Export XLSX</span></div>
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -339,24 +378,22 @@
           <div class="panel" style="font-size:14px;line-height:1.5;color:var(--ink)">
             <p>Peakbagger is a tool to track your summits of peaks in the White Mountains. Use it to log your ascents, track your progress through peak lists, and discover which peaks you've conquered.</p>
             <p style="margin-top:10px">Whether you're working toward the NH 48, the 52 with a View, or other peak bagging challenges, Peakbagger helps you stay organized and motivated on your peak-hunting adventures.</p>
+            <a class="app-promo" href="https://apps.apple.com/us/app/peakbaggers-journal/idXXXXXXXXX" target="_blank" rel="noopener">
+              <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger's Journal iOS icon" loading="lazy">
+              <div class="app-promo__meta">
+                <div class="app-promo__title">Peakbagger's Journal (iOS)</div>
+                <div class="app-promo__sub">Available on the App Store</div>
+              </div>
+              <span class="btn btn-primary btn-small app-promo__cta" style="background:#22c55e;border-color:#22c55e">View</span>
+            </a>
           </div>
         </div>
       </details>
 
       <div style="margin-top:14px">
-        <label for="listSelect" class="subtle" style="font-size:14px" data-i18n="Choose List">Choose List:</label>
-        <select id="listSelect" class="select" style="width:100%;margin-top:6px"></select>
+        <label for="listSelect" class="subtle choose-list-label" data-i18n="Choose List">Choose List:</label>
+        <select id="listSelect" class="select choose-list-select" style="width:100%;margin-top:8px"></select>
       </div>
-
-      <!-- iOS App Promo - Between Choose List and Settings on mobile -->
-      <a class="app-promo" href="https://apps.apple.com/us/app/peakbaggers-journal/idXXXXXXXXX" target="_blank" rel="noopener">
-        <img class="app-promo__icon" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger's Journal iOS icon" loading="lazy">
-        <div class="app-promo__meta">
-          <div class="app-promo__title">Peakbagger's Journal (iOS)</div>
-          <div class="app-promo__sub">Available on the App Store</div>
-        </div>
-        <span class="btn btn-primary btn-small app-promo__cta" style="background:#22c55e;border-color:#22c55e">View</span>
-      </a>
 
       <!-- Mobile Search -->
       <div id="mobileSidebarSearch" style="display:none">
@@ -435,6 +472,7 @@
             <select id="themeSelect" class="select" style="width:100%;margin-top:6px">
               <option value="dark" data-i18n-option="Dark (default)">Dark (default)</option>
               <option value="light" data-i18n-option="Light (white & black)">Light (white & black)</option>
+              <option value="eye-saver" data-i18n-option="Light Mode (Eye Saver)">Light Mode (Eye Saver)</option>
               <option value="forest" data-i18n-option="Forest Green">Forest Green</option>
               <option value="sky" data-i18n-option="Sky Blue">Sky Blue</option>
             </select>
@@ -453,7 +491,7 @@
         <div class="collapsible-content">
           <div class="panel" style="margin-top:14px">
             <div class="links-col">
-              <a class="btn-link" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH (trip reports)</a>
+          
               <a class="btn-link" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Weather</a>
               <a class="btn-link" href="https://www.peakbagger.com/" target="_blank" rel="noopener">Peakbagger (lists & facts)</a>
               <a class="btn-link" href="https://www.mountwashington.org/" target="_blank" rel="noopener">Mount Washington Observatory</a>
@@ -541,7 +579,7 @@
             <div class="links-col">
               <a class="btn-link" id="peakWxNoaa" href="https://www.weather.gov/" target="_blank" rel="noopener">NOAA Point Forecast</a>
               <a class="btn-link" id="peakWxOpenMeteo" href="https://open-meteo.com/en/docs" target="_blank" rel="noopener">Open-Meteo (lat/lon)</a>
-              <a class="btn-link" id="peakWxTrailsNH" href="https://trailsnh.com/" target="_blank" rel="noopener">TrailsNH Summit Forecast</a>
+              
               <a class="btn-link" id="peakWxMWOBS" href="https://www.mountwashington.org/experience-the-weather/" target="_blank" rel="noopener">MWOBS (Presidentials)</a>
             </div>
           </section>
@@ -601,14 +639,14 @@
       </label>
       
       <div class="row-actions" style="margin-top:16px">
-        <button class="btn btn-primary" id="doLogin" data-i18n="Log in">Log in</button>
+        <button class="btn btn-primary" id="doLogin" type="button" data-i18n="Log in">Log in</button>
         <span class="space"></span>
-        <button class="btn btn-ghost" id="closeAuth" data-i18n="Close">Close</button>
+        <button class="btn btn-ghost" id="closeAuth" type="button" data-i18n="Close">Close</button>
       </div>
-      
+
       <div style="margin-top:16px;text-align:center">
         <span class="subtle" data-i18n="Don't have an account?">Don't have an account? </span>
-        <a href="#" id="showSignup" style="color:#4a9eff;text-decoration:none" data-i18n="Create account">Create account</a>
+        <a href="#" id="showSignup" class="auth-switch" data-i18n="Create account">Create account</a>
       </div>
     </div>
     
@@ -637,20 +675,51 @@
       </label>
       
       <div class="row-actions" style="margin-top:16px">
-        <button class="btn btn-primary" id="doSignup" disabled data-i18n="Create account">Create account</button>
+        <button class="btn btn-primary" id="doSignup" type="button" disabled data-i18n="Create account">Create account</button>
         <span class="space"></span>
-        <button class="btn btn-ghost" id="closeAuth" data-i18n="Close">Close</button>
+        <button class="btn btn-ghost" id="closeAuth" type="button" data-i18n="Close">Close</button>
       </div>
-      
+
       <div style="margin-top:16px;text-align:center">
         <span class="subtle">Already have an account? </span>
-        <a href="#" id="showLogin" style="color:#4a9eff;text-decoration:none">Log in</a>
+        <a href="#" id="showLogin" class="auth-switch">Log in</a>
       </div>
     </div>
     
-    <div id="authMsg" class="note" style="margin-top:12px"></div>
+  <div id="authMsg" class="note" style="margin-top:12px"></div>
   </div>
 </div>
+
+<!-- Fallback auth opener wiring so CTAs stay clickable even if other scripts fail early -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('authModal');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loginEmail = document.getElementById('loginEmail');
+    const openers = ['openAuth', 'openAuthNav', 'openAuthMobile'];
+
+    const openAuthModal = () => {
+      if (!modal) return;
+      modal.classList.add('open');
+      if (loginForm) loginForm.style.display = 'block';
+      if (signupForm) signupForm.style.display = 'none';
+      const title = document.getElementById('authTitle');
+      if (title) title.textContent = 'Log in';
+      loginEmail?.focus();
+    };
+
+    openers.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          openAuthModal();
+        });
+      }
+    });
+  });
+</script>
 
 <!-- XLSX lib -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
