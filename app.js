@@ -45,6 +45,7 @@ const translations = {
     'All Peaks': 'All Peaks',
     'Hide completed': 'Hide completed',
     'Advanced Filters': 'Advanced Filters',
+    'All Filters': 'All Filters',
     'Units: Feet': 'Units: Feet',
     'Units: Meters': 'Units: Meters',
     
@@ -136,6 +137,7 @@ const translations = {
     'Choose theme': 'Choose theme',
     'Dark (default)': 'Dark (default)',
     'Light (white & black)': 'Light (white & black)',
+    'Light Mode (Eye Saver)': 'Light Mode (Eye Saver)',
     'Forest Green': 'Forest Green',
     'Sky Blue': 'Sky Blue',
     
@@ -172,6 +174,7 @@ const translations = {
     'All Peaks': 'Todos los Picos',
     'Hide completed': 'Ocultar completados',
     'Advanced Filters': 'Filtros Avanzados',
+    'All Filters': 'Todos los Filtros',
     'Units: Feet': 'Unidades: Pies',
     'Units: Meters': 'Unidades: Metros',
     
@@ -252,6 +255,7 @@ const translations = {
     'Choose theme': 'Elegir tema',
     'Dark (default)': 'Oscuro (predeterminado)',
     'Light (white & black)': 'Claro (blanco y negro)',
+    'Light Mode (Eye Saver)': 'Modo claro (protector de ojos)',
     'Forest Green': 'Verde Bosque',
     'Sky Blue': 'Azul Cielo',
     
@@ -285,6 +289,7 @@ const translations = {
     'All Peaks': 'Tous les Sommets',
     'Hide completed': 'Masquer complétés',
     'Advanced Filters': 'Filtres Avancés',
+    'All Filters': 'Tous les Filtres',
     
     'Rank': 'Rang',
     'Name': 'Nom',
@@ -328,6 +333,7 @@ const translations = {
     'Choose theme': 'Choisir un thème',
     'Dark (default)': 'Sombre (par défaut)',
     'Light (white & black)': 'Clair (blanc et noir)',
+    'Light Mode (Eye Saver)': 'Mode clair (repos des yeux)',
     'Forest Green': 'Vert Forêt',
     'Sky Blue': 'Bleu Ciel',
     
@@ -361,6 +367,7 @@ const translations = {
     'All Peaks': 'Alle Gipfel',
     'Hide completed': 'Abgeschlossene ausblenden',
     'Advanced Filters': 'Erweiterte Filter',
+    'All Filters': 'Alle Filter',
     
     'Rank': 'Rang',
     'Name': 'Name',
@@ -404,6 +411,7 @@ const translations = {
     'Choose theme': 'Thema wählen',
     'Dark (default)': 'Dunkel (Standard)',
     'Light (white & black)': 'Hell (weiß und schwarz)',
+    'Light Mode (Eye Saver)': 'Heller Modus (augenfreundlich)',
     'Forest Green': 'Waldgrün',
     'Sky Blue': 'Himmelblau',
     
@@ -437,6 +445,7 @@ const translations = {
     'All Peaks': '所有山峰',
     'Hide completed': '隐藏已完成',
     'Advanced Filters': '高级筛选',
+    'All Filters': '全部筛选',
     
     'Rank': '排名',
     'Name': '名称',
@@ -480,6 +489,7 @@ const translations = {
     'Choose theme': '选择主题',
     'Dark (default)': '深色（默认）',
     'Light (white & black)': '浅色（黑白）',
+    'Light Mode (Eye Saver)': '护眼浅色模式',
     'Forest Green': '森林绿',
     'Sky Blue': '天空蓝',
     
@@ -513,6 +523,7 @@ const translations = {
     'All Peaks': 'すべての山',
     'Hide completed': '完了を非表示',
     'Advanced Filters': '高度なフィルター',
+    'All Filters': 'すべてのフィルター',
     
     'Rank': 'ランク',
     'Name': '名前',
@@ -556,6 +567,7 @@ const translations = {
     'Choose theme': 'テーマを選択',
     'Dark (default)': 'ダーク（デフォルト）',
     'Light (white & black)': 'ライト（白と黒）',
+    'Light Mode (Eye Saver)': 'ライトモード（目に優しい）',
     'Forest Green': 'フォレストグリーン',
     'Sky Blue': 'スカイブルー',
     
@@ -633,11 +645,9 @@ function translatePage() {
       option.textContent = translated;
     }
   });
-  
+
   // Update unit toggle
-  if (unitLabel) {
-    unitLabel.textContent = meters ? t('Units: Meters') : t('Units: Feet');
-  }
+  renderUnitLabel();
   
   // Update sort label
   if (sortLabel) {
@@ -888,8 +898,12 @@ const searchEl = document.getElementById('search');
 const sortBtn = document.getElementById('sortBtn');
 const sortLabel = document.getElementById('sortLabel');
 const showBtn = document.getElementById('showComplete');
+const showCompleteIcon = document.getElementById('showCompleteIcon');
+const completedPrefix = document.getElementById('completedPrefix');
+const completedState = document.getElementById('completedState');
 const exportBtn = document.getElementById('exportBtn');
 const unitToggle = document.getElementById('unitToggle');
+const unitPrefix = document.getElementById('unitPrefix');
 const unitLabel = document.getElementById('unitLabel');
 const metersToggle = document.getElementById('metersToggle');
 const themeSelect = document.getElementById('themeSelect');
@@ -920,6 +934,9 @@ const miniPulseGraph = document.getElementById('miniPulseGraph');
 const miniPulseMeta = document.getElementById('miniPulseMeta');
 const mainLoadingEl = document.getElementById('main-loading');
 const mainLoadingLabel = document.getElementById('main-loading-label');
+const mobileFiltersPanel = document.getElementById('mobileFiltersPanel');
+const contentEl = document.querySelector('.content');
+const mainPanel = document.querySelector('main.panel');
 const signedOutBox = document.getElementById('authSignedOut');
 const signedInBox = document.getElementById('authSignedIn');
 const detail = document.getElementById('detail');
@@ -939,12 +956,71 @@ const tosToggle = document.getElementById('tosToggle');
 const tosBox = document.getElementById('tosBox');
 const tosAgree = document.getElementById('tosAgree');
 const tosTextEl = document.getElementById('tosText');
+
+function updateLayoutCenterOffset() {
+  if (!contentEl || !mainPanel || window.innerWidth < 881) {
+    document.documentElement.style.setProperty('--layout-center-offset', '0px');
+    return;
+  }
+
+  const rect = mainPanel.getBoundingClientRect();
+  const viewportCenter = window.innerWidth / 2;
+  const mainCenter = rect.left + rect.width / 2;
+  const offset = mainCenter - viewportCenter;
+
+  document.documentElement.style.setProperty('--layout-center-offset', `${offset}px`);
+}
+
+window.addEventListener('resize', updateLayoutCenterOffset);
+window.addEventListener('orientationchange', updateLayoutCenterOffset);
+window.addEventListener('load', updateLayoutCenterOffset);
+requestAnimationFrame(updateLayoutCenterOffset);
+
+function syncMobileFiltersState() {
+  if (!mobileFiltersPanel) return;
+
+  const isMobile = window.matchMedia('(max-width: 960px)').matches;
+
+  if (syncMobileFiltersState.isMobile === isMobile) return;
+
+  syncMobileFiltersState.isMobile = isMobile;
+  mobileFiltersPanel.open = !isMobile;
+}
+
+syncMobileFiltersState.isMobile = null;
+window.addEventListener('resize', syncMobileFiltersState);
+window.addEventListener('orientationchange', syncMobileFiltersState);
+window.addEventListener('load', syncMobileFiltersState);
+requestAnimationFrame(syncMobileFiltersState);
+
+function renderUnitLabel() {
+  if (!unitLabel || !unitPrefix) return;
+
+  const label = meters ? t('Units: Meters') : t('Units: Feet');
+  const [prefix, value] = label.split(':');
+
+  unitPrefix.textContent = `${(prefix || 'Units').trim()}:`;
+  unitLabel.textContent = (value || '').trim() || label;
+}
+
 function renderCompletedButtonState() {
   if (!showBtn) return;
 
   const icon = hideCompleted ? '🚫' : '✅';
-  const label = hideCompleted ? 'Completed: Hidden' : 'Completed: Showing';
-  showBtn.innerHTML = `<span class="ico">${icon}</span> <span>${t(label)}</span>`;
+  const label = hideCompleted ? t('Completed: Hidden') : t('Completed: Showing');
+  const [prefix, value] = label.split(':');
+
+  if (showCompleteIcon) {
+    showCompleteIcon.textContent = icon;
+  }
+
+  if (completedPrefix) {
+    completedPrefix.textContent = `${(prefix || t('Completed')).trim()}:`;
+  }
+
+  if (completedState) {
+    completedState.textContent = (value || '').trim() || label;
+  }
 }
 
 // Old detail close button (from side panel) - removed in favor of peakDetailBackBtn
@@ -953,7 +1029,7 @@ function renderCompletedButtonState() {
 // =====================================================
 // Asset URLs
 // =====================================================
-const CHECKED_IMG = "data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1.5' y='1.5' width='25' height='25' rx='6' fill='%231b1b1b' stroke='%23ffffff' stroke-width='3'/%3E%3Cpath d='M8 14.2l4.1 4.3L20 10' fill='none' stroke='%2322c55e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
+const CHECKED_IMG = "data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1.5' y='1.5' width='25' height='25' rx='6' fill='%231b1b1b' stroke='%2322c55e' stroke-width='3'/%3E%3Cpath d='M8 14.2l4.1 4.3L20 10' fill='none' stroke='%2322c55e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
 const UNCHECKED_IMG = "data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1.5' y='1.5' width='25' height='25' rx='6' fill='%231b1b1b' stroke='%23ffffff' stroke-width='3'/%3E%3C/svg%3E";
 const TOS_VERSION = '1.0';
 const TERMS_TEXT = `<strong>Peakbagger's Journal – Terms & Conditions (v${TOS_VERSION})</strong><br><br>1) Local, offline-first storage. 2) No resale of your data. 3) Outdoor safety is your responsibility. 4) Clearing browser data will remove local progress. 5) Email + hashed password are stored locally for sign-in on this device.`;
@@ -972,6 +1048,35 @@ let lastTotalItems = 0;  // Track total items for pagination
 let gridMode = 'grid';  // 'grid', 'list', 'compact'
 let completionsGrid = {};
 let completions = {};
+
+// Local backup helpers to mirror Supabase data for resilience
+const BROWSER_BACKUP_PREFIX = 'pb_backup_v1';
+const browserUserKey = () => (currentUser?.id ? String(currentUser.id) : 'guest');
+
+function backupKey(type, userId = browserUserKey()) {
+  return `${BROWSER_BACKUP_PREFIX}_${type}_${userId}`;
+}
+
+function writeBrowserBackup(type, payload) {
+  try {
+    localStorage.setItem(backupKey(type), JSON.stringify({
+      savedAt: new Date().toISOString(),
+      data: payload || null
+    }));
+  } catch (e) {
+    console.warn('Unable to persist browser backup for', type, e);
+  }
+}
+
+function readBrowserBackup(type, userId = browserUserKey()) {
+  try {
+    const raw = localStorage.getItem(backupKey(type, userId));
+    return raw ? JSON.parse(raw).data : null;
+  } catch (e) {
+    console.warn('Unable to read browser backup for', type, e);
+    return null;
+  }
+}
 let favorites = new Set();  // Peak IDs that are favorited
 let wishlist = new Set();   // Peak IDs on wishlist
 let statusFilter = 'all';  // Filter: 'all', 'completed', 'favorites', 'wishlist', 'incomplete'
@@ -1071,6 +1176,27 @@ async function loadUserSettingsFromSupabase() {
 
 // Load state from Supabase - reads from user_hike_logs table
 // Each peak's completion status is determined by having at least one hike log entry
+async function refreshHikeLogBackupFromDb() {
+  if (!supabase || !currentUser) return null;
+  const { data, error } = await supabase
+    .from('user_hike_logs')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('hike_date', { ascending: false });
+
+  if (error) {
+    console.warn('refreshHikeLogBackupFromDb: Unable to refresh cache', error);
+    return null;
+  }
+
+  writeBrowserBackup('hike_logs', data || []);
+  return data || [];
+}
+
+function backupCompletionSnapshots() {
+  writeBrowserBackup('completions', { completions, completionsGrid });
+}
+
 async function loadStateFromSupabase() {
   if (!currentUser || !currentList) {
     completions = {};
@@ -1096,7 +1222,7 @@ async function loadStateFromSupabase() {
     // We get the most recent hike date per peak as the "completion date"
     const { data: hikeLogs, error } = await supabase
       .from('user_hike_logs')
-      .select('peak_id, hike_date, list_id, peaks(slug, name)')
+      .select('id, user_id, list_id, peak_id, hike_date, trail_name, route_notes, miles, elevation_gain_ft, duration_minutes, notes, tags, visibility, created_at, updated_at, effort, trail_condition, views, temperature, precipitation, wind, crowds, bugs, peaks(slug, name)')
       .eq('user_id', currentUser.id)
       .order('hike_date', { ascending: false });
     
@@ -1107,6 +1233,7 @@ async function loadStateFromSupabase() {
     }
     
     completions[currentList] = {};
+    writeBrowserBackup('hike_logs', hikeLogs || []);
     
     if (hikeLogs) {
       // Group by peak - first occurrence (most recent) determines the date shown for classic mode
@@ -1137,8 +1264,9 @@ async function loadStateFromSupabase() {
         peaksSeen.add(peakName);
       });
     }
-    
+
     console.log('loadStateFromSupabase: Loaded', Object.keys(completions[currentList] || {}).length, 'completed peaks from hike logs');
+    backupCompletionSnapshots();
   } catch (e) {
     console.error('Failed to load state from Supabase:', e);
     completions = {};
@@ -1303,6 +1431,7 @@ async function saveGridToSupabase(peakName, month, date) {
             peak_id: peakId,
             hike_date: date
           });
+        await refreshHikeLogBackupFromDb();
       }
     } else {
       // When clearing a date from grid, we need to find and delete hike logs for this month
@@ -1326,6 +1455,7 @@ async function saveGridToSupabase(peakName, month, date) {
             .delete()
             .eq('id', log.id);
         }
+        await refreshHikeLogBackupFromDb();
       }
     }
   } catch (e) {
@@ -1333,120 +1463,136 @@ async function saveGridToSupabase(peakName, month, date) {
   }
 }
 
-// Load favorites from Supabase
+function persistFavoriteCaches(favRows = [], wishRows = []) {
+  const favoriteIds = favRows.map(f => peakKey(f?.peak_id)).filter(Boolean);
+  const wishlistIds = wishRows.map(f => peakKey(f?.peak_id)).filter(Boolean);
+
+  writeBrowserBackup('favorites', favoriteIds);
+  writeBrowserBackup('wishlist', wishlistIds);
+
+  const favoriteSlugs = favRows.map(f => f?.peaks?.slug).filter(Boolean);
+  const wishlistSlugs = wishRows.map(f => f?.peaks?.slug).filter(Boolean);
+
+  localStorage.setItem('peakbagger_favorites', JSON.stringify(favoriteSlugs));
+  localStorage.setItem('peakbagger_wishlist', JSON.stringify(wishlistSlugs));
+}
+
+// Load favorites/wishlist from Supabase with a browser backup
 async function loadFavorites() {
-  // Skip if not logged in
+  // Skip if not logged in - fall back to local backup so guests retain data
   if (!currentUser) {
-    favorites.clear();
-    wishlist.clear();
+    favorites = new Set((readBrowserBackup('favorites', 'guest') || []).filter(Boolean));
+    wishlist = new Set((readBrowserBackup('wishlist', 'guest') || []).filter(Boolean));
+    persistFavoriteCaches(
+      Array.from(favorites).map(id => ({ peak_id: id })),
+      Array.from(wishlist).map(id => ({ peak_id: id }))
+    );
     return;
   }
-  
+
   try {
-    const { data: favData, error } = await supabase
+    const { data: favRows, error: favError } = await supabase
       .from('user_favorite_peaks')
-      .select('peak_id, favorite_type')
+      .select('peak_id, peaks(slug)')
       .eq('user_id', currentUser.id);
-    
-    if (error) {
-      // Silently handle missing table/column errors - don't spam console
-      if (error.code === '42703' || error.message?.includes('does not exist')) {
-        console.log('Favorites table not configured - using local storage only');
-      } else {
-        console.error('Error loading favorites:', error);
-      }
+
+    const { data: wishRows, error: wishError } = await supabase
+      .from('user_wishlist_hikes')
+      .select('peak_id, peaks(slug)')
+      .eq('user_id', currentUser.id);
+
+    if (favError || wishError) {
+      console.error('Error loading favorites/wishlist:', favError || wishError);
       favorites.clear();
       wishlist.clear();
+      persistFavoriteCaches();
       return;
     }
-    
-    favorites.clear();
-    wishlist.clear();
-    
-    if (favData && Array.isArray(favData)) {
-      favData.forEach(fav => {
-        const key = peakKey(fav?.peak_id);
-        if (key) {
-          if (fav.favorite_type === 'favorite') {
-            favorites.add(key);
-          } else if (fav.favorite_type === 'wishlist') {
-            wishlist.add(key);
-          }
-        }
-      });
-    }
-    
+
+    favorites = new Set((favRows || []).map(f => peakKey(f?.peak_id)).filter(Boolean));
+    wishlist = new Set((wishRows || []).map(f => peakKey(f?.peak_id)).filter(Boolean));
+
+    persistFavoriteCaches(favRows || [], wishRows || []);
+
     console.log(`Loaded ${favorites.size} favorites and ${wishlist.size} wishlist items`);
   } catch (e) {
     // Silently fail - favorites will just use local storage
     favorites.clear();
     wishlist.clear();
+    persistFavoriteCaches();
   }
 }
 
 // Toggle favorite or wishlist for a peak
 async function toggleFavorite(peakId, favoriteType) {
-  if (!currentUser || !peakId) {
-    console.warn('Cannot toggle favorite: missing user or peak ID');
+  if (!peakId) {
+    console.warn('Cannot toggle favorite: missing peak ID');
     return;
   }
-  
+
   if (favoriteType !== 'favorite' && favoriteType !== 'wishlist') {
     console.error('Invalid favorite type:', favoriteType);
     return;
   }
-  
+
+  const key = peakKey(peakId);
+  if (!key) return;
+
+  // Allow guests to cache intent locally so we can sync later
+  if (!currentUser) {
+    const targetSet = favoriteType === 'favorite' ? favorites : wishlist;
+    targetSet.has(key) ? targetSet.delete(key) : targetSet.add(key);
+    persistFavoriteCaches(
+      Array.from(favorites).map(id => ({ peak_id: id })),
+      Array.from(wishlist).map(id => ({ peak_id: id }))
+    );
+    renderView();
+    return;
+  }
+
   try {
     const targetSet = favoriteType === 'favorite' ? favorites : wishlist;
     const otherSet = favoriteType === 'favorite' ? wishlist : favorites;
-    const otherType = favoriteType === 'favorite' ? 'wishlist' : 'favorite';
-    const key = peakKey(peakId);
-
-    if (!key) {
-      console.warn('Invalid peak key for favorite toggle');
-      return;
-    }
+    const otherTable = favoriteType === 'favorite' ? 'user_wishlist_hikes' : 'user_favorite_peaks';
+    const targetTable = favoriteType === 'favorite' ? 'user_favorite_peaks' : 'user_wishlist_hikes';
 
     if (targetSet.has(key)) {
-      // Remove from favorites
       const { error } = await supabase
-        .from('user_favorite_peaks')
+        .from(targetTable)
         .delete()
         .eq('user_id', currentUser.id)
-        .eq('peak_id', peakId)
-        .eq('favorite_type', favoriteType);
+        .eq('peak_id', peakId);
 
       if (error) throw error;
 
       targetSet.delete(key);
       console.log(`Removed ${favoriteType} for peak ${peakId}`);
     } else {
-      // Add to favorites (and remove from other type if present)
-        if (otherSet.has(key)) {
-          await supabase
-            .from('user_favorite_peaks')
-            .delete()
-            .eq('user_id', currentUser.id)
-            .eq('peak_id', peakId)
-            .eq('favorite_type', otherType);
-          otherSet.delete(key);
-        }
-      
+      // Remove from the opposite table if needed to avoid stale coloring
+      if (otherSet.has(key)) {
+        await supabase
+          .from(otherTable)
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('peak_id', peakId);
+        otherSet.delete(key);
+      }
+
       const { error } = await supabase
-        .from('user_favorite_peaks')
+        .from(targetTable)
         .insert({
           user_id: currentUser.id,
-          peak_id: peakId,
-          favorite_type: favoriteType
+          peak_id: peakId
         });
-      
+
       if (error) throw error;
-      
+
       targetSet.add(key);
       console.log(`Added ${favoriteType} for peak ${peakId}`);
     }
-    
-    // Re-render to update card colors
+
+    // Refresh from DB so browser cache mirrors the source of truth
+    await loadFavorites();
     renderView();
   } catch (e) {
     console.error(`Failed to toggle ${favoriteType}:`, e);
@@ -1507,7 +1653,7 @@ function loadState() {
 }
 
 function saveState() {
-  // No-op for now - we're using Supabase
+  backupCompletionSnapshots();
 }
 
 function loadGrid() {
@@ -1519,7 +1665,7 @@ function loadGrid() {
 }
 
 function saveGrid() {
-  // No-op for now - we're using Supabase
+  backupCompletionSnapshots();
 }
 
 // =====================================================
@@ -1582,6 +1728,104 @@ function getMonthDate(list, peak, month) {
   return ensureGridRecord(list, peak)[String(month)] || "";
 }
 
+async function upsertHikeLogRecord(listId, peakId, dateStr) {
+  if (!currentUser || !supabase || !peakId || !dateStr) return;
+
+  const { data: existing } = await supabase
+    .from('user_hike_logs')
+    .select('id')
+    .eq('user_id', currentUser.id)
+    .eq('peak_id', peakId)
+    .eq('hike_date', dateStr)
+    .maybeSingle();
+
+  if (!existing) {
+    await supabase.from('user_hike_logs').insert({
+      user_id: currentUser.id,
+      list_id: listId || null,
+      peak_id: peakId,
+      hike_date: dateStr
+    });
+  }
+}
+
+async function syncBrowserDataToSupabase() {
+  if (!currentUser || !supabase) return;
+
+  try {
+    const listsResp = await supabase.from('lists').select('id, slug, name');
+    const listIdBySlug = new Map();
+    (listsResp.data || []).forEach(l => {
+      listIdBySlug.set(l.slug, l.id);
+      if (l.name) listIdBySlug.set(slugify(l.name), l.id);
+    });
+
+    const peakCache = JSON.parse(localStorage.getItem('peakbagger_peaks') || '[]');
+    const peakIdByName = new Map();
+    const peakIdBySlug = new Map();
+    peakCache.forEach(p => {
+      const id = p?.id || p?.peak_id;
+      if (!id) return;
+      if (p.name) peakIdByName.set(p.name, id);
+      if (p.slug) peakIdBySlug.set(p.slug, id);
+    });
+
+    const completionSnapshot = readBrowserBackup('completions', 'guest') || readBrowserBackup('completions') || {};
+    const comp = completionSnapshot.completions || completions || {};
+    const grid = completionSnapshot.completionsGrid || completionsGrid || {};
+
+    const pendingHikes = [];
+
+    Object.entries(comp || {}).forEach(([listName, peaks]) => {
+      Object.entries(peaks || {}).forEach(([peakName, rec]) => {
+        const dates = new Set();
+        if (rec?.date) dates.add(rec.date);
+        (rec?.allDates || []).forEach(d => d && dates.add(d));
+        const gridRec = grid?.[listName]?.[peakName] || {};
+        Object.values(gridRec).forEach(d => d && dates.add(d));
+
+        dates.forEach(d => pendingHikes.push({ listName, peakName, dateStr: d }));
+      });
+    });
+
+    const hikeBackup = readBrowserBackup('hike_logs', 'guest') || [];
+    hikeBackup.forEach(row => {
+      if (row?.hike_date && row?.peak_id) {
+        pendingHikes.push({ listId: row.list_id, peakId: row.peak_id, dateStr: row.hike_date });
+      }
+    });
+
+    for (const entry of pendingHikes) {
+      const listId = entry.listId || (entry.listName ? listIdBySlug.get(slugify(entry.listName)) : null) || null;
+      const peakId = entry.peakId || peakIdByName.get(entry.peakName) || peakIdBySlug.get(entry.peakName) || null;
+      if (!peakId || !entry.dateStr) continue;
+      await upsertHikeLogRecord(listId, peakId, entry.dateStr);
+    }
+
+    const guestFavorites = readBrowserBackup('favorites', 'guest') || [];
+    const guestWishlist = readBrowserBackup('wishlist', 'guest') || [];
+
+    await loadFavorites();
+
+    for (const fav of guestFavorites) {
+      const key = peakKey(fav);
+      if (!key || favorites.has(key)) continue;
+      await supabase.from('user_favorite_peaks').insert({ user_id: currentUser.id, peak_id: fav });
+    }
+
+    for (const wish of guestWishlist) {
+      const key = peakKey(wish);
+      if (!key || wishlist.has(key)) continue;
+      await supabase.from('user_wishlist_hikes').insert({ user_id: currentUser.id, peak_id: wish });
+    }
+
+    await refreshHikeLogBackupFromDb();
+    await loadFavorites();
+  } catch (e) {
+    console.error('syncBrowserDataToSupabase failed:', e);
+  }
+}
+
 // =====================================================
 // Authentication with Supabase
 // =====================================================
@@ -1627,8 +1871,9 @@ async function signUp(firstName, lastName, email, pass, opts = {}) {
       default_list_id: null
     }, { onConflict: 'user_id' });
   }
-  
+
   currentUser = data.user;
+  await syncBrowserDataToSupabase();
   return data.user;
 }
 
@@ -1793,6 +2038,7 @@ function showLoginForm() {
   if (signupForm) signupForm.style.display = 'none';
   if (authTitle) authTitle.textContent = 'Log in';
   authMsg.textContent = '';
+  if (loginEmail) loginEmail.focus();
 }
 
 function showSignupForm() {
@@ -1800,6 +2046,7 @@ function showSignupForm() {
   if (signupForm) signupForm.style.display = 'block';
   if (authTitle) authTitle.textContent = 'Create Account';
   authMsg.textContent = '';
+  if (signupFirstName) signupFirstName.focus();
 }
 
 function validatePasswordMatch() {
@@ -2221,7 +2468,6 @@ async function openPeakDetailOLD(it) {
   // Update links
   const wxNoaa = document.getElementById('peakWxNoaa');
   const wxOpenMeteo = document.getElementById('peakWxOpenMeteo');
-  const wxTrailsNH = document.getElementById('peakWxTrailsNH');
   const wxMWOBS = document.getElementById('peakWxMWOBS');
   const lnkWikipedia = document.getElementById('peakLnkWikipedia');
   const lnkPeakbagger = document.getElementById('peakLnkPeakbagger');
@@ -2243,7 +2489,6 @@ async function openPeakDetailOLD(it) {
     if (lnkPeakbagger) lnkPeakbagger.href = `https://www.peakbagger.com/search.aspx?tid=S&ss=${searchName}`;
     if (lnkAllTrails) lnkAllTrails.href = `https://www.alltrails.com/search?q=${searchName}`;
     if (lnkSummitPost) lnkSummitPost.href = `https://www.summitpost.org/search?query=${searchName}`;
-    if (wxTrailsNH) wxTrailsNH.href = `https://trailsnh.com/search?q=${searchName}`;
     if (wxMWOBS) wxMWOBS.href = 'https://www.mountwashington.org/experience-the-weather/';
   }
   
@@ -2400,7 +2645,7 @@ function fmtElevation(ft) {
 function applyUnitsFlag(flag) {
   meters = flag;
   metersToggle.checked = meters;
-  unitLabel.textContent = meters ? 'Units: Meters' : 'Units: Feet';
+  renderUnitLabel();
   renderView();
   const prefs = readPrefs();
   prefs.meters = meters;
@@ -2408,7 +2653,7 @@ function applyUnitsFlag(flag) {
 }
 
 function applyTheme(theme) {
-  document.body.classList.remove('theme-light', 'theme-forest', 'theme-sky');
+  document.body.classList.remove('theme-light', 'theme-forest', 'theme-sky', 'theme-eye-saver');
   if (!theme || theme === 'dark') {
     // dark = default
   } else if (theme === 'light') {
@@ -2417,6 +2662,8 @@ function applyTheme(theme) {
     document.body.classList.add('theme-forest');
   } else if (theme === 'sky') {
     document.body.classList.add('theme-sky');
+  } else if (theme === 'eye-saver') {
+    document.body.classList.add('theme-eye-saver');
   }
   if (themeSelect) themeSelect.value = theme || 'dark';
   const prefs = readPrefs();
@@ -2722,8 +2969,9 @@ async function createOrUpdateHikeLog(peakName, dateStr, options = {}) {
         console.error('createOrUpdateHikeLog: Update error:', updateError);
         return null;
       }
-      
+
       console.log('createOrUpdateHikeLog: Updated log date for', peakName, 'to', dateStr);
+      await refreshHikeLogBackupFromDb();
       return existingLog.id;
     }
     
@@ -2747,8 +2995,9 @@ async function createOrUpdateHikeLog(peakName, dateStr, options = {}) {
       console.error('createOrUpdateHikeLog: Insert error:', insertError);
       return null;
     }
-    
+
     console.log('createOrUpdateHikeLog: Created log for', peakName, dateStr, '- ID:', newLog?.id);
+    await refreshHikeLogBackupFromDb();
     return newLog?.id || null;
   } catch (e) {
     console.error('createOrUpdateHikeLog error:', e);
@@ -3540,6 +3789,10 @@ async function changeList(name) {
     await loadStateFromSupabase();
     await loadGridFromSupabase();
     await loadGridTrackingSettings();
+    await loadFavorites();
+  } else {
+    // Refresh guest caches so card colors reflect browser backups
+    await loadFavorites();
   }
 
   try {
@@ -3790,14 +4043,16 @@ if (openAuthNavBtn) openAuthNavBtn.onclick = () => openModal();
 if (showSignup) showSignup.onclick = (e) => {
   e.preventDefault();
   showSignupForm();
+  if (signupFirstName) signupFirstName.focus();
 };
 if (showLogin) showLogin.onclick = (e) => {
   e.preventDefault();
   showLoginForm();
+  if (loginEmail) loginEmail.focus();
 };
 
-// Login handler
-if (doLoginBtn) doLoginBtn.onclick = async () => {
+const submitLogin = async () => {
+  if (!doLoginBtn) return;
   authMsg.textContent = '';
   try {
     const remember = rememberMe ? rememberMe.checked : true;
@@ -3814,22 +4069,25 @@ if (doLoginBtn) doLoginBtn.onclick = async () => {
   }
 };
 
-// Signup handler
-if (doSignupBtn) doSignupBtn.onclick = async () => {
+// Login handler
+if (doLoginBtn) doLoginBtn.onclick = submitLogin;
+
+const submitSignup = async () => {
+  if (!doSignupBtn || doSignupBtn.disabled) return;
   authMsg.textContent = '';
-  
+
   // Bot prevention check
   if (!checkBotPrevention()) {
     authMsg.textContent = 'Invalid submission';
     authMsg.className = 'err';
     return;
   }
-  
+
   // Validate password match
   if (!validatePasswordMatch()) {
     return; // Error message already set in validatePasswordMatch
   }
-  
+
   try {
     await signUp(
       signupFirstName.value,
@@ -3849,6 +4107,30 @@ if (doSignupBtn) doSignupBtn.onclick = async () => {
     authMsg.className = 'err';
   }
 };
+
+// Signup handler
+if (doSignupBtn) doSignupBtn.onclick = submitSignup;
+
+const loginEnterHandler = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitLogin();
+  }
+};
+if (loginEmail) loginEmail.addEventListener('keydown', loginEnterHandler);
+if (loginPass) loginPass.addEventListener('keydown', loginEnterHandler);
+
+const signupEnterHandler = (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitSignup();
+  }
+};
+if (signupFirstName) signupFirstName.addEventListener('keydown', signupEnterHandler);
+if (signupLastName) signupLastName.addEventListener('keydown', signupEnterHandler);
+if (signupEmail) signupEmail.addEventListener('keydown', signupEnterHandler);
+if (signupPass) signupPass.addEventListener('keydown', signupEnterHandler);
+if (signupPassConfirm) signupPassConfirm.addEventListener('keydown', signupEnterHandler);
 
 // Real-time password match validation
 if (signupPassConfirm) {

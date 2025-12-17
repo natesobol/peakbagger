@@ -17,7 +17,7 @@ Replaced the side-panel detail view with a full-page NH48-style peak information
   - Photo carousel container (`#peakDetailPhotos`)
   - Detail grid with three sections:
     - Fast facts (elevation, date completed, location, prominence, difficulty)
-    - Weather (NOAA, Open-Meteo, TrailsNH, MWOBS links)
+    - Weather (NOAA, Open-Meteo, MWOBS links)
     - Learn more (Wikipedia, Peakbagger, AllTrails, SummitPost, OpenStreetMap)
 
 **Page Structure:**
@@ -133,7 +133,6 @@ Replaced the side-panel detail view with a full-page NH48-style peak information
 ### Weather Links
 - NOAA Point Forecast
 - Open-Meteo (lat/lon)
-- TrailsNH Summit Forecast
 - MWOBS (for Presidentials)
 
 ### Learn More Links
