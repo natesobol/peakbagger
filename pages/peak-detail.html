@@ -254,7 +254,7 @@
     // =====================================================
     const SUPABASE_URL = 'https://uobvavnsstrgyezcklib.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvYnZhdm5zc3RyZ3llemNrbGliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0ODEzNTksImV4cCI6MjA4MTA1NzM1OX0.KL32AFytJcOC5RPEPlWlCzBDiA8N_Su9qb0yXT2n2ZI';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -600,12 +600,12 @@
 
       if (currentUser) {
         try {
-          const { data: favRows, error: favError } = await supabase
+          const { data: favRows, error: favError } = await supabaseClient
             .from('user_favorite_peaks')
             .select('peak_id, peaks(slug)')
             .eq('user_id', currentUser.id);
 
-          const { data: wishRows, error: wishError } = await supabase
+          const { data: wishRows, error: wishError } = await supabaseClient
             .from('user_wishlist_hikes')
             .select('peak_id, peaks(slug)')
             .eq('user_id', currentUser.id);
@@ -634,14 +634,14 @@
       if (currentUser && currentPeakId) {
         try {
           if (isFavorite) {
-            await supabase
+            await supabaseClient
               .from('user_favorite_peaks')
               .delete()
               .eq('user_id', currentUser.id)
               .eq('peak_id', currentPeakId);
             favorites = favorites.filter(s => s !== slug);
           } else {
-            await supabase
+            await supabaseClient
               .from('user_favorite_peaks')
               .insert({ user_id: currentUser.id, peak_id: currentPeakId });
             favorites.push(slug);
@@ -674,14 +674,14 @@
       if (currentUser && currentPeakId) {
         try {
           if (isWishlist) {
-            await supabase
+            await supabaseClient
               .from('user_wishlist_hikes')
               .delete()
               .eq('user_id', currentUser.id)
               .eq('peak_id', currentPeakId);
             wishlist = wishlist.filter(s => s !== slug);
           } else {
-            await supabase
+            await supabaseClient
               .from('user_wishlist_hikes')
               .insert({ user_id: currentUser.id, peak_id: currentPeakId });
             wishlist.push(slug);
@@ -712,7 +712,7 @@
     // =====================================================
     async function initUserSession() {
       console.log('initUserSession: Checking auth state...');
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       if (session?.user) {
         currentUser = session.user;
         console.log('initUserSession: User logged in:', currentUser.email);
@@ -751,7 +751,7 @@
       
       try {
         console.log('loadSummitLogPanel: Fetching most recent hike for peak', currentPeakId);
-        const { data: logs, error } = await supabase
+        const { data: logs, error } = await supabaseClient
           .from('user_hike_logs')
           .select('id, hike_date')
           .eq('user_id', currentUser.id)
@@ -827,7 +827,7 @@
         }
         
         // Check if a log already exists for this date
-        const { data: existing } = await supabase
+        const { data: existing } = await supabaseClient
           .from('user_hike_logs')
           .select('id')
           .eq('user_id', currentUser.id)
@@ -845,7 +845,7 @@
         
         // Create new hike log entry
         console.log('handleQuickLogDateChange: Creating new log for', newDate);
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseClient
           .from('user_hike_logs')
           .insert({
             user_id: currentUser.id,
@@ -918,7 +918,7 @@
         // DB Load: user_hike_logs - Get all logs for this peak
         // =====================================================
         console.log('DB Load: user_hike_logs - Fetching logs for peak', currentPeakId);
-        const { data: logs, error } = await supabase
+        const { data: logs, error } = await supabaseClient
           .from('user_hike_logs')
           .select('*')
           .eq('user_id', currentUser.id)
@@ -1039,9 +1039,9 @@
         // DB Save: user_hike_logs - Update date
         // =====================================================
         console.log('DB Save: user_hike_logs - Updating date for log', logId);
-        const { error } = await supabase
+        const { error } = await supabaseClient
           .from('user_hike_logs')
-          .update({ 
+          .update({
             hike_date: newDate,
             updated_at: new Date().toISOString()
           })
@@ -1115,7 +1115,7 @@
         // DB Save: user_hike_logs - Delete entry
         // =====================================================
         console.log('DB Save: user_hike_logs - Deleting log', logId);
-        const { error } = await supabase
+        const { error } = await supabaseClient
           .from('user_hike_logs')
           .delete()
           .eq('id', logId)
@@ -1151,7 +1151,7 @@
         // DB Load: peaks - Get peak by slug
         // =====================================================
         console.log('DB Load: peaks - Fetching peak by slug');
-        const { data: peak, error } = await supabase
+        const { data: peak, error } = await supabaseClient
           .from('peaks')
           .select('id')
           .eq('slug', slug)

@@ -686,9 +686,40 @@
       </div>
     </div>
     
-    <div id="authMsg" class="note" style="margin-top:12px"></div>
+  <div id="authMsg" class="note" style="margin-top:12px"></div>
   </div>
 </div>
+
+<!-- Fallback auth opener wiring so CTAs stay clickable even if other scripts fail early -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('authModal');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loginEmail = document.getElementById('loginEmail');
+    const openers = ['openAuth', 'openAuthNav', 'openAuthMobile'];
+
+    const openAuthModal = () => {
+      if (!modal) return;
+      modal.classList.add('open');
+      if (loginForm) loginForm.style.display = 'block';
+      if (signupForm) signupForm.style.display = 'none';
+      const title = document.getElementById('authTitle');
+      if (title) title.textContent = 'Log in';
+      loginEmail?.focus();
+    };
+
+    openers.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          openAuthModal();
+        });
+      }
+    });
+  });
+</script>
 
 <!-- XLSX lib -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
