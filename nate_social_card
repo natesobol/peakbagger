@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NH48pics • Quick Links</title>
+<meta name="description" content="New Hampshire Photographer — Nate Sobol | nh48pics.com. Shop fine‑art prints and explore our White Mountains web apps." />
+
+<!-- Mobile browser chrome/overscroll color (iOS/Android) -->
+<meta name="theme-color" content="#0a0a0a" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+<!--
+  NH48pics Quick Links Page
+  -------------------------------------------------------
+  This document defines the responsive, dark-themed
+  landing page for NH48pics. It contains:
+  • Variables for theming in CSS :root section.
+  • A responsive card with rounded corners and shadow.
+  • An avatar header with animated particle effect.
+  • A subtitle line featuring the AMC 4000 badge next
+    to the photographer’s name.
+  • A grid of links: home page, framed photos, woodworking,
+    Etsy shop, Peakbagger’s Journal web app, Howker Ridge
+    projects, and Instagram.
+  • Footer separating copyright from Terms and Privacy
+    links on a new line across all devices.
+  • JavaScript for year detection (in America/New_York),
+    parent frame height syncing, and the light particle
+    animation.
+  Comments throughout the code aid maintainability.
+-->
+
+<style>
+  /* -------------------------- THEME VARIABLES ------------------------- */
+  :root{
+    --bg:#0a0a0a;         /* deep black for overall page background */
+    --ink:#ffffff;        /* pure white text color */
+    --muted:#d6d6d6;      /* softer white for secondary text */
+    --stroke:#ffffff;     /* white borders and outlines */
+    --panel:#101318;      /* near-black for cards/panels */
+    --radius:18px;        /* border radius for rounding corners */
+    --gap:14px;           /* vertical spacing between link buttons */
+    --shadow:0 10px 30px rgba(0,0,0,.4); /* soft shadow for cards/links */
+  }
+
+  /* Base box sizing resets to ensure consistent sizing */
+  *, *::before, *::after{
+    box-sizing:border-box;
+  }
+
+  /* Paint the viewport dark. We set height:100% for full viewport coverage. */
+  html, body {
+    height: 100%;
+    background: var(--bg);
+  }
+
+  /* Body typography and smoothing */
+  body{
+    margin: 0;
+    color: var(--ink);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+    line-height: 1.35;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none; /* prevent overscroll flash on mobile */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Wrapping container ensures card is centered vertically and horizontally */
+  .wrap{
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px 16px;
+  }
+
+  /* Card container: white border matching interior buttons, dark panel */
+  .card {
+    width: 100%;
+    max-width: 520px;
+    border: 2px solid var(--stroke);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    background: var(--panel);
+  }
+
+  /* Header: center everything and give spacing below */
+  .header{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    margin-bottom:22px;
+  }
+
+  /* Avatar wrapper: static neon gradient ring and subtle shadow */
+  .avatar-wrap{
+    position:relative;
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    padding:2px;
+    overflow:visible;
+    background:conic-gradient(from 0deg, #a200ff, #ff0055, #ffd400, #a200ff);
+    box-shadow:0 0 30px rgba(255,0,120,.15);
+  }
+
+  /* Actual avatar container for image and canvas overlay */
+  .avatar{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    overflow:hidden;
+    background:var(--panel); /* fallback color if image fails */
+    border:2px solid var(--stroke); /* crisp inner white ring */
+  }
+
+  /* Avatar image */
+  .avatar img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    filter:saturate(1.05) contrast(1.05);
+    display:block;
+  }
+
+  /* Sparkle canvas overlay: full coverage */
+  .avatar canvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+  }
+
+  /* Subtitle container (name + AMC badge + website) */
+  .subtitle{
+    margin-top:12px;
+    font-size:15px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:4px;
+    line-height:1.4;
+  }
+
+  /* AMC badge image next to name, sized like an emoji */
+  .badge{
+    width:20px;
+    height:16px;
+    border:1px solid var(--stroke);
+    border-radius:4px;
+    object-fit:cover;
+    margin-left:4px;
+    margin-right:4px;
+    padding:1px;
+    background:var(--panel);
+    display:inline-block;
+  }
+
+/* Base tagline styling */
+.title {
+  font-size: 14px;
+  opacity: 0.95;
+}
+
+/* Show desktop tagline by default, hide mobile version */
+.title-desktop { display: inline-block; }
+.title-mobile  { display: none; }
+
+/* On narrow screens, swap: hide desktop, show mobile version */
+@media (max-width: 420px) {
+  .title-desktop { display: none; }
+  .title-mobile  {
+    display: inline-block;
+    text-align: center;
+  }
+}
+
+
+  /* Poetic line describing the canvas of seasons */
+  .blurb{
+    margin-top:6px;
+    font-size:13px;
+    color:var(--muted);
+    opacity:.95;
+  }
+  .blurb em{
+    font-style:italic;
+  }
+
+  /* Links container: vertical stack */
+  .links{
+    display:flex;
+    flex-direction:column;
+    gap:var(--gap);
+  }
+
+  /* Each link block: grid layout with left icon, center text, right chevron */
+  .link{
+    display:grid;
+    grid-template-columns:40px 1fr 20px;
+    align-items:center;
+    gap:10px;
+    background:var(--panel);
+    border:2px solid var(--stroke);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    text-decoration:none;
+    color:var(--ink);
+    box-shadow:var(--shadow);
+    transform:translateZ(0);
+    line-height:1.2;
+    min-height:66px;
+    transition:filter .2s ease, transform .2s ease;
+  }
+  .link>*{
+    align-self:center;
+  }
+  .link:hover{
+    filter:brightness(1.02);
+  }
+  .link:active{
+    transform:scale(.99);
+  }
+
+  /* Icon container: centers image or emoji */
+  .icon{
+    width:28px;
+    height:28px;
+    display:grid;
+    place-items:center;
+  }
+  .icon img{
+    width:22px;
+    height:22px;
+    display:block;
+    object-fit:contain;
+  }
+
+  /* Special stacked icon for Howker Ridge (3 overlapping logos) */
+  .icon.stack{
+    width:36px;
+    height:22px;
+    display:block;
+    position:relative;
+  }
+  .icon.stack img{
+    position:absolute;
+    top:0;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    border:2px solid #fff;
+    object-fit:cover;
+    background: var(--panel);
+  }
+  .icon.stack img:nth-child(1){ left:0; z-index:1; }
+  .icon.stack img:nth-child(2){ left:10px; z-index:2; }
+  .icon.stack img:nth-child(3){ left:20px; z-index:3; }
+
+  /* App logo icons: add border and rounding */
+  .icon.app-logo img{
+    width:22px;
+    height:22px;
+    border:2px solid var(--stroke);
+    border-radius:6px;
+    padding:2px;
+    background:var(--panel);
+    object-fit:cover;
+  }
+
+  /* Link text styling: bold and center aligned */
+  .txt{
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:.2px;
+    text-align:center;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+  }
+
+  /* Chevron icon styling */
+  .chev{
+    width:16px;
+    height:16px;
+    display:grid;
+    place-items:center;
+  }
+  .chev svg{
+    display:block;
+    width:16px;
+    height:16px;
+  }
+
+  /* -------------------------- FOOTER STYLES --------------------------- */
+  /* Footer container: vertical column to force new line for policies */
+  .foot{
+    margin-top:22px;
+    text-align:center;
+    font-size:12px;
+    color:var(--muted);
+    opacity:.9;
+    display:flex;
+    flex-direction:column; /* ensures terms/privacy appear on new line */
+    align-items:center;
+    gap:6px;
+    word-break:keep-all;
+  }
+
+  /* Copy line remains its own block */
+  .foot .copy{
+    display:block;
+  }
+
+  /* Policies container: holds Terms and Privacy horizontally */
+  .foot .policies{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:nowrap;
+  }
+
+  /* Links inside the policies */
+  .foot .policies a{
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--stroke);
+  }
+
+  /* Dot separator between Terms and Privacy */
+  .foot .separator{
+    color: var(--muted);
+  }
+
+  /* Focus styles for accessibility: show focus ring on keyboard focus */
+  .link:focus-visible,
+  .avatar-wrap:focus-visible,
+  .foot .policies a:focus-visible{
+    outline:2px solid var(--stroke);
+    outline-offset:2px;
+  }
+
+  /* ----------------------- RESPONSIVE ADJUSTMENTS ---------------------- */
+  /* Small screens: adjust sizes, paddings, fonts */
+  @media (max-width: 420px){
+    .txt{ font-size:15px; }
+    .link{ padding:12px 14px; min-height:60px; }
+    .card{ padding:16px; }
+  }
+  @media (max-width: 340px){
+    .card{
+      padding: 12px;
+      border-radius: 16px;
+    }
+    .avatar-wrap{
+      width: 104px;
+      height: 104px;
+    }
+    .subtitle{
+      font-size: 13px;
+    }
+    .title{
+      font-size: 12px;
+    }
+    .blurb{
+      font-size: 11px;
+    }
+    .txt{
+      font-size:14px;
+    }
+    .link{
+      grid-template-columns:36px 1fr 18px;
+      padding:10px 12px;
+      min-height:56px;
+    }
+    .icon{
+      width:24px;
+      height:24px;
+    }
+    .icon img{
+      width:20px;
+      height:20px;
+    }
+    .icon.stack{
+      width:34px;
+      height:20px;
+    }
+    .icon.stack img{
+      width:18px;
+      height:18px;
+      border:2px solid #fff;
+      background: var(--panel);
+    }
+    .icon.stack img:nth-child(2){ left:8px; }
+    .icon.stack img:nth-child(3){ left:16px; }
+    .chev{
+      width:14px;
+      height:14px;
+    }
+    .chev svg{
+      width:14px;
+      height:14px;
+    }
+    .foot{
+      gap:4px;
+    }
+    .subtitle .badge{
+      width:18px;
+      height:14px;
+    }
+  }
+  /* Medium screens: adjust slightly larger fonts and button heights */
+  @media (min-width:421px) and (max-width:600px){
+    .txt{ font-size:16px; }
+    .link{ min-height:66px; }
+  }
+  /* Large screens: scale up fonts and button height */
+  @media (min-width:601px){
+    .txt{ font-size:17px; }
+    .link{ min-height:68px; }
+  }
+
+  /* Prefer reduced motion: remove transitions for users who disable motion */
+  @media (prefers-reduced-motion: reduce){
+    .link{
+      transition:none;
+    }
+  }
+
+  /* High-contrast mode detection in Windows: optional for future improvements */
+  @media screen and (-ms-high-contrast: active), (-ms-high-contrast: none) {
+    /* You can add specific styles for Windows high contrast here */
+  }
+
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card" aria-label="NH48pics quick links">
+      <!-- Profile / Header -->
+      <div class="header">
+        <a class="avatar-wrap" href="https://www.nh48pics.com/?utm_source=links&amp;utm_medium=social&amp;utm_campaign=profile" target="_blank" rel="noopener noreferrer" aria-label="Open nh48pics.com profile image link">
+          <div class="avatar">
+            <!-- Photographer profile image -->
+            <img alt="Profile — New Hampshire Photographer, Nate Sobol" src="https://static.wixstatic.com/media/66b1b2_ae7d4a9a1f6a410299a45f7cf4748203~mv2.jpg" />
+            <canvas id="sparkle"></canvas>
+          </div>
+        </a>
+        <!-- Name with AMC 4000 badge inserted before vertical bar, followed by website -->
+        <div class="subtitle">
+          Nate Sobol
+          <!-- 4000 AMC badge image, sized like an emoji, alt text for accessibility -->
+          <img class="badge" src="https://static.wixstatic.com/media/66b1b2_383707cf8bac4e13889e96c3d6733ef0~mv2.jpeg" alt="AMC 4000 badge" />
+          | 
+          <span>nh48pics.com</span>
+        </div>
+        <!-- Tagline: show single-line on desktop, two-line on mobile -->
+		<div class="title">
+		  <!-- Desktop view: one line with bullets -->
+		  <span class="title-desktop">New Hampshire Photographer • RMC Trail Adopter • “Gridiot”</span>
+
+		  <!-- Mobile view: first line without bullet; second line with bullet -->
+		  <span class="title-mobile">
+			<span>New Hampshire Photographer</span><br>
+			<span>RMC Trail Adopter • “Gridiot”</span>
+		  </span>
+		</div>
+
+        <!-- Poetic line -->
+        <div class="blurb"><em>An ancient granite canvas, brushed with ever‑changing seasons.</em></div>
+      </div>
+
+      <!-- Links -->
+      <nav class="links" aria-label="Primary links">
+        <!-- Homepage -->
+        <a class="link" href="https://www.nh48pics.com/?utm_source=links&amp;utm_medium=social&amp;utm_campaign=linkinbio" target="_blank" rel="noopener noreferrer" aria-label="Open nh48pics.com in a new tab">
+          <span class="icon" aria-hidden="true"><img loading="lazy" src="https://static.wixstatic.com/media/66b1b2_40a2129fe8a9406d9edb3944d78b7164~mv2.png" alt="NH48pics logo" /></span>
+          <span class="txt">NH48pics.com Home</span>
+          <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+
+        <!-- Framed photos store -->
+        <a class="link" href="https://www.nh48pics.com/category/framed-photos?utm_source=links&amp;utm_medium=social&amp;utm_campaign=framedprints" target="_blank" rel="noopener noreferrer" aria-label="Shop framed photos">
+          <span class="icon" aria-hidden="true">🖼</span>
+          <span class="txt">Shop Framed Photos</span>
+          <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+
+        <!-- Woodworking store -->
+        <a class="link" href="https://www.nh48pics.com/category/woodworking?utm_source=links&amp;utm_medium=social&amp;utm_campaign=woodworking" target="_blank" rel="noopener noreferrer" aria-label="Shop woodworking items">
+          <span class="icon" aria-hidden="true">🪵</span>
+          <span class="txt">Shop Woodworking</span>
+          <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+
+        <!-- Etsy shop -->
+        <a class="link" href="https://www.etsy.com/shop/NH48pics?utm_source=links&amp;utm_medium=social&amp;utm_campaign=etsy" target="_blank" rel="noopener noreferrer" aria-label="Open Etsy shop in a new tab">
+          <span class="icon" aria-hidden="true"><img loading="lazy" src="https://static.wixstatic.com/media/66b1b2_f4cf317552d0465eb0b87ff1f9ad1ff5~mv2.png" alt="Etsy logo" /></span>
+          <span class="txt">Etsy Shop · Prints &amp; Stickers</span>
+          <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+
+        <!-- Peakbagger’s Journal web app -->
+        <a class="link" href="https://www.nh48pics.com/peakbagger?utm_source=links&amp;utm_medium=social&amp;utm_campaign=peakbagger" target="_blank" rel="noopener noreferrer" aria-label="Open Peakbagger’s Journal Web app">
+          <span class="icon app-logo" aria-hidden="true"><img loading="lazy" src="https://static.wixstatic.com/media/66b1b2_6dfce097ed584b5296afeb83f26e4c8a~mv2.png" alt="Peakbagger logo" /></span>
+          <span class="txt">Peakbagger’s Journal Web App</span>
+          <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+
+        <!-- Howker Ridge Projects (now HRT Projects) with stacked icons -->
+        <a class="link" href="https://www.nh48pics.com/hrt-projects?utm_source=links&amp;utm_medium=social&amp;utm_campaign=howker" target="_blank" rel="noopener noreferrer" aria-label="Open HRT Projects landing">
+          <span class="icon stack" aria-hidden="true">
+            <img loading="lazy" src="https://static.wixstatic.com/media/66b1b2_28672dbcb1514038b7656139137c4a05~mv2.png" alt="Howker Ridge logo 1" />
+            <img loading="lazy" src="https://static.wixstatic.com/media/66b1b2_9d069d65e7fc43059106f805a45de873~mv2.png" alt="Howker Ridge logo 2" />
+            <img loading="lazy" src="https://static.wixstatic.com/media/66b1b2_ae699f4f2e4f4f28b7734c32b8cbfedc~mv2.png" alt="Plant Catalog logo" />
+          </span>
+          <span class="txt">Howker Ridge Trail</span>
+          <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+
+        <!-- Instagram link -->
+        <a class="link" href="https://www.instagram.com/nate_dumps_pics/?utm_source=links&amp;utm_medium=social&amp;utm_campaign=instagram" target="_blank" rel="noopener noreferrer" aria-label="Open Instagram profile">
+          <span class="icon" aria-hidden="true"><img loading="lazy" src="https://static.wixstatic.com/media/66b1b2_888cea41098b42f0b5105b1d2814cff0~mv2.png" alt="Instagram logo" /></span>
+          <span class="txt">Instagram @nate_dumps_pics</span>
+          <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+        </a>
+      </nav>
+
+      <!-- Footer: copyright and policy links on new line -->
+      <div class="foot">
+        <!-- Copy line with dynamic year -->
+        <div class="copy">© <span id="yr"></span> Nathan Sobol • All rights reserved</div>
+        <!-- Terms and Privacy appear below in separate container -->
+        <div class="policies">
+          <a href="https://www.nh48pics.com/terms" target="_blank" rel="noopener noreferrer" aria-label="Terms and Conditions">Terms</a>
+          <span class="separator">·</span>
+          <a href="https://www.nh48pics.com/privacy" target="_blank" rel="noopener noreferrer" aria-label="Privacy Policy">Privacy</a>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+<script>
+  // ----------------------------------------------------------------------------------
+  // JavaScript enhancements for dynamic year, height syncing, and sparkle animation.
+  // ----------------------------------------------------------------------------------
+
+  // 1. Set year in footer using America/New_York timezone.
+  (function(){
+    try{
+      // Use Intl.DateTimeFormat to get year in user’s timezone (America/New_York)
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric'
+      });
+      const year = formatter.format(now);
+      const yrEl = document.getElementById('yr');
+      if(yrEl) {
+        yrEl.textContent = year;
+      }
+    }catch(e){
+      // Fallback: use UTC year if Intl.DateTimeFormat is unavailable
+      var fallbackYear = new Date().getUTCFullYear();
+      var yrElFallback = document.getElementById('yr');
+      if(yrElFallback){
+        yrElFallback.textContent = fallbackYear;
+      }
+    }
+  })();
+
+  // 2. Automatically post page height to parent (for embedding contexts).
+  function postHeight(){
+    try{
+      // Get full document height (account for margin collapse)
+      const h = document.documentElement.scrollHeight;
+      parent.postMessage({ type:'nh48-links-height', height:h }, '*');
+    }catch(e){
+      // ignore cross-origin issues
+    }
+  }
+  // Initial height post on load
+  postHeight();
+  // Repost when content finishes loading
+  window.addEventListener('load', postHeight);
+  // Repost on resize (debounced)
+  window.addEventListener('resize', ()=>{
+    clearTimeout(window.__rh);
+    window.__rh = setTimeout(postHeight, 120);
+  });
+
+  // 3. Sparkle animation inside profile circle (subtle, optional).
+  (function(){
+    const canvas = document.getElementById('sparkle');
+    if(!canvas) return;
+    // Ensure CanvasRenderingContext2D exists
+    const ctx = canvas.getContext && canvas.getContext('2d');
+    if(!ctx) return;
+
+    // Device pixel ratio capped at 2 for performance
+    const DPR = Math.min(2, window.devicePixelRatio || 1);
+
+    // Resize canvas to match element size (scaled for DPR)
+    function size(){
+      const rect = canvas.getBoundingClientRect();
+      canvas.width  = Math.floor(rect.width  * DPR);
+      canvas.height = Math.floor(rect.height * DPR);
+    }
+    size();
+    window.addEventListener('resize', size);
+
+    // Particle configuration
+    const N = 14;    // Number of particles
+    const P = [];    // Particle array
+
+    // Initialize particles with random positions, radii, opacity, and velocity
+    function init(){
+      P.length = 0;
+      for(let i=0; i<N; i++){
+        P.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: (0.5 + Math.random() * 1.0) * DPR,
+          a: 0.06 + Math.random() * 0.10,
+          vx: (Math.random() - 0.5) * 0.10 * DPR,
+          vy: (Math.random() - 0.5) * 0.10 * DPR
+        });
+      }
+    }
+    init();
+
+    // Draw and update each frame
+    function tick(){
+      // Clear previous frame
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Update & draw particles
+      for(const p of P){
+        p.x += p.vx;
+        p.y += p.vy;
+        // Bounce off edges
+        if(p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+        if(p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        // Draw particle as small circle with subtle opacity
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${p.a})`;
+        ctx.fill();
+      }
+      // Schedule next frame
+      requestAnimationFrame(tick);
+    }
+    tick();
+  })();
+</script>
+</body>
+</html>
