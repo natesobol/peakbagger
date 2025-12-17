@@ -896,7 +896,7 @@ if (window.location.pathname.includes('/pages/')) {
   // Achievement Progress Calculator
   // Returns { current, target, percent } for ascent-based achievements
   // =====================================================
-  function getAchievementProgress(type, ascentsCount) {
+  function getAchievementProgress(type, progressCounts = {}) {
     const thresholds = {
       'first_ascent': 1,
       'rookie_hiker': 5,
@@ -911,8 +911,14 @@ if (window.location.pathname.includes('/pages/')) {
     
     const target = thresholds[type];
     if (!target) return null; // Non-ascent based achievement
-    
-    const current = Math.min(ascentsCount, target);
+
+    let current = 0;
+
+    if (type === 'fourteeners') {
+      current = Math.min(progressCounts.fourteeners || 0, target);
+    } else {
+      current = Math.min(progressCounts.totalAscents || 0, target);
+    }
     const percent = Math.round((current / target) * 100);
     
     return { current, target, percent };
@@ -970,7 +976,36 @@ if (window.location.pathname.includes('/pages/')) {
   
   // Get icon URL for achievement (PNG from /ico folder, fallback to emoji)
   function getAchievementIcon(type, fallbackEmoji) {
-    return `<img src="/ico/${type}.png" alt="" class="achievement-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'"><span class="achievement-icon-emoji" style="display:none">${fallbackEmoji}</span>`;
+    return `<span class="achievement-icon-emoji">${fallbackEmoji}</span>`;
+  }
+
+  async function buildAchievementCounts(progress = []) {
+    const counts = {
+      totalAscents: progress?.length || 0,
+      fourteeners: 0
+    };
+
+    const peakIds = Array.from(new Set(progress.map(p => p.peak_id).filter(Boolean)));
+    if (!peakIds.length) return counts;
+
+    try {
+      const { data: peaks, error } = await supabase
+        .from('peaks')
+        .select('id, elevation_ft')
+        .in('id', peakIds);
+
+      if (error) {
+        console.error('buildAchievementCounts: peak lookup error', error);
+        return counts;
+      }
+
+      const elevationMap = new Map((peaks || []).map(p => [p.id, p.elevation_ft || 0]));
+      counts.fourteeners = progress.filter(p => (elevationMap.get(p.peak_id) || 0) >= 14000).length;
+    } catch (e) {
+      console.error('buildAchievementCounts: unexpected error', e);
+    }
+
+    return counts;
   }
   
   // =====================================================
@@ -1028,6 +1063,7 @@ if (window.location.pathname.includes('/pages/')) {
       
       // Calculate achievements that SHOULD be earned based on progress
       // This fills in any gaps where the DB wasn't updated
+      const achievementCounts = await buildAchievementCounts(progressData);
       const calculatedEarned = calculateEarnedAchievements(progressData, userProgressCount);
       calculatedEarned.forEach(calc => {
         if (!earnedMap.has(calc.type)) {
@@ -1050,14 +1086,11 @@ if (window.location.pathname.includes('/pages/')) {
         }) : null;
         
         // Calculate progress for ascent-based achievements
-        const progressInfo = getAchievementProgress(ach.type, userProgressCount);
+        const progressInfo = getAchievementProgress(ach.type, achievementCounts);
         
         html += `
           <div class="achievement-card ${isEarned ? '' : 'locked'}" title="${ach.desc}" data-category="${ach.category}">
-            <div class="achievement-icon">
-              <img src="/ico/${ach.type}.png" alt="${ach.name}" class="achievement-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <span class="achievement-icon-emoji" style="display:none">${ach.icon}</span>
-            </div>
+            <div class="achievement-icon">${getAchievementIcon(ach.type, ach.icon)}</div>
             <div class="achievement-name">${earnedAch?.achievement_name || ach.name}</div>
             <div class="achievement-desc">${ach.desc}</div>
             <span class="achievement-date">${isEarned ? (earnedDate || 'Earned') : 'Not earned'}</span>
@@ -1339,10 +1372,7 @@ if (window.location.pathname.includes('/pages/')) {
         
         html += `
           <div class="achievement-card" title="${ach.desc}" data-category="${ach.category}">
-            <div class="achievement-icon">
-              <img src="/ico/${ach.type}.png" alt="${ach.name}" class="achievement-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <span class="achievement-icon-emoji" style="display:none">${ach.icon}</span>
-            </div>
+            <div class="achievement-icon">${getAchievementIcon(ach.type, ach.icon)}</div>
             <div class="achievement-name">${ach.name}</div>
             <div class="achievement-desc">${ach.desc}</div>
             <span class="achievement-date">${dateStr}</span>
@@ -1354,10 +1384,7 @@ if (window.location.pathname.includes('/pages/')) {
       ALL_ACHIEVEMENTS.filter(a => !earnedTypes.has(a.type)).forEach(ach => {
         html += `
           <div class="achievement-card locked" title="${ach.desc}" data-category="${ach.category}">
-            <div class="achievement-icon">
-              <img src="/ico/${ach.type}.png" alt="${ach.name}" class="achievement-icon-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-              <span class="achievement-icon-emoji" style="display:none">${ach.icon}</span>
-            </div>
+            <div class="achievement-icon">${getAchievementIcon(ach.type, ach.icon)}</div>
             <div class="achievement-name">${ach.name}</div>
             <div class="achievement-desc">${ach.desc}</div>
             <span class="achievement-date">Not earned</span>

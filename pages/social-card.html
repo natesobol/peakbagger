@@ -361,9 +361,10 @@
         .eq('id', id)
         .eq('user_id', currentUser.id)
         .single();
-      
-      if (error) {
-        console.error('DB Load Error:', error);
+
+      if (error || !log) {
+        console.error('DB Load Error:', error || 'No log found');
+        showStatus('Could not load that hike from your account.', true);
         return;
       }
 
@@ -392,9 +393,10 @@
         .eq('id', id)
         .eq('user_id', currentUser.id)
         .single();
-      
-      if (error) {
-        console.error('DB Load Error:', error);
+
+      if (error || !progress) {
+        console.error('DB Load Error:', error || 'Progress not found');
+        showStatus('Could not load that peak progress entry.', true);
         return;
       }
       
@@ -627,7 +629,10 @@
   }
   
   // Initialize on load
-  init();
+  init().catch(err => {
+    console.error('Social card init failed:', err);
+    showStatus('Unable to load social card data. Please try again.', true);
+  });
 </script>
 
 </body>
