@@ -527,12 +527,12 @@ if (window.location.pathname.includes('/pages/')) {
   initializeProfile();
   
   // =====================================================
-  // Hike Logs - Load from user_peak_progress (completed peaks)
-  // DB Load: user_peak_progress, peaks, lists
+  // Hike Logs - Load recent entries from user_hike_logs
+  // DB Load: user_hike_logs, peaks, lists
   // =====================================================
   async function loadRecentHikes() {
     const hikesContainer = document.getElementById('hikesContainer');
-    
+
     // Error handling: Check user authentication
     if (!currentUser) {
       console.log('loadRecentHikes: No currentUser yet, skipping');
@@ -544,89 +544,84 @@ if (window.location.pathname.includes('/pages/')) {
       `;
       return;
     }
-    
+
     try {
-      console.log('loadRecentHikes: Fetching completions for user:', currentUser.id);
-      
-      // DB Load: Get recent completions from user_peak_progress
-      const { data: completions, error } = await supabase
-        .from('user_peak_progress')
-        .select('peak_id, list_id, completed, first_completed_at, last_completed_at')
+      console.log('loadRecentHikes: Fetching recent hike logs for user:', currentUser.id);
+
+      // DB Load: Get recent hike logs from user_hike_logs
+      const { data: logs, error } = await supabase
+        .from('user_hike_logs')
+        .select('id, peak_id, list_id, hike_date, created_at')
         .eq('user_id', currentUser.id)
-        .eq('completed', true)
-        .order('first_completed_at', { ascending: false })
+        .order('hike_date', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false })
         .limit(10);
-      
+
       if (error) {
         console.error('loadRecentHikes: DB Load Error:', error);
         throw error;
       }
-      
-      console.log('loadRecentHikes: Found completions:', completions?.length || 0);
-      
+
+      console.log('loadRecentHikes: Found logs:', logs?.length || 0);
+
       // Handle no data case
-      if (!completions || completions.length === 0) {
+      if (!logs || logs.length === 0) {
         recentHikesForSocial = [];
         populateSocialCardDropdown([]);
         hikesContainer.innerHTML = `
           <div class="no-logs-message">
             <div class="empty-icon">🥾</div>
-            <div>No peaks completed yet</div>
+            <div>No hikes logged yet</div>
             <p style="margin-top:8px;font-size:13px">Start tracking your hikes to see them here!</p>
             <a href="/" class="btn btn-primary btn-small" style="margin-top:16px">Browse Peaks</a>
           </div>
         `;
         return;
       }
-      
-      // DB Load: Fetch peak and list names separately for each completion
-      const enrichedCompletions = await Promise.all(completions.map(async (item) => {
-        let peakName = '—';
-        let peakSlug = '';
-        let listName = '—';
-        
-        // DB Load: Get peak info from peaks table
-        if (item.peak_id) {
-          const { data: peak, error: peakError } = await supabase
-            .from('peaks')
-            .select('name, slug')
-            .eq('id', item.peak_id)
-            .single();
-          if (peakError) {
-            console.warn('loadRecentHikes: DB Load peak error:', peakError);
-          }
-          if (peak) {
-            peakName = peak.name;
-            peakSlug = peak.slug || '';
-          }
-        }
-        
-        // DB Load: Get list info from lists table
-        if (item.list_id) {
-          const { data: list, error: listError } = await supabase
-            .from('lists')
-            .select('name')
-            .eq('id', item.list_id)
-            .single();
-          if (listError) {
-            console.warn('loadRecentHikes: DB Load list error:', listError);
-          }
-          if (list) {
-            listName = list.name;
-          }
-        }
-        
-        return {
-          ...item,
-          peakName,
-          peakSlug,
-          listName
-        };
-      }));
 
-      recentHikesForSocial = enrichedCompletions;
-      populateSocialCardDropdown(enrichedCompletions);
-      
+      // DB Load: Fetch peak and list metadata in batches
+      const peakIds = [...new Set(logs.map(l => l.peak_id).filter(Boolean))];
+      const listIds = [...new Set(logs.map(l => l.list_id).filter(Boolean))];
+
+      const peakMap = new Map();
+      const listMap = new Map();
+
+      if (peakIds.length) {
+        const { data: peaks, error: peakError } = await supabase
+          .from('peaks')
+          .select('id, name, slug')
+          .in('id', peakIds);
+        if (peakError) {
+          console.warn('loadRecentHikes: DB Load peak error:', peakError);
+        }
+        (peaks || []).forEach(p => peakMap.set(p.id, p));
+      }
+
+      if (listIds.length) {
+        const { data: lists, error: listError } = await supabase
+          .from('lists')
+          .select('id, name')
+          .in('id', listIds);
+        if (listError) {
+          console.warn('loadRecentHikes: DB Load list error:', listError);
+        }
+        (lists || []).forEach(l => listMap.set(l.id, l));
+      }
+
+      const enrichedLogs = logs.map(log => {
+        const peak = log.peak_id ? peakMap.get(log.peak_id) : null;
+        const list = log.list_id ? listMap.get(log.list_id) : null;
+        return {
+          ...log,
+          peakName: peak?.name || '—',
+          peakSlug: peak?.slug || '',
+          listName: list?.name || '—'
+        };
+      });
+
+      recentHikesForSocial = enrichedLogs;
+      populateSocialCardDropdown(enrichedLogs);
+
       const tableHtml = `
         <table class="hike-logs-table">
           <thead>
@@ -638,10 +633,10 @@ if (window.location.pathname.includes('/pages/')) {
             </tr>
           </thead>
           <tbody>
-            ${enrichedCompletions.map(item => {
-              const date = item.first_completed_at || item.last_completed_at;
-              const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
-                month: 'short', day: 'numeric', year: 'numeric' 
+            ${enrichedLogs.map(item => {
+              const date = item.hike_date || item.created_at;
+              const formattedDate = date ? new Date(date).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
               }) : '—';
               return `
                 <tr>
@@ -649,7 +644,7 @@ if (window.location.pathname.includes('/pages/')) {
                   <td style="cursor:pointer" onclick="window.location.href='/peak-detail?slug=${item.peakSlug}'">${item.peakName}</td>
                   <td style="cursor:pointer" onclick="window.location.href='/peak-detail?slug=${item.peakSlug}'">${item.listName}</td>
                   <td style="text-align:center">
-                    <button class="social-card-btn" onclick="event.stopPropagation(); window.location.href='/social-card?peak=${item.peakSlug}&progress=${item.id}'" title="Generate Social Card">
+                    <button class="social-card-btn" onclick="event.stopPropagation(); window.location.href='/social-card?peak=${item.peakSlug}&log=${item.id}'" title="Generate Social Card">
                       📸
                     </button>
                   </td>
@@ -659,10 +654,10 @@ if (window.location.pathname.includes('/pages/')) {
           </tbody>
         </table>
       `;
-      
+
       hikesContainer.innerHTML = tableHtml;
-      console.log('loadRecentHikes: Successfully rendered', enrichedCompletions.length, 'hikes');
-      
+      console.log('loadRecentHikes: Successfully rendered', enrichedLogs.length, 'hikes');
+
     } catch (e) {
       console.error('Error loading hikes:', e);
       hikesContainer.innerHTML = `
@@ -676,7 +671,7 @@ if (window.location.pathname.includes('/pages/')) {
     }
   }
   
-    function populateSocialCardDropdown(hikes = []) {
+  function populateSocialCardDropdown(hikes = []) {
     if (!socialCardSelect || !generateSocialCardBtn) return;
 
     if (!hikes.length) {
@@ -692,7 +687,7 @@ if (window.location.pathname.includes('/pages/')) {
     socialCardSelect.innerHTML = [
       '<option value="">Select recent hike</option>',
       ...hikes.map(hike => {
-        const date = hike.first_completed_at || hike.last_completed_at;
+        const date = hike.hike_date || hike.created_at;
         const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
         return `<option value="${hike.id}" data-peak="${hike.peakSlug}">${hike.peakName || 'Peak'} • ${formattedDate}</option>`;
       })
@@ -746,11 +741,11 @@ if (window.location.pathname.includes('/pages/')) {
 
     generateSocialCardBtn.addEventListener('click', () => {
       const selectedOption = socialCardSelect.options[socialCardSelect.selectedIndex];
-      const progressId = socialCardSelect.value;
+      const logId = socialCardSelect.value;
       const peakSlug = selectedOption?.dataset?.peak || '';
 
-      if (progressId && peakSlug) {
-        window.location.href = `/social-card?peak=${peakSlug}&progress=${progressId}`;
+      if (logId && peakSlug) {
+        window.location.href = `/social-card?peak=${peakSlug}&log=${logId}`;
       }
     });
   }

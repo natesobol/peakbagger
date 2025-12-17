@@ -328,6 +328,9 @@
 
       if (logs && logs.length) {
         hikeLogData = logs[0];
+        if (logs[0]?.peak_id) {
+          peakDbId = logs[0].peak_id;
+        }
         setOptionalTogglesFromData();
       }
     } catch (e) {
@@ -363,8 +366,11 @@
         console.error('DB Load Error:', error);
         return;
       }
-      
+
       hikeLogData = log;
+      if (log?.peak_id) {
+        peakDbId = log.peak_id;
+      }
       setOptionalTogglesFromData();
       console.log('DB Load Success: Hike log loaded');
     } catch (e) {
