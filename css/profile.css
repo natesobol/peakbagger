@@ -239,6 +239,18 @@
 .stat-value.red { color: #dc2626; }
 .stat-value.blue { color: #3b82f6; }
 
+#dashboardStats.loading .progress-header,
+#dashboardStats.loading .stats-grid,
+#dashboardStats.loading .pulse-section {
+  opacity: 0.55;
+  filter: saturate(0.6);
+  pointer-events: none;
+}
+
+#dashboardStats .main-loading {
+  margin-bottom: 12px;
+}
+
 .stat-label {
   font-size: 13px;
   color: var(--ink-weak);

@@ -1029,7 +1029,7 @@ function renderCompletedButtonState() {
 // =====================================================
 // Asset URLs
 // =====================================================
-const CHECKED_IMG = "data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1.5' y='1.5' width='25' height='25' rx='6' fill='%231b1b1b' stroke='%23ffffff' stroke-width='3'/%3E%3Cpath d='M8 14.2l4.1 4.3L20 10' fill='none' stroke='%2322c55e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
+const CHECKED_IMG = "data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1.5' y='1.5' width='25' height='25' rx='6' fill='%231b1b1b' stroke='%2322c55e' stroke-width='3'/%3E%3Cpath d='M8 14.2l4.1 4.3L20 10' fill='none' stroke='%2322c55e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
 const UNCHECKED_IMG = "data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1.5' y='1.5' width='25' height='25' rx='6' fill='%231b1b1b' stroke='%23ffffff' stroke-width='3'/%3E%3C/svg%3E";
 const TOS_VERSION = '1.0';
 const TERMS_TEXT = `<strong>Peakbagger's Journal – Terms & Conditions (v${TOS_VERSION})</strong><br><br>1) Local, offline-first storage. 2) No resale of your data. 3) Outdoor safety is your responsibility. 4) Clearing browser data will remove local progress. 5) Email + hashed password are stored locally for sign-in on this device.`;
