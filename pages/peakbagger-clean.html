@@ -755,9 +755,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
-<!-- App Module -->
-<script type="module" src="../app.js"></script>
-
 <!-- Reset helper (unchanged + grid key) -->
 <button id="pbReset" style="border:1px solid #ff8a8a;border-radius:8px;padding:8px 10px;background:#1a1a1a;color:#fff;cursor:pointer">
   Reset all local data
@@ -803,16 +800,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 </script>
 
-<!-- Noscript notice -->
-<noscript>
-  <div style="margin:12px; padding:12px; border:1px solid #e6a100; border-radius:8px; background:#2a2000; color:#ffd87a">
-    Peakbagger's Journal needs JavaScript for list loading and saving progress. Please enable JavaScript to use the app.
-  </div>
-</noscript>
-
-<!-- Version badge -->
-<div class="app-version" aria-hidden="true">v0.8.0.1</div>
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
@@ -830,18 +817,46 @@ document.addEventListener('DOMContentLoaded',()=>{
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
 
+  const logAnalyticsEvent = (eventName, params = {}) => {
+    try {
+      logEvent(analytics, eventName, { app: "peakbagger", ...params });
+    } catch (err) {
+      console.debug('Analytics event skipped', err);
+    }
+  };
+
   // Expose globally so your existing JS can use it
   window.NH48_ANALYTICS = {
     analytics,
-    logEvent
+    logEvent,
+    log: logAnalyticsEvent
   };
 
+  // Flush any queued events from scripts that ran before Firebase initialized
+  if (Array.isArray(window.__pbAnalyticsQueue) && window.__pbAnalyticsQueue.length) {
+    const queued = [...window.__pbAnalyticsQueue];
+    window.__pbAnalyticsQueue.length = 0;
+    queued.forEach(({ eventName, params }) => logAnalyticsEvent(eventName, params));
+  }
+
   // First event to confirm wiring works
-  logEvent(analytics, "app_loaded", {
-    app: "peakbagger",
+  logAnalyticsEvent("app_loaded", {
     host: location.hostname
   });
 </script>
+
+<!-- App Module -->
+<script type="module" src="../app.js"></script>
+
+<!-- Noscript notice -->
+<noscript>
+  <div style="margin:12px; padding:12px; border:1px solid #e6a100; border-radius:8px; background:#2a2000; color:#ffd87a">
+    Peakbagger's Journal needs JavaScript for list loading and saving progress. Please enable JavaScript to use the app.
+  </div>
+</noscript>
+
+<!-- Version badge -->
+<div class="app-version" aria-hidden="true">v0.8.0.1</div>
 
 </body>
 </html>
