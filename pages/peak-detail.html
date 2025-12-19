@@ -99,6 +99,39 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBOoVfsHNCBoMbJs3qPVtww8rizKSZ84uo",
+      authDomain: "nh48-app.firebaseapp.com",
+      projectId: "nh48-app",
+      storageBucket: "nh48-app.firebasestorage.app",
+      messagingSenderId: "287695607808",
+      appId: "1:287695607808:web:a45dc3bc0f5096b22560e5",
+      measurementId: "G-T3QTRLC22T"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+
+    const logAnalyticsEvent = (eventName, params = {}) => {
+      try {
+        logEvent(analytics, eventName, { app: 'peakbagger', ...params });
+      } catch (err) {
+        console.debug('Analytics event skipped', err);
+      }
+    };
+
+    window.NH48_ANALYTICS = { analytics, logEvent, log: logAnalyticsEvent };
+
+    if (Array.isArray(window.__pbAnalyticsQueue) && window.__pbAnalyticsQueue.length) {
+      const queued = [...window.__pbAnalyticsQueue];
+      window.__pbAnalyticsQueue.length = 0;
+      queued.forEach(({ eventName, params }) => logAnalyticsEvent(eventName, params));
+    }
+  </script>
   <!-- URL Masking: hide /pages/ from URL bar -->
   <script>
   if (window.location.pathname.includes('/pages/')) {
@@ -262,7 +295,23 @@
         storage: window.localStorage
       }
     });
-    
+
+    const analyticsQueue = window.__pbAnalyticsQueue = window.__pbAnalyticsQueue || [];
+    function trackEvent(eventName, params = {}) {
+      try {
+        const { analytics, logEvent, log } = window.NH48_ANALYTICS || {};
+        const hasLogger = analytics && (logEvent || log);
+        if (hasLogger && typeof (log || logEvent) === 'function') {
+          const logFn = log || ((evt, payload) => logEvent(analytics, evt, payload));
+          logFn(eventName, { app: 'peakbagger', ...params });
+          return;
+        }
+        analyticsQueue.push({ eventName, params });
+      } catch (err) {
+        console.debug('Analytics tracking skipped', err);
+      }
+    }
+
     let currentUser = null;
     let currentPeakId = null;
     let currentPeakSlug = null;
@@ -764,11 +813,11 @@
           return;
         }
         
-        if (logs && logs.length > 0) {
-          mostRecentLogId = logs[0].id;
-          dateInput.value = logs[0].hike_date || '';
-          recentEntry.style.display = 'block';
-          noEntry.style.display = 'none';
+      if (logs && logs.length > 0) {
+        mostRecentLogId = logs[0].id;
+        dateInput.value = logs[0].hike_date || '';
+        recentEntry.style.display = 'block';
+        noEntry.style.display = 'none';
           
           // Wire up edit button
           editBtn.onclick = () => {
@@ -780,6 +829,7 @@
           // Wire up social button
           socialBtn.onclick = () => {
             if (currentPeakSlug && mostRecentLogId) {
+              trackEvent('social_card_cta', { source: 'peak_detail_recent', peak_slug: currentPeakSlug, log_id: mostRecentLogId });
               window.location.href = `/social-card?peak=${currentPeakSlug}&log=${mostRecentLogId}`;
             }
           };
@@ -1176,6 +1226,7 @@
     
     // Initialize
     async function init() {
+      trackEvent('peak_detail_page_loaded', { peak_slug: peakSlug || 'unknown' });
       await initUserSession();
       await loadPeakData();
       

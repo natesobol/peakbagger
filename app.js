@@ -25,6 +25,27 @@ const supabase = window.supabase?.createClient(supabaseUrl, supabaseAnonKey, {
 let currentUser = null;
 
 // =====================================================
+// Analytics Helper
+// =====================================================
+const analyticsQueue = window.__pbAnalyticsQueue = window.__pbAnalyticsQueue || [];
+function trackEvent(eventName, params = {}) {
+  try {
+    const { analytics, logEvent, log } = window.NH48_ANALYTICS || {};
+    const hasLogger = analytics && (logEvent || log);
+
+    if (hasLogger && typeof (log || logEvent) === 'function') {
+      const logFn = log || ((evt, payload) => logEvent(analytics, evt, payload));
+      logFn(eventName, { app: 'peakbagger', ...params });
+      return;
+    }
+
+    analyticsQueue.push({ eventName, params });
+  } catch (err) {
+    console.debug('Analytics tracking skipped', err);
+  }
+}
+
+// =====================================================
 // Translation System
 // =====================================================
 let currentLanguage = 'en';
@@ -2009,7 +2030,8 @@ if (supabase) {
 // =====================================================
 // Modal Helpers
 // =====================================================
-function openModal() {
+function openModal(source = 'unknown') {
+  trackEvent('auth_modal_open', { source, user_state: currentUser ? 'signed_in' : 'signed_out' });
   authModal.classList.add('open');
   authMsg.textContent = '';
   // Default to login form
@@ -2039,6 +2061,7 @@ function showLoginForm() {
   if (authTitle) authTitle.textContent = 'Log in';
   authMsg.textContent = '';
   if (loginEmail) loginEmail.focus();
+  trackEvent('auth_form_shown', { form: 'login' });
 }
 
 function showSignupForm() {
@@ -2047,6 +2070,7 @@ function showSignupForm() {
   if (authTitle) authTitle.textContent = 'Create Account';
   authMsg.textContent = '';
   if (signupFirstName) signupFirstName.focus();
+  trackEvent('auth_form_shown', { form: 'signup' });
 }
 
 function validatePasswordMatch() {
@@ -4028,27 +4052,29 @@ if (introPanelDetails) {
   });
 }
 
-if (openAuthBtn) openAuthBtn.onclick = () => openModal();
+if (openAuthBtn) openAuthBtn.onclick = () => openModal('hero_cta');
 if (closeAuthBtn) closeAuthBtn.onclick = () => closeModal();
 
 // Mobile login button
 const openAuthMobileBtn = document.getElementById('openAuthMobile');
-if (openAuthMobileBtn) openAuthMobileBtn.onclick = () => openModal();
+if (openAuthMobileBtn) openAuthMobileBtn.onclick = () => openModal('mobile_nav');
 
 // Nav login button
 const openAuthNavBtn = document.getElementById('openAuthNav');
-if (openAuthNavBtn) openAuthNavBtn.onclick = () => openModal();
+if (openAuthNavBtn) openAuthNavBtn.onclick = () => openModal('desktop_nav');
 
 // Toggle between login and signup forms
 if (showSignup) showSignup.onclick = (e) => {
   e.preventDefault();
   showSignupForm();
   if (signupFirstName) signupFirstName.focus();
+  trackEvent('auth_modal_switch', { target: 'signup' });
 };
 if (showLogin) showLogin.onclick = (e) => {
   e.preventDefault();
   showLoginForm();
   if (loginEmail) loginEmail.focus();
+  trackEvent('auth_modal_switch', { target: 'login' });
 };
 
 const submitLogin = async () => {
@@ -4056,7 +4082,9 @@ const submitLogin = async () => {
   authMsg.textContent = '';
   try {
     const remember = rememberMe ? rememberMe.checked : true;
+    trackEvent('auth_login_attempt', { method: 'password', remember });
     await signIn(loginEmail.value, loginPass.value, remember);
+    trackEvent('auth_login_success', { method: 'password' });
     authMsg.textContent = 'Success!';
     authMsg.className = 'ok';
     setTimeout(() => {
@@ -4064,6 +4092,7 @@ const submitLogin = async () => {
       reflectAuthUI();
     }, 500);
   } catch (e) {
+    trackEvent('auth_login_error', { method: 'password', error: e?.message || 'unknown' });
     authMsg.textContent = e.message || 'Failed to log in';
     authMsg.className = 'err';
   }
@@ -4089,6 +4118,7 @@ const submitSignup = async () => {
   }
 
   try {
+    trackEvent('auth_signup_attempt', { method: 'password', tos_agreed: !!tosAgree?.checked });
     await signUp(
       signupFirstName.value,
       signupLastName.value,
@@ -4096,6 +4126,7 @@ const submitSignup = async () => {
       signupPass.value,
       { tosAgreed: tosAgree.checked }
     );
+    trackEvent('auth_signup_success', { method: 'password' });
     authMsg.textContent = 'Account created & signed in!';
     authMsg.className = 'ok';
     setTimeout(() => {
@@ -4103,6 +4134,7 @@ const submitSignup = async () => {
       reflectAuthUI();
     }, 1000);
   } catch (e) {
+    trackEvent('auth_signup_error', { method: 'password', error: e?.message || 'unknown' });
     authMsg.textContent = e.message || 'Failed to create account';
     authMsg.className = 'err';
   }

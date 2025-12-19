@@ -49,6 +49,39 @@
   <link rel="stylesheet" href="../css/social-card.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBOoVfsHNCBoMbJs3qPVtww8rizKSZ84uo",
+      authDomain: "nh48-app.firebaseapp.com",
+      projectId: "nh48-app",
+      storageBucket: "nh48-app.firebasestorage.app",
+      messagingSenderId: "287695607808",
+      appId: "1:287695607808:web:a45dc3bc0f5096b22560e5",
+      measurementId: "G-T3QTRLC22T"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+
+    const logAnalyticsEvent = (eventName, params = {}) => {
+      try {
+        logEvent(analytics, eventName, { app: 'peakbagger', ...params });
+      } catch (err) {
+        console.debug('Analytics event skipped', err);
+      }
+    };
+
+    window.NH48_ANALYTICS = { analytics, logEvent, log: logAnalyticsEvent };
+
+    if (Array.isArray(window.__pbAnalyticsQueue) && window.__pbAnalyticsQueue.length) {
+      const queued = [...window.__pbAnalyticsQueue];
+      window.__pbAnalyticsQueue.length = 0;
+      queued.forEach(({ eventName, params }) => logAnalyticsEvent(eventName, params));
+    }
+  </script>
 </head>
 <body>
 
@@ -178,7 +211,23 @@
   const SUPABASE_URL = 'https://jyvlwkxcrqprjdlnhqms.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5dmx3a3hjcnFwcmpkbG5ocW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2MDEzODksImV4cCI6MjA2MTE3NzM4OX0.DK0FPbAGdXBsmdy6VzoGLO2sXL0bxMh0VHnJ9xI5lfo';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  
+
+  const analyticsQueue = window.__pbAnalyticsQueue = window.__pbAnalyticsQueue || [];
+  function trackEvent(eventName, params = {}) {
+    try {
+      const { analytics, logEvent, log } = window.NH48_ANALYTICS || {};
+      const hasLogger = analytics && (logEvent || log);
+      if (hasLogger && typeof (log || logEvent) === 'function') {
+        const logFn = log || ((evt, payload) => logEvent(analytics, evt, payload));
+        logFn(eventName, { app: 'peakbagger', ...params });
+        return;
+      }
+      analyticsQueue.push({ eventName, params });
+    } catch (err) {
+      console.debug('Analytics tracking skipped', err);
+    }
+  }
+
   const API_URLS = [
     'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json',
     'https://raw.githubusercontent.com/natesobol/nh48-api/main/data/nh48.json'
@@ -208,7 +257,13 @@
   async function init() {
     console.log('Initializing social card generator...');
     console.log('Params:', { peakSlug, logId, progressId });
-    
+
+    trackEvent('social_card_page_loaded', {
+      peak_slug: peakSlug || 'unknown',
+      log_id: logId || null,
+      progress_id: progressId || null
+    });
+
     // Check auth
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
@@ -572,7 +627,14 @@
       link.download = `${peakSlugName}-${dateStr}-social.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-      
+
+      trackEvent('social_card_download', {
+        peak_slug: peakSlugName,
+        log_id: logId || null,
+        style: cardStyle,
+        photo_index: currentPhotoIndex
+      });
+
       showStatus('Image downloaded!', false);
     } catch (e) {
       console.error('Error generating image:', e);
@@ -602,6 +664,12 @@
           await navigator.clipboard.write([
             new ClipboardItem({ 'image/png': blob })
           ]);
+          trackEvent('social_card_copied', {
+            peak_slug: peakSlug || peakData?.slug || 'peak',
+            log_id: logId || null,
+            style: cardStyle,
+            photo_index: currentPhotoIndex
+          });
           showStatus('Copied to clipboard!', false);
         } catch (e) {
           console.error('Clipboard error:', e);
