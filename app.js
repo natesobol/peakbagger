@@ -693,9 +693,62 @@ function translatePage() {
 // NH48 API Integration Constants & Helpers
 // =====================================================
 const NH48_API_URL = 'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json';
+const NH48_PHOTO_BASE_URL = 'https://photos.nh48.info';
 
 let NH48_DATA = null;
 let NH48_SLUG_MAP = {};
+
+const LEGACY_PHOTO_PATTERNS = [
+  /https?:\/\/cdn\.jsdelivr\.net\/gh\/natesobol\/nh48-api@main\/photos\/([^/]+)\/([^?#]+)/i,
+  /https?:\/\/raw\.githubusercontent\.com\/natesobol\/nh48-api\/main\/photos\/([^/]+)\/([^?#]+)/i
+];
+
+function normalizePhotoUrl(url, slug, filename) {
+  if (slug && filename) {
+    return `${NH48_PHOTO_BASE_URL}/${slug}/${filename}`;
+  }
+  if (!url) return url;
+  for (const pattern of LEGACY_PHOTO_PATTERNS) {
+    const match = url.match(pattern);
+    if (match) {
+      return `${NH48_PHOTO_BASE_URL}/${match[1]}/${match[2]}`;
+    }
+  }
+  return url;
+}
+
+function normalizePhotoEntry(photo, slug) {
+  if (!photo) return photo;
+  if (typeof photo === 'string') {
+    return normalizePhotoUrl(photo, slug);
+  }
+  if (typeof photo !== 'object') return photo;
+  const filename = photo.filename || photo.fileName || photo.name;
+  const sourceUrl = photo.url || photo.src || photo.image || photo.image_url;
+  const normalizedUrl = normalizePhotoUrl(sourceUrl, slug, filename);
+  if (!normalizedUrl || normalizedUrl === sourceUrl) return photo;
+  const updated = { ...photo };
+  if ('url' in updated) updated.url = normalizedUrl;
+  if ('image_url' in updated) updated.image_url = normalizedUrl;
+  if ('src' in updated) updated.src = normalizedUrl;
+  if ('image' in updated) updated.image = normalizedUrl;
+  if (!('url' in updated)) updated.url = normalizedUrl;
+  return updated;
+}
+
+function normalizePhotoList(photos, slug) {
+  if (!Array.isArray(photos)) return photos;
+  return photos.map(photo => normalizePhotoEntry(photo, slug));
+}
+
+function normalizePhotoData(data) {
+  if (!data || typeof data !== 'object') return;
+  Object.entries(data).forEach(([slug, entry]) => {
+    if (entry && typeof entry === 'object' && Array.isArray(entry.photos)) {
+      entry.photos = normalizePhotoList(entry.photos, slug);
+    }
+  });
+}
 
 async function fetchNh48Data() {
   if (NH48_DATA && Object.keys(NH48_DATA).length > 0) return NH48_DATA;
@@ -704,6 +757,7 @@ async function fetchNh48Data() {
     const resp = await fetch(url, { mode: 'cors', headers: { 'Accept': 'application/json' } });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
     NH48_DATA = await resp.json();
+    normalizePhotoData(NH48_DATA);
     console.log('Loaded NH48 data, peaks:', Object.keys(NH48_DATA).length);
     buildSlugMap();
   } catch (e) {
@@ -791,8 +845,11 @@ async function fetchPeakImages(slug) {
       }
     }
     
-    _imagesCache.set(slug, imgs);
-    return imgs;
+    const normalizedImgs = Array.isArray(imgs)
+      ? imgs.map(img => normalizePhotoEntry(img, slug))
+      : imgs;
+    _imagesCache.set(slug, normalizedImgs);
+    return normalizedImgs;
   } catch (e) {
     console.error('Failed to load images for', slug, e);
     _imagesCache.set(slug, []);
@@ -875,6 +932,9 @@ async function fetchListItems(name) {
         } else if (!normalized.elevation_ft) {
           normalized.elevation_ft = 0;
         }
+        if (Array.isArray(normalized.photos)) {
+          normalized.photos = normalizePhotoList(normalized.photos, normalized.slug);
+        }
         return normalized;
       });
     } else if (typeof data === 'object' && data !== null) {
@@ -892,6 +952,9 @@ async function fetchListItems(name) {
           normalized.elevation_ft = isNaN(parsed) ? 0 : parsed;
         } else if (!normalized.elevation_ft) {
           normalized.elevation_ft = 0;
+        }
+        if (Array.isArray(normalized.photos)) {
+          normalized.photos = normalizePhotoList(normalized.photos, normalized.slug);
         }
         return normalized;
       });
@@ -2433,7 +2496,7 @@ async function openPeakDetailOLD(it) {
   let photos = [];
 
   if (data && Array.isArray(data.photos) && data.photos.length > 0) {
-      photos = data.photos.filter(p => p && (p.url || p.image_url));
+      photos = normalizePhotoList(data.photos, slug).filter(p => p && (p.url || p.image_url));
     } else {
       try {
         const apiImgs = await fetchPeakImages(slug);
