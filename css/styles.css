@@ -817,6 +817,8 @@ details.collapsible-section{
 .collapsible-section[open] .summary-chevron{transform:rotate(90deg)}
 .collapsible-content{overflow:hidden;max-height:0;opacity:0;padding:0 16px;display:flex;flex-direction:column;gap:12px;transition:max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease}
 .collapsible-section[open] .collapsible-content{max-height:2000px;opacity:1;padding:14px 16px 16px}
+.settings-mobile-panels{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.settings-mobile-panels .collapsible-section{margin-top:0}
 .collapsible-content > .settings,.collapsible-content > .panel{margin:0;padding:0;border:none;border-radius:0;background:transparent;box-shadow:none}
 
 /* ---------- Mini pulse preview ---------- */
