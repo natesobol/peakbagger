@@ -454,6 +454,7 @@
               </div>
             </div>
           </div>
+          <div id="settingsMobilePanels" class="settings-mobile-panels"></div>
         </div>
       </details>
 
@@ -780,22 +781,61 @@ document.addEventListener('DOMContentLoaded',()=>{
   })();
 </script>
 
-<!-- Auto-collapse details on mobile (NEW) -->
+<!-- Auto-collapse details on mobile + settings grouping -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const settingsEl = document.getElementById('settingsDetails');
-    const resourcesEl = document.getElementById('resourcesDetails');
-    function toggleDetailsByWidth() {
+    const mobilePanelsSlot = document.getElementById('settingsMobilePanels');
+    const detailIds = ['introPanelDetails', 'settingsDetails', 'themeDetails', 'resourcesDetails'];
+    const detailEls = detailIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+    const nestedIds = ['introPanelDetails', 'themeDetails', 'resourcesDetails'];
+    const originalPositions = new Map();
+
+    detailEls.forEach((el) => {
+      originalPositions.set(el, { parent: el.parentElement, nextSibling: el.nextElementSibling });
+    });
+
+    const movePanelsForMobile = (isMobile) => {
+      if (!mobilePanelsSlot || !settingsEl) return;
+      const nestedPanels = nestedIds
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+      if (isMobile) {
+        nestedPanels.forEach((panel) => {
+          if (panel.parentElement !== mobilePanelsSlot) {
+            mobilePanelsSlot.appendChild(panel);
+          }
+        });
+      } else {
+        nestedPanels.forEach((panel) => {
+          const original = originalPositions.get(panel);
+          if (original?.parent) {
+            original.parent.insertBefore(panel, original.nextSibling);
+          }
+        });
+      }
+    };
+
+    const syncDetailsState = (isMobile) => {
+      detailEls.forEach((panel) => {
+        if (isMobile) {
+          panel.removeAttribute('open');
+        } else if (panel.id === 'settingsDetails' || panel.id === 'resourcesDetails') {
+          panel.setAttribute('open', '');
+        }
+      });
+    };
+
+    const handleLayout = () => {
       const isMobile = window.innerWidth < 960;
-      if (settingsEl) {
-        if (isMobile) settingsEl.removeAttribute('open'); else settingsEl.setAttribute('open', '');
-      }
-      if (resourcesEl) {
-        if (isMobile) resourcesEl.removeAttribute('open'); else resourcesEl.setAttribute('open', '');
-      }
-    }
-    toggleDetailsByWidth();
-    window.addEventListener('resize', toggleDetailsByWidth);
+      movePanelsForMobile(isMobile);
+      syncDetailsState(isMobile);
+    };
+
+    handleLayout();
+    window.addEventListener('resize', handleLayout);
   });
 </script>
 
