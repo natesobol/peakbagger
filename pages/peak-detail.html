@@ -324,6 +324,7 @@
       'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json',
       'https://raw.githubusercontent.com/natesobol/nh48-api/main/data/nh48.json'
     ];
+    const PHOTO_HOST = 'https://photos.nh48.info';
     
     const PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="#172032"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="22">No photos available</text></svg>'
@@ -342,6 +343,22 @@
       }
     }
 
+    function normalizePhotoUrl(url, slug, filename) {
+      if (!url && filename && slug) return `${PHOTO_HOST}/${slug}/${filename}`;
+      if (typeof url !== 'string') return '';
+      if (url.startsWith(PHOTO_HOST)) return url;
+      const r2Match = url.split('r2.cloudflarestorage.com/nh48-photos/')[1];
+      if (r2Match) return `${PHOTO_HOST}/${r2Match}`;
+      return url;
+    }
+
+    function getPhotoUrl(photo, slug) {
+      if (typeof photo === 'string') return normalizePhotoUrl(photo, slug);
+      if (!photo || typeof photo !== 'object') return '';
+      const filename = photo.filename || photo.fileName || '';
+      return normalizePhotoUrl(photo.url || photo.image_url || photo.thumb || '', slug, filename);
+    }
+
     function updateMetaTags(peak) {
       const title = peak.name ? `Peakbagger – ${peak.name} stats, photos & routes` : 'Peakbagger – Peak stats, photos & routes';
       const description = peak.name
@@ -349,7 +366,7 @@
         : 'Elevation, prominence, difficulty, weather links and route info for White Mountain peaks in the NH 48, 52 With a View and other lists.';
       const pageUrl = peak.slug ? `https://nh48.app/pages/peak-detail.html?slug=${encodeURIComponent(peak.slug)}` : 'https://nh48.app/pages/peak-detail.html';
       const primaryPhoto = Array.isArray(peak.photos) && peak.photos.length > 0
-        ? (typeof peak.photos[0] === 'string' ? peak.photos[0] : peak.photos[0].url || peak.photos[0].src || peak.photos[0].image)
+        ? getPhotoUrl(peak.photos[0], peak.slug)
         : null;
       const imageUrl = primaryPhoto || 'https://nh48pics.com/images/peakbagger-og.jpg';
       const imageAlt = peak.name ? `${peak.name} summit photo` : 'White Mountain peak collage';
@@ -561,7 +578,7 @@
       
       let images = [];
       if (peak.photos && Array.isArray(peak.photos) && peak.photos.length > 0) {
-        images = peak.photos.map(p => typeof p === 'string' ? p : (p && p.url ? p.url : null)).filter(Boolean);
+        images = peak.photos.map(p => getPhotoUrl(p, peak.slug)).filter(Boolean);
       }
       if (images.length === 0) images = [PLACEHOLDER];
       carouselImgs = images;
