@@ -324,7 +324,11 @@
       'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json',
       'https://raw.githubusercontent.com/natesobol/nh48-api/main/data/nh48.json'
     ];
-    const PHOTO_HOST = 'https://photos.nh48.info';
+    const PHOTO_BASE_URL = 'https://photos.nh48.info';
+    const LEGACY_PHOTO_PATTERNS = [
+      /https?:\/\/cdn\.jsdelivr\.net\/gh\/natesobol\/nh48-api@main\/photos\/([^/]+)\/([^?#]+)/i,
+      /https?:\/\/raw\.githubusercontent\.com\/natesobol\/nh48-api\/main\/photos\/([^/]+)\/([^?#]+)/i
+    ];
     
     const PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="#172032"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="22">No photos available</text></svg>'
@@ -344,19 +348,41 @@
     }
 
     function normalizePhotoUrl(url, slug, filename) {
-      if (!url && filename && slug) return `${PHOTO_HOST}/${slug}/${filename}`;
-      if (typeof url !== 'string') return '';
-      if (url.startsWith(PHOTO_HOST)) return url;
-      const r2Match = url.split('r2.cloudflarestorage.com/nh48-photos/')[1];
-      if (r2Match) return `${PHOTO_HOST}/${r2Match}`;
+      if (slug && filename) {
+        return `${PHOTO_BASE_URL}/${slug}/${filename}`;
+      }
+      if (!url) return url;
+      for (const pattern of LEGACY_PHOTO_PATTERNS) {
+        const match = url.match(pattern);
+        if (match) {
+          return `${PHOTO_BASE_URL}/${match[1]}/${match[2]}`;
+        }
+      }
       return url;
     }
 
-    function getPhotoUrl(photo, slug) {
-      if (typeof photo === 'string') return normalizePhotoUrl(photo, slug);
-      if (!photo || typeof photo !== 'object') return '';
-      const filename = photo.filename || photo.fileName || '';
-      return normalizePhotoUrl(photo.url || photo.image_url || photo.thumb || '', slug, filename);
+    function normalizePhotoEntry(photo, slug) {
+      if (!photo) return photo;
+      if (typeof photo === 'string') {
+        return normalizePhotoUrl(photo, slug);
+      }
+      if (typeof photo !== 'object') return photo;
+      const filename = photo.filename || photo.fileName || photo.name;
+      const sourceUrl = photo.url || photo.src || photo.image || photo.image_url;
+      const normalizedUrl = normalizePhotoUrl(sourceUrl, slug, filename);
+      if (!normalizedUrl || normalizedUrl === sourceUrl) return photo;
+      const updated = { ...photo };
+      if ('url' in updated) updated.url = normalizedUrl;
+      if ('image_url' in updated) updated.image_url = normalizedUrl;
+      if ('src' in updated) updated.src = normalizedUrl;
+      if ('image' in updated) updated.image = normalizedUrl;
+      if (!('url' in updated)) updated.url = normalizedUrl;
+      return updated;
+    }
+
+    function normalizePhotoList(photos, slug) {
+      if (!Array.isArray(photos)) return photos;
+      return photos.map(photo => normalizePhotoEntry(photo, slug));
     }
 
     function updateMetaTags(peak) {
@@ -475,7 +501,7 @@
             trailType: apiPeak['Trail Type'] || '',
             exposure: apiPeak['Exposure Level'] || apiPeak['Weather Exposure Rating'] || '',
             lat: apiPeak.latitude, lon: apiPeak.longitude,
-            photos: apiPeak.photos || []
+            photos: normalizePhotoList(apiPeak.photos || [], peakSlug)
           };
           await renderPeak(peak);
           return;
@@ -489,6 +515,7 @@
     
     async function renderPeak(peak) {
       currentPeakName = peak.name;  // Store for summit log panel
+      peak.photos = normalizePhotoList(peak.photos || [], peak.slug);
       document.getElementById('peakName').textContent = peak.name;
       updateMetaTags(peak);
       hideMapPanel();

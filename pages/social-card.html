@@ -232,6 +232,11 @@
     'https://cdn.jsdelivr.net/gh/natesobol/nh48-api@main/data/nh48.json',
     'https://raw.githubusercontent.com/natesobol/nh48-api/main/data/nh48.json'
   ];
+  const PHOTO_BASE_URL = 'https://photos.nh48.info';
+  const LEGACY_PHOTO_PATTERNS = [
+    /https?:\/\/cdn\.jsdelivr\.net\/gh\/natesobol\/nh48-api@main\/photos\/([^/]+)\/([^?#]+)/i,
+    /https?:\/\/raw\.githubusercontent\.com\/natesobol\/nh48-api\/main\/photos\/([^/]+)\/([^?#]+)/i
+  ];
   
   const PLACEHOLDER_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="100%" height="100%" fill="#1a1a24"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="22">No photo available</text></svg>'
@@ -250,6 +255,44 @@
   const logId = params.get('log');
   const progressId = params.get('progress');
   let peakDbId = null;
+
+  function normalizePhotoUrl(url, slug, filename) {
+    if (slug && filename) {
+      return `${PHOTO_BASE_URL}/${slug}/${filename}`;
+    }
+    if (!url) return url;
+    for (const pattern of LEGACY_PHOTO_PATTERNS) {
+      const match = url.match(pattern);
+      if (match) {
+        return `${PHOTO_BASE_URL}/${match[1]}/${match[2]}`;
+      }
+    }
+    return url;
+  }
+
+  function normalizePhotoEntry(photo, slug) {
+    if (!photo) return photo;
+    if (typeof photo === 'string') {
+      return normalizePhotoUrl(photo, slug);
+    }
+    if (typeof photo !== 'object') return photo;
+    const filename = photo.filename || photo.fileName || photo.name;
+    const sourceUrl = photo.url || photo.src || photo.image || photo.image_url;
+    const normalizedUrl = normalizePhotoUrl(sourceUrl, slug, filename);
+    if (!normalizedUrl || normalizedUrl === sourceUrl) return photo;
+    const updated = { ...photo };
+    if ('url' in updated) updated.url = normalizedUrl;
+    if ('image_url' in updated) updated.image_url = normalizedUrl;
+    if ('src' in updated) updated.src = normalizedUrl;
+    if ('image' in updated) updated.image = normalizedUrl;
+    if (!('url' in updated)) updated.url = normalizedUrl;
+    return updated;
+  }
+
+  function normalizePhotoList(photos, slug) {
+    if (!Array.isArray(photos)) return photos;
+    return photos.map(photo => normalizePhotoEntry(photo, slug));
+  }
   
   // =====================================================
   // Initialize
@@ -306,7 +349,10 @@
         const peaks = JSON.parse(stored);
         const peak = peaks.find(p => p.slug === slug);
         if (peak) {
-          peakData = peak;
+          peakData = {
+            ...peak,
+            photos: normalizePhotoList(peak.photos || [], slug)
+          };
           apiPeakFound = true;
         }
       }
@@ -329,7 +375,7 @@
                 location: apiPeak['Range / Subrange'] || apiPeak.range,
                 prominence: apiPeak['Prominence (ft)'] || apiPeak.prominence,
                 difficulty: apiPeak['Difficulty'] || apiPeak.difficulty,
-                photos: apiPeak.photos || []
+                photos: normalizePhotoList(apiPeak.photos || [], slug)
               };
               apiPeakFound = true;
               break;
@@ -356,7 +402,9 @@
           name: dbPeak.name || peakData.name,
           elevation: dbPeak.elevation_ft || peakData.elevation,
           location: dbPeak.range || dbPeak.state || peakData.location,
-          photos: Array.isArray(dbPeak.photos) && dbPeak.photos.length ? dbPeak.photos : (peakData.photos || [])
+          photos: Array.isArray(dbPeak.photos) && dbPeak.photos.length
+            ? normalizePhotoList(dbPeak.photos, peakData?.slug || slug)
+            : normalizePhotoList(peakData.photos || [], peakData?.slug || slug)
         };
       }
     } catch (e) {
