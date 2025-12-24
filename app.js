@@ -813,6 +813,7 @@ function getSlugForName(name) {
 const API = (location.hostname.endsWith('nh48pics.com') || location.hostname === 'nh48.app') 
   ? '/_functions' 
   : 'https://www.nh48pics.com/_functions';
+const PHOTO_HOST = 'https://photos.nh48.info';
 
 // Images API cache
 const _imagesCache = new Map();
@@ -2177,6 +2178,22 @@ function placeholderFor(name, w = 800, h = 420) {
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
+function normalizePhotoUrl(url, slug, filename) {
+  if (!url && filename && slug) return `${PHOTO_HOST}/${slug}/${filename}`;
+  if (typeof url !== 'string') return '';
+  if (url.startsWith(PHOTO_HOST)) return url;
+  const r2Match = url.split('r2.cloudflarestorage.com/nh48-photos/')[1];
+  if (r2Match) return `${PHOTO_HOST}/${r2Match}`;
+  return url;
+}
+
+function getPhotoUrl(photo, slug) {
+  if (typeof photo === 'string') return normalizePhotoUrl(photo, slug);
+  if (!photo || typeof photo !== 'object') return '';
+  const filename = photo.filename || photo.fileName || '';
+  return normalizePhotoUrl(photo.url || photo.image_url || photo.thumb || '', slug, filename);
+}
+
 // Low-res placeholder with blur-up effect
 function lowResPlaceholder(w = 20, h = 12) {
   // Generate a tiny colored placeholder that will be blurred
@@ -2207,6 +2224,8 @@ function loadImageProgressive(img, fullSrc, lowResSrc) {
     });
   };
   fullImg.onerror = () => {
+    const fallback = placeholderFor(img.alt || 'No Photo', 800, 480);
+    img.src = fallback;
     img.classList.add('loaded'); // Remove blur even on error
     img.classList.remove('img-blur');
     if (container) container.classList.remove('img-loading');
@@ -2506,7 +2525,10 @@ async function openPeakDetailOLD(it) {
       } catch (e) {
         console.error('Failed to load photos:', e);
       }
+    } catch (e) {
+      console.error('Failed to load photos:', e);
     }
+  }
 
     if (photos.length > 0) {
       window.peakCarouselImages = photos;
@@ -3492,12 +3514,12 @@ async function renderGrid() {
     let imgSrc = '';
     const photoData = NH48_DATA?.[slug]?.photos;
     const listHasImages = currentList && currentList.toLowerCase() === 'nh 48';
-    if (listHasImages && photoData && photoData.length > 0 && photoData[0].url) {
-      imgSrc = photoData[0].url;
+    if (listHasImages && photoData && photoData.length > 0) {
+      imgSrc = getPhotoUrl(photoData[0], slug);
     } else if (listHasImages) {
       const apiImgs = await fetchPeakImages(slug);
       if (apiImgs.length > 0) {
-        imgSrc = apiImgs[0].thumb || apiImgs[0].url || '';
+        imgSrc = normalizePhotoUrl(apiImgs[0].thumb || apiImgs[0].url || '', slug);
       }
     }
 
@@ -3693,12 +3715,12 @@ async function renderTable() {
     let profileUrl = '';
     const photoData = NH48_DATA?.[slug]?.photos;
     const listHasImages = currentList && currentList.toLowerCase() === 'nh 48';
-    if (listHasImages && photoData && photoData.length > 0 && photoData[0].url) {
-      profileUrl = photoData[0].url;
+    if (listHasImages && photoData && photoData.length > 0) {
+      profileUrl = getPhotoUrl(photoData[0], slug);
     } else if (listHasImages) {
       const apiImgs = await fetchPeakImages(slug);
       if (apiImgs.length > 0) {
-        profileUrl = apiImgs[0].thumb || apiImgs[0].url || '';
+        profileUrl = normalizePhotoUrl(apiImgs[0].thumb || apiImgs[0].url || '', slug);
       }
     }
     if (profileUrl) {

@@ -392,7 +392,7 @@
         : 'Elevation, prominence, difficulty, weather links and route info for White Mountain peaks in the NH 48, 52 With a View and other lists.';
       const pageUrl = peak.slug ? `https://nh48.app/pages/peak-detail.html?slug=${encodeURIComponent(peak.slug)}` : 'https://nh48.app/pages/peak-detail.html';
       const primaryPhoto = Array.isArray(peak.photos) && peak.photos.length > 0
-        ? (typeof peak.photos[0] === 'string' ? peak.photos[0] : peak.photos[0].url || peak.photos[0].src || peak.photos[0].image)
+        ? getPhotoUrl(peak.photos[0], peak.slug)
         : null;
       const imageUrl = primaryPhoto || 'https://nh48pics.com/images/peakbagger-og.jpg';
       const imageAlt = peak.name ? `${peak.name} summit photo` : 'White Mountain peak collage';
@@ -605,7 +605,7 @@
       
       let images = [];
       if (peak.photos && Array.isArray(peak.photos) && peak.photos.length > 0) {
-        images = peak.photos.map(p => typeof p === 'string' ? p : (p && p.url ? p.url : null)).filter(Boolean);
+        images = peak.photos.map(p => getPhotoUrl(p, peak.slug)).filter(Boolean);
       }
       if (images.length === 0) images = [PLACEHOLDER];
       carouselImgs = images;
