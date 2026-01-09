@@ -58,6 +58,32 @@
   </script>
 </head>
 <body>
+<div id="siteNavContainer"></div>
+<div class="site-nav-auth" id="navAuthCard" style="display:none">
+  <div id="navAuthSignedOut">
+    <button class="btn btn-primary btn-small" id="openAuthNav" style="background:#22c55e;border-color:#22c55e;color:#fff">Log in</button>
+  </div>
+  <div id="navAuthSignedIn" style="display:none">
+    <a href="/profile" class="site-nav-avatar" title="View profile">
+      <div id="navUserAvatarIcon" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#6b8cff);display:flex;align-items:center;justify-content:center;font-size:12px;color:white;font-weight:600;border:2px solid rgba(255,255,255,0.3)">
+        <span id="navUserInitials">U</span>
+      </div>
+    </a>
+  </div>
+</div>
+<script>
+fetch('/pages/nav.html')
+  .then(resp => resp.text())
+  .then(html => {
+    document.getElementById('siteNavContainer').innerHTML = html;
+    const navLinks = document.querySelector('.site-nav-links');
+    const authCard = document.getElementById('navAuthCard');
+    if (navLinks && authCard) {
+      navLinks.appendChild(authCard);
+      authCard.style.display = 'flex';
+    }
+  });
+</script>
 
 <div class="profile-page">
   <div class="profile-header">
